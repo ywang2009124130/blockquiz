@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Long+Cang&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
 <style id="lxgw-fonts">
 /* §V13.4 内嵌字体：霞鹜文楷(汉字, OFL) + LxgwPinyin(拼音字母, OFL)，均可商用 */
-@font-face{font-family:"LxgwHan";font-weight:400;font-display:swap;src:url(fonts/han.woff2) format("woff2");}
-@font-face{font-family:"LxgwPY";font-weight:400;font-display:swap;src:url(fonts/py.woff2) format("woff2");}
+@font-face{font-family:"LxgwHan";font-weight:400;font-display:swap;src:url(han.woff2) format("woff2");}
+@font-face{font-family:"LxgwPY";font-weight:400;font-display:swap;src:url(py.woff2) format("woff2");}
 :root{
   --font-han:"LxgwHan","Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;
   --font-py:"LxgwPY","LxgwHan",Arial,sans-serif;
@@ -50,7 +50,7 @@
 }
 
 /* ===== §水晶魔法启动页 注入CSS ===== */
-#cms-splash-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;display:flex;flex-direction:column;background:#160a28;}
+#cms-splash-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;display:flex;flex-direction:column;background:#241043;}
 /* 关键修复:Safari/嵌入环境 flex 子元素高度会塌成0导致白屏,改绝对定位强制全高,不靠flex算高 */
 #cms-splash-overlay #stageWrap{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;flex:none!important;width:100%!important;height:100%!important;}
 
@@ -58,10 +58,11 @@
 #stars{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
 #stageWrap>#stage{position:absolute;z-index:1;}
 #stageWrap{flex:1;position:relative;overflow:hidden;
-  background:radial-gradient(120% 90% at 50% 35%,#3a1f5e 0%,#251140 55%,#160a28 100%);}
+  background:#241043;}
 #stage{position:absolute;left:50%;top:50%;transform-origin:center;}
 .cube{position:absolute;will-change:transform,opacity;pointer-events:none;}
 .cube img{position:absolute;left:0;top:0;display:block;}
+#glowfx{position:absolute;inset:0;pointer-events:none;z-index:0;}
 #fx{position:absolute;inset:0;pointer-events:none;}
 #loadbar{position:absolute;left:50%;transform:translateX(-50%);bottom:132px;width:42%;max-width:420px;height:8px;
   background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.08);}
@@ -7768,6 +7769,7 @@ html[lang="ar"] .blocks-zone-mark-i18n{
   <div id="stageWrap">
     <canvas id="stars"></canvas>
     <div id="stage">
+      <canvas id="glowfx"></canvas>
       <canvas id="fx"></canvas>
       <div id="wand"><img id="wandImg" src=""></div>
     </div>
@@ -7810,6 +7812,7 @@ const SW=900, SH=620;           // 虚拟舞台
 const CX=SW/2, CY=SH/2;
 const stage=document.getElementById('stage');
 const fx=document.getElementById('fx');
+const glowfx=document.getElementById('glowfx'); const gctx=glowfx.getContext('2d');
 const ctx=fx.getContext('2d');
 const wandEl=document.getElementById('wand');
 
@@ -7820,6 +7823,7 @@ function fit(){
   stage.style.width=SW+'px'; stage.style.height=SH+'px';
   stage.style.transform=`translate(-50%,-50%) scale(${s})`;
   fx.width=SW; fx.height=SH;
+  glowfx.width=SW; glowfx.height=SH;
   // 全屏星空canvas按真实视口尺寸
   const sc=document.getElementById('stars');
   sc.width=wrap.clientWidth; sc.height=wrap.clientHeight;
@@ -8004,6 +8008,29 @@ function burst(x,y,n,spread){
 let ambient=0;
 function updateParts(dt){
   ctx.clearRect(0,0,SW,SH);
+  // —— logo背后发光画在底层glowfx(积木之下,从边缘透出,不糊表面) ——
+  gctx.clearRect(0,0,SW,SH);
+  if(t>=T.logoHold-0.3){
+    const gin=seg(t,T.logoHold-0.3,T.logoHold+0.6,E.lin);
+    const breathe=0.80+0.20*Math.sin(waveClock*1.6);
+    const pos=logoPos(camOff);
+    for(let i=0;i<3;i++){
+      const c=cubes[i]; if(!c) continue;
+      const L=c.layers.t; const m=L.meta;
+      const px=pos[i][0], py=pos[i][1];
+      const passes=[[1.34,22,0.32],[1.16,11,0.42]];
+      for(let pi=0;pi<passes.length;pi++){
+        const scl=passes[pi][0], blur=passes[pi][1], al=passes[pi][2];
+        const w=m.w*scl, h=m.h*scl;
+        gctx.save();
+        gctx.globalAlpha=al*gin*breathe;
+        gctx.globalCompositeOperation='lighter';
+        gctx.filter='blur('+blur+'px) brightness(1.5) saturate(1.4)';
+        gctx.drawImage(L.img, px-w/2, py-h/2, w, h);
+        gctx.restore();
+      }
+    }
+  }
   // (环境星点已改由全屏星空层负责;此处只保留施法金粉迸发)
   for(let i=parts.length-1;i>=0;i--){
     const p=parts[i];
