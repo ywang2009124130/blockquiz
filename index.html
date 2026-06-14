@@ -62,7 +62,7 @@
 #stage{position:absolute;left:50%;top:50%;transform-origin:center;}
 .cube{position:absolute;will-change:transform,opacity;pointer-events:none;}
 .cube img{position:absolute;left:0;top:0;display:block;}
-#glowfx{position:absolute;inset:0;pointer-events:none;z-index:0;}
+#glowfx{position:absolute;inset:0;pointer-events:none;z-index:0;filter:blur(16px) saturate(1.3) brightness(1.35);}
 #fx{position:absolute;inset:0;pointer-events:none;}
 #loadbar{position:absolute;left:50%;transform:translateX(-50%);bottom:132px;width:42%;max-width:420px;height:8px;
   background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.08);}
@@ -8018,14 +8018,13 @@ function updateParts(dt){
       const c=cubes[i]; if(!c) continue;
       const L=c.layers.t; const m=L.meta;
       const px=pos[i][0], py=pos[i][1];
-      const passes=[[1.34,22,0.32],[1.16,11,0.42]];
+      const passes=[[1.30,0.34],[1.14,0.42]];
       for(let pi=0;pi<passes.length;pi++){
-        const scl=passes[pi][0], blur=passes[pi][1], al=passes[pi][2];
+        const scl=passes[pi][0], al=passes[pi][1];
         const w=m.w*scl, h=m.h*scl;
         gctx.save();
         gctx.globalAlpha=al*gin*breathe;
         gctx.globalCompositeOperation='lighter';
-        gctx.filter='blur('+blur+'px) brightness(1.5) saturate(1.4)';
         gctx.drawImage(L.img, px-w/2, py-h/2, w, h);
         gctx.restore();
       }
