@@ -6846,7 +6846,18 @@ html[lang="ar"] .dialog-card-grid:empty::before{ content:'حدّد الجمل ع
   .corpus-right textarea{
     font-size:16px !important;
   }
-  .corpus-right{flex:0 0 auto;width:100%;min-width:0;min-height:460px;} /* §V14.10 库区在下：保底高度，整体靠 twocol 纵向滚动看全 */
+  /* §V16.10 右栏字词库/语句库区移动端自适应：不再死给 460px 撑出空白。
+     内部 tab/subtab/list 链全部从"flex撑满+内部滚动"改为"内容自然高度"，整体靠 twocol 纵向滚动看全。
+     min-height 仅保底放下 tabs + 空态提示，词条多了自己增高。 */
+  .corpus-right{flex:0 0 auto;width:100%;min-width:0;min-height:0;}   /* §V16.10 去掉 460px 死高 */
+  .corpus-right .ctab-pane{flex:0 0 auto;min-height:0;overflow:visible;}
+  .corpus-right .ctab-pane.active{display:flex;}
+  .corpus-right .csub-pane{flex:0 0 auto;min-height:0;overflow:visible;}
+  .corpus-right .csub-pane.active{display:flex;}
+  .corpus-right .qb-list,
+  .corpus-right .dlg-list,
+  .corpus-right .ind-list{flex:0 0 auto;min-height:0;overflow-y:visible;}   /* §V16.10 列表随词条数增高，不内部滚动；空时不占高 */
+  .corpus-right .csub-pane.active{min-height:64px;}   /* 空态时给一点高度放"暂无生词"提示 */
   .corpus-splitter{display:none;}    /* §十二 v11 窄屏隐藏拖动条 */
   /* §V14.14 对话卡面板桌面死限宽(min-width:560px)是移动端"两个屏宽"的根因；散句面板 320px 同理一并解除 */
   .sent-zone-body{grid-template-columns:minmax(0,1fr);overflow-x:hidden;}   /* §V14.14 窄屏两面板上下堆叠：桌面网格列写死 320px/560px，移动端单列 */
