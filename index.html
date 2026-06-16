@@ -3577,6 +3577,20 @@ img[src*="data:image/png;base64"],
   .nav-bar .crumb-val{ max-width:26vw; }
 }
 
+/* §V16.9 极窄屏 (≤360px / 预览框拉窄) 顶栏防御加固：彻底消除重叠与挤压 */
+@media (max-width:360px){
+  .nav-bar{ gap:5px !important; padding:0 8px !important; }
+  .nav-bar .brand-badges{ gap:4px !important; }
+  .version-badge{ font-size:9px !important; padding:2px 6px !important; }
+  /* 题卷名在极窄屏隐藏（本就被省略号截断，留空间给功能按钮） */
+  .nav-bar .nav-crumb{ display:none !important; }
+  .nav-right{ gap:5px !important; }
+  .nav-right .btn,
+  .nav-right .lang-picker-btn,
+  .nav-right .nav-lang-sel{ padding:4px 6px !important; font-size:10.5px !important; }
+  .nav-logo img{ height:30px !important; }
+}
+
 /* ===========================================================
    免费体验版 UI 升级 (Session 2)
    Free Trial Version UI Upgrade
@@ -5381,11 +5395,12 @@ img[src*="data:image/png;base64"],
 /* —— 左栏：原始粘贴（可拖动宽度）—— */
 .corpus-left{
   flex:0 0 var(--corpus-left-width);min-width:280px;
-  display:flex;flex-direction:column;gap:12px;
+  display:flex;flex-direction:column;gap:0;   /* §V16.9 gap 归零，改由分隔条提供间距 */
   overflow:hidden;
 }
+/* §V16.9 旧知/新知不再对半：旧知框高度由 --corpus-old-h 控制(默认 50%)，新知框占剩余；中间分隔条可拖。 */
 .corpus-left .corpus-pane{
-  flex:1 1 50%;min-height:0;
+  min-height:54px;
   display:flex;flex-direction:column;
   background:rgba(255,255,255,.7);
   border:1.5px solid var(--border2);
@@ -5393,6 +5408,20 @@ img[src*="data:image/png;base64"],
   overflow:hidden;
   transition:border-color .14s,box-shadow .14s;
 }
+.corpus-left .corpus-pane-old{ flex:0 0 var(--corpus-old-h,50%); }
+.corpus-left .corpus-pane-new{ flex:1 1 auto; }
+/* 上下拖拉分隔条（样式B·隐形细条）：平时淡灰，hover/拖动变紫加粗 */
+.corpus-vsplit{
+  flex:0 0 auto;height:16px;margin:1px 0;
+  display:flex;align-items:center;justify-content:center;
+  cursor:row-resize;position:relative;touch-action:none;user-select:none;
+}
+.corpus-vsplit .cv-bar{
+  width:46px;height:5px;border-radius:3px;background:var(--border2);
+  transition:background .15s,width .15s,height .15s;
+}
+.corpus-vsplit:hover .cv-bar,
+.corpus-vsplit.dragging .cv-bar{ background:var(--p3);width:56px;height:6px; }
 .corpus-left .corpus-pane:focus-within{
   border-color:var(--p3);
   box-shadow:0 0 0 3px rgba(168,85,247,.12);
@@ -6796,9 +6825,27 @@ html[lang="ar"] .dialog-card-grid:empty::before{ content:'حدّد الجمل ع
   .corpus-toolbar{flex-wrap:wrap;}
   .corpus-toolbar .ct-title-input{flex:1 1 100%;margin-bottom:6px;}
   .corpus-twocol{flex-direction:column;gap:10px;padding:10px 12px 12px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
-  .corpus-left{flex:0 0 auto;max-width:100%;width:100%;min-width:0;}
-  .corpus-left .corpus-pane{flex:0 0 auto;min-height:150px;}            /* §V14.10 输入双框各保 150px 高，余下高度让给下方库区 */
-  .corpus-left textarea{min-height:96px;}
+  .corpus-left{flex:0 0 auto;max-width:100%;width:100%;min-width:0;gap:10px;}
+  /* §V16.9 移动端不用上下拖拉(整体已纵向滚动)，改输入框随内容自动长高：初始矮，内容多了自己撑高 */
+  .corpus-vsplit{display:none;}
+  .corpus-left .corpus-pane{flex:0 0 auto;min-height:0;}              /* §V16.9 取消桌面比例与150px死高，让框随内容长高 */
+  .corpus-left .corpus-pane-old{flex:0 0 auto;}                       /* 覆盖桌面 --corpus-old-h 比例 */
+  .corpus-left textarea{min-height:62px;max-height:200px;flex:0 0 auto;overflow-y:auto;}   /* §V16.9 初始约2-3行高，auto-grow 长到 200px 上限后框内滚动（保留滚动条，符合"拖拉条设置不变"） */
+  .drawer textarea.corpus-box{min-height:62px;}   /* §V16.9 覆盖桌面 corpus-box 的 min-height:200px，使新知框也从矮开始 auto-grow */
+  /* §V16.9 iOS 聚焦自动放大根因：输入框字号<16px。移动端统一抬到16px → iOS 不再 auto-zoom（输完也就不会卡在放大态）。
+     仅 ≤768px 生效，桌面字号不变；16px 在手机上反而更易读。 */
+  .corpus-left textarea,
+  .corpus-toolbar .ct-title-input,
+  #quiz-title-input,
+  #survey-title-input,
+  .qb-row input,
+  .qb-row textarea,
+  .dc-fi,
+  .add-row-btn,
+  .corpus-right input,
+  .corpus-right textarea{
+    font-size:16px !important;
+  }
   .corpus-right{flex:0 0 auto;width:100%;min-width:0;min-height:460px;} /* §V14.10 库区在下：保底高度，整体靠 twocol 纵向滚动看全 */
   .corpus-splitter{display:none;}    /* §十二 v11 窄屏隐藏拖动条 */
   /* §V14.14 对话卡面板桌面死限宽(min-width:560px)是移动端"两个屏宽"的根因；散句面板 320px 同理一并解除 */
@@ -8833,14 +8880,16 @@ requestAnimationFrame(tick);
 
             <!-- 左栏：原始粘贴 -->
             <div class="corpus-left">
-              <div class="corpus-pane">
+              <div class="corpus-pane corpus-pane-old">
                 <div class="corpus-pane-h">
                   <span class="cph-dot cph-dot-old"></span><span data-i18n="oldImport">旧知导入</span>
                   <span class="cph-sub" data-i18n="oldImportSub">复习词 / 旧句 / 旧对话</span>
                 </div>
                 <textarea id="vi-old" data-i18n-placeholder="oldInputPlaceholder" placeholder="粘贴学生已学过的词、句子、问答。每个词用 ，、; 或换行分隔。&#10;例：起床、吃饭、上学&#10;我每天早上六点起床。"></textarea>
               </div>
-              <div class="corpus-pane">
+              <!-- §V16.9 旧知/新知之间上下拖拉分隔条（样式B·隐形细条）：拖动重分配两框高度，记忆到 localStorage -->
+              <div class="corpus-vsplit" id="corpus-vsplit" role="separator" aria-orientation="horizontal" title="拖动调整上下两框高度"><div class="cv-bar"></div></div>
+              <div class="corpus-pane corpus-pane-new">
                 <div class="corpus-pane-h">
                   <span class="cph-dot cph-dot-new"></span><span data-i18n="newCorpus">新知语料</span>
                   <span class="cph-sub" data-i18n="newCorpusSub">本课生词 / 句子 / 对话</span>
@@ -9607,6 +9656,7 @@ function setDrawerW(w){
   drawer.classList.toggle('open',open);
   drawerHandle.classList.toggle('open',open);
   workbench.classList.toggle('drawer-open',open);
+  if(open){ try{ window.dispatchEvent(new Event('bq:drawer-open')); }catch(_){} }   /* §V16.9 通知 auto-grow 在抽屉可见后重算输入框高度 */
 }
 function lastOpenW(){
   const v=parseInt(localStorage.getItem('drawerOpenW')||'640');
@@ -10770,6 +10820,86 @@ function refreshSelectedPreview(){
   function go(){renderDialogs(); if(typeof refreshMyQuizCount==='function') refreshMyQuizCount();}  /* §V13.1.1 初次显示已入选数量 */
   if(document.readyState!=='loading'){go();}
   else{document.addEventListener('DOMContentLoaded',go);}
+})();
+
+// §V16.9 语料区左栏「旧知/新知」上下可拖拉分隔条：拖动重分配两框高度，记忆到 localStorage。
+//   电脑+手机均启用；与左右栏分栏(initCorpusSplitter)互不影响。
+(function initCorpusVSplit(){
+  function go(){
+    const left=document.querySelector('.corpus-left');
+    const div=document.getElementById('corpus-vsplit');
+    const oldPane=left && left.querySelector('.corpus-pane-old');
+    if(!left || !div || !oldPane) return;
+    if(div._wired) return; div._wired=true;
+    const MIN=54;                 // 每个框最小高度
+    // 恢复保存的旧知框高度比例（相对左栏内容高），默认 0.5
+    function applyRatio(r){
+      r=Math.max(0.12, Math.min(0.88, r));
+      oldPane.style.flex='0 0 '+(r*100).toFixed(2)+'%';
+    }
+    const saved=parseFloat(localStorage.getItem('corpusOldRatio'));
+    if(!isNaN(saved)) applyRatio(saved);
+    let dragging=false;
+    div.addEventListener('pointerdown',e=>{
+      dragging=true; div.classList.add('dragging');
+      try{div.setPointerCapture(e.pointerId);}catch(_){}
+      e.preventDefault();
+    });
+    div.addEventListener('pointermove',e=>{
+      if(!dragging) return;
+      const lr=left.getBoundingClientRect();
+      const divH=div.offsetHeight;
+      // 旧知框目标高度 = 指针 y - 左栏顶 - 分隔条半高
+      let h=e.clientY - lr.top - divH/2;
+      const maxH=lr.height - divH - MIN;
+      h=Math.max(MIN, Math.min(maxH, h));
+      const r=h/lr.height;
+      oldPane.style.flex='0 0 '+h+'px';
+      div.dataset.ratio=r.toFixed(4);
+    });
+    function end(){
+      if(!dragging) return;
+      dragging=false; div.classList.remove('dragging');
+      const r=parseFloat(div.dataset.ratio);
+      if(!isNaN(r)) localStorage.setItem('corpusOldRatio', r.toFixed(4));
+    }
+    div.addEventListener('pointerup',end);
+    div.addEventListener('pointercancel',end);
+  }
+  if(document.readyState!=='loading'){go();}
+  else{document.addEventListener('DOMContentLoaded',go);}
+})();
+
+// §V16.9 移动端语料输入框随内容自动长高（auto-grow）：仅 ≤768px 生效；桌面用拖拉分隔条不受影响。
+(function initCorpusAutoGrow(){
+  const mq=window.matchMedia('(max-width:768px)');
+  function grow(ta){
+    if(!mq.matches){ ta.style.height=''; return; }   // 桌面不接管，交回 flex 布局
+    if(!ta.offsetParent && ta.offsetHeight===0) return;
+    ta.style.height='auto';
+    const MAX=200;
+    const h=Math.min(Math.max(ta.scrollHeight, 62), MAX);   // 62~200 之间随内容长高，到顶后框内滚动
+    if(h>0) ta.style.height=h+'px';
+  }
+  function growHasContent(ta){
+    // 初始：有内容才长高；空框保持 CSS 的 min-height:62px，不强行撑
+    if(ta.value && ta.value.trim()) grow(ta);
+    else { ta.style.height=''; }
+  }
+  function wire(){
+    ['vi-old','vi-corpus'].forEach(id=>{
+      const ta=document.getElementById(id);
+      if(!ta || ta._autogrow) return; ta._autogrow=true;
+      ta.addEventListener('input',()=>grow(ta));
+      growHasContent(ta);
+    });
+  }
+  function recalcAll(){ ['vi-old','vi-corpus'].forEach(id=>{const t=document.getElementById(id);if(t)growHasContent(t);}); }
+  if(mq.addEventListener){ mq.addEventListener('change',recalcAll); }
+  // 抽屉打开后元素才真正可量，延迟重算一次
+  window.addEventListener('bq:drawer-open', ()=>setTimeout(recalcAll,60));
+  if(document.readyState!=='loading'){wire();}
+  else{document.addEventListener('DOMContentLoaded',wire);}
 })();
 
 // §九-§十一 v11 语料区粘贴区/识别区可调分栏：注入拖动条 + 绑定 drag
