@@ -11,6 +11,8 @@
 /* §V13.4 内嵌字体：霞鹜文楷(汉字, OFL) + LxgwPinyin(拼音字母, OFL)，均可商用 */
 @font-face{font-family:"LxgwHan";font-weight:400;font-display:swap;src:url(han.woff2) format("woff2");}
 @font-face{font-family:"LxgwPY";font-weight:400;font-display:swap;src:url(py.woff2) format("woff2");}
+/* §slogan专用:霞鹜文楷GB子集(仅slogan13字)base64内嵌,splash开场即显示,手机无需等外链 */
+@font-face{font-family:"LxgwSloganGB";font-weight:400;font-display:block;src:url(data:font/woff2;base64,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) format("woff2");}
 :root{
   --font-han:"LxgwHan","Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;
   --font-py:"LxgwPY","LxgwHan",Arial,sans-serif;
@@ -103,7 +105,7 @@
 /* 6 宋体衬线(秀气) */
 #tSlogan.s6 span{font-family:"Songti SC","STSong","SimSun",serif;font-weight:400;letter-spacing:1px;text-shadow:0 1px 5px rgba(255,180,60,.25);}
 /* s7: 外置霞鹜文楷(LxgwHan, 与题卡/题卷正文同字体)，手机也能显示 */
-#tSlogan.s7 span{font-family:"LxgwHan","Kaiti SC","STKaiti",serif;font-weight:400;letter-spacing:1px;text-shadow:0 1px 6px rgba(255,180,60,.3);}
+#tSlogan.s7 span{font-family:"LxgwSloganGB","LxgwHan","Kaiti SC","STKaiti",serif;font-weight:400;letter-spacing:1px;text-shadow:0 1px 6px rgba(255,180,60,.3);}
 #bar{flex:0 0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
   padding:10px 14px;background:#141020;border-top:1px solid #2a2342;color:#cbb8e8;font-size:13px;}
 #bar button,#bar select{font:inherit;color:#eee;background:#2a2342;border:1px solid #3c3360;
@@ -375,6 +377,7 @@ html,body{
    工作台 - Nav
 ───────────────────────────────────────────────── */
 #teacher-view{display:flex;flex-direction:column;
+  overflow-x:clip;   /* §V16.8 iOS Safari 橡皮筋横滑兜底：clip 比 hidden 更彻底地禁止横向滚动/拖动，防止抽屉/内容溢出时被拽出屏 */
   background:
     radial-gradient(ellipse 60% 50% at 12% 0%,rgba(168,85,247,.07) 0%,transparent 60%),
     radial-gradient(ellipse 55% 45% at 90% 100%,rgba(124,58,237,.06) 0%,transparent 62%),
@@ -3340,7 +3343,15 @@ html[lang="ar"] .drawer-handle .drawer-handle-label-slot{
 }
 .demo-switch:hover{background:#fff;border-color:var(--p3);}
 .demo-switch[style*="display:none"]{display:none !important;}
-@media(max-width:900px){.mbw{top:auto;bottom:24px;right:20px!important;}.drawer{width:95vw;right:-95vw;transition:width .35s, right .35s;}.drawer.open{right:0;}.drawer-handle.open{right:min(95vw, calc(100% - 40px));cursor:pointer;}}   /* §V14.9.8 小屏：抽屉 right 滑动补过渡与把手同步；小屏禁拖宽故把手用普通指针 */
+@media(max-width:900px){
+  .mbw{top:auto;bottom:24px;right:20px!important;}
+  /* §V16.8 小屏抽屉：不再用 95vw+right:-95vw 把整盒推出屏外（iOS Safari 下那块屏外内容会被橡皮筋横滑拽出，导致把手跑掉/输入框被切）。
+     改为 right:0 锚定、纯靠 width 收合：关闭=width:0 真收起（无屏外残留盒子），打开=占满视口仅留 42px 给把手。 */
+  .drawer{width:0;right:0;max-width:none;transition:width .32s;}
+  .drawer.open{width:calc(100vw - 42px);right:0;}
+  /* 把手：关闭贴右缘；打开停在抽屉左缘（距右缘满屏宽），那 42px 正好露在屏左可见，永不滑出屏 */
+  .drawer-handle.open{right:calc(100vw - 42px);cursor:pointer;}
+}
 
 /* DEFENSIVE: Force transparent background on all logo images */
 img[src*="data:image/png;base64"],
@@ -5282,6 +5293,11 @@ img[src*="data:image/png;base64"],
   .corpus-toolbar.corpus-toolbar-inline{flex:1 1 100%;flex-wrap:wrap;}
   .corpus-toolbar.corpus-toolbar-inline .ct-title-input{flex:1 1 100%;width:100%;max-width:none;}
   .corpus-toolbar.corpus-toolbar-inline .corpus-status{flex:1 1 100%;margin-left:0;justify-content:flex-start;}
+  /* §V16.8 三按钮（识别/清空/语料确认）压到一行恢入屏内：等分收缩、缩小内边距与字距，绝不溢出抽屉宽 */
+  .corpus-toolbar.corpus-toolbar-inline .ct-btn{
+    flex:1 1 0;min-width:0;padding:8px 6px;font-size:12.5px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;justify-content:center;
+  }
 }
 
 .ct-btn-recognize{
@@ -8319,15 +8335,23 @@ document.getElementById('loop').onchange=e=>{ looping=e.target.checked; if(loopi
 document.getElementById('speed').onchange=e=>{ speed=parseFloat(e.target.value); };
 document.getElementById('cam').onchange=e=>{ camOff=parseInt(e.target.value)*140; };
 // 点击/按键跳过到结尾
+var _cmsFinished=false;
 function cmsFinish(){
+  if(_cmsFinished) return;          // 只允许进入主页台一次,音效也只响一次
+  _cmsFinished=true;
+  // 进入后立即拆掉启动页的全局监听器,避免语料区打字等按键再次触发音效
+  try{ window.removeEventListener('keydown',_cmsKeyHandler); }catch(e){}
+  try{ document.getElementById('stageWrap').removeEventListener('click',_cmsClickHandler); }catch(e){}
   try{ var _sfx=document.getElementById('cms-splash-sfx'); if(_sfx){ _sfx.currentTime=0; _sfx.volume=0.7; _sfx.play().catch(function(){}); } }catch(e){}
   var ov=document.getElementById('cms-splash-overlay');
   if(ov){ ov.style.transition='opacity .55s'; ov.style.opacity='0'; setTimeout(function(){ ov.style.display='none'; },600); }
   try{ if(typeof showView==='function') showView('teacher'); }catch(e){}
 }
 function skip(){ t=T.END; playing=false; }
-document.getElementById('stageWrap').addEventListener('click',()=>{ cmsFinish(); });
-window.addEventListener('keydown',e=>{ if(e.code==='Space')e.preventDefault(); cmsFinish(); });
+function _cmsClickHandler(){ cmsFinish(); }
+function _cmsKeyHandler(e){ if(e.code==='Space')e.preventDefault(); cmsFinish(); }
+document.getElementById('stageWrap').addEventListener('click',_cmsClickHandler);
+window.addEventListener('keydown',_cmsKeyHandler);
 
 fit();
 requestAnimationFrame(tick);
@@ -9679,7 +9703,7 @@ if(drawerHandle){
     }
   };
   h.addEventListener('pointerdown',e=>{
-    // §V14.9.8 小屏不启用拖宽：小屏抽屉宽度由 CSS 固定 95vw，拖宽只会让 --drawer-w 与实际宽度脱节、
+    // §V16.8 小屏不启用拖宽：小屏抽屉宽度由 CSS 固定（关闭 width:0 / 打开 calc(100vw-42px)），拖宽只会让 --drawer-w 与实际宽度脱节、
     //   并在拖动过程中反复翻转 open 态造成把手与抽屉分离跳跃 → 小屏把手纯点按开合。
     if(window.matchMedia('(max-width:900px)').matches) return;
     startX=e.clientX;
