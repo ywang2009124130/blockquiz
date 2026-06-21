@@ -2242,6 +2242,16 @@ html[lang="ar"] .dc-pair-imgline .dc-pair-img-preview:empty::before{ content:'ب
   flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; max-width:200px;
 }
 .pt-bar .pt-spacer{flex:1 1 12px;}
+/* §V19.64 题卷第二语言徽章（深紫顶栏版）：半透明胶囊+文红发光+选中亮紫发光 */
+.pt-secondlang{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:30px;padding:2px 4px;flex:none;}
+.pt-secondlang .slb{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:none;cursor:pointer;padding:0;transition:background .15s,box-shadow .15s,color .15s;font-family:inherit;}
+.pt-secondlang .slb.zh{background:#e0594f;color:#fff;cursor:default;box-shadow:0 0 9px rgba(224,89,79,.85),0 0 20px rgba(224,89,79,.5);font-family:'ZCOOL XiaoWei','Noto Sans SC',sans-serif;}
+.pt-secondlang .slb.l{background:rgba(255,255,255,.15);color:rgba(255,255,255,.62);}
+.pt-secondlang .slb.l:hover{background:rgba(255,255,255,.26);}
+.pt-secondlang .slb.en.on{background:#4a86f5;color:#fff;box-shadow:0 0 10px rgba(74,134,245,.95),0 0 22px rgba(74,134,245,.6);}
+.pt-secondlang .slb.arb.on{background:#22a86a;color:#fff;box-shadow:0 0 10px rgba(34,168,106,.98),0 0 22px rgba(34,168,106,.62);}
+.pt-secondlang .slb.arb{font-family:"Geeza Pro","Noto Naskh Arabic","Arial",sans-serif;font-size:15px;}
+@media print{ .pt-secondlang{ display:none !important; } }
 /* 迷你魔法引擎：照搬主引擎盖，缩小 */
 .pt-bar .mini-engine{
   width:62px; height:62px; border-radius:50%; flex:none;
@@ -3516,12 +3526,9 @@ html[lang="ar"] .drawer-handle .drawer-handle-label-slot{
 .demo-switch[style*="display:none"]{display:none !important;}
 @media(max-width:900px){
   .mbw{top:auto;bottom:24px;right:20px!important;}
-  /* §V16.8 小屏抽屉：不再用 95vw+right:-95vw 把整盒推出屏外（iOS Safari 下那块屏外内容会被橡皮筋横滑拽出，导致把手跑掉/输入框被切）。
-     改为 right:0 锚定、纯靠 width 收合：关闭=width:0 真收起（无屏外残留盒子），打开=占满视口仅留 42px 给把手。 */
-  .drawer{width:0;right:0;max-width:none;transition:width .32s;}
-  .drawer.open{width:calc(100vw - 42px);right:0;}
-  /* 把手：关闭贴右缘；打开停在抽屉左缘（距右缘满屏宽），那 42px 正好露在屏左可见，永不滑出屏 */
-  .drawer-handle.open{right:calc(100vw - 42px);cursor:pointer;}
+  /* §V19.44 删除小屏抽屉特殊规则（原 .drawer/.drawer.open/.drawer-handle.open 固定宽不可拖）：
+     全站已改 width=1280 桌面视口缩放，这条为 device-width 响应式准备的规则反而让手机抽屉拉不宽。
+     删后抽屉在所有宽度都走桌面"可拖拽"逻辑，与电脑一致。 */
 }
 
 /* DEFENSIVE: Force transparent background on all logo images */
@@ -7424,7 +7431,7 @@ html[lang="ar"] .dialog-card-grid:empty::before{ content:'حدّد الجمل ع
 /* 表头（题卷预览顶部） */
 /* ===== §V18.34 表头卡片系统：每个板块=一张卡片（编辑态有阴影立体感，打印纯内容） ===== */
 .myq-paper-header{
-  display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 16px;
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 12px;   /* §V19.59 卡间距(列间距)→12 */
   padding-bottom:8px;margin-bottom:14px;
 }
 .myq-paper-header h1{font-family:'ZCOOL XiaoWei';font-size:26px;color:var(--ink);font-weight:600;}
@@ -7703,11 +7710,11 @@ html[lang="en"] .myq-settings-panel, html[lang="ar"] .myq-settings-panel{ width:
 /* §V18.34 每个板块=卡片：圆角+淡底+描边+投影（阴影立体感），打印时全去掉 */
 .myq-paper-header .myq-hd-sec{
   position:relative;flex:0 0 auto;width:fit-content;max-width:100%;box-sizing:border-box;margin:0;
-  background:transparent;border:none;border-radius:10px;
-  box-shadow:0 2px 12px rgba(86,57,138,.13), 0 1px 4px rgba(86,57,138,.09);
-  padding:12px 14px;transition:box-shadow .18s;
+  background:transparent;border:none;border-radius:5px;   /* §V19.59 白卡柔边：透明白卡 + 柔化阴影定义边缘(虚化边框)，无硬边框 */
+  box-shadow:0 0 6px rgba(86,57,138,0.10);
+  padding:3px;transition:box-shadow .18s;
 }
-.myq-paper-header .myq-hd-sec:hover{ box-shadow:0 5px 20px rgba(86,57,138,.2), 0 2px 6px rgba(86,57,138,.12); }
+.myq-paper-header .myq-hd-sec:hover{ box-shadow:0 0 10px rgba(86,57,138,0.16); }   /* §V19.59 hover 稍强的同款白卡柔边 */
 /* §V18.48 这三块去掉卡片感（辅助信息，非内容卡片）：透明无边框无圆角无阴影，padding 最小，直接贴页面 */
 .myq-paper-header .myq-hd-studentinfo,
 .myq-paper-header .myq-hd-title,
@@ -7773,9 +7780,10 @@ body.myq-cardrow-swapping .myq-hd-sec{
 @media print{ .myq-hd-knowledge>.myq-hd-know-title,.myq-hd-moe>.myq-hd-moe-title{ padding-left:0 !important; } }
 /* §V19.25 打印态去掉卡片框/阴影（编辑辅助元素，题卷要干净）：只去装饰，不碰布局/padding/尺寸，布局排版与网页仍一致 */
 @media print{
+  .myq-paper-header .myq-hd-sec{ background:transparent !important; box-shadow:none !important; }   /* §V19.59 打印去掉卡片柔边阴影 */
   .myq-paper-header .myq-hd-knowledge,
   .myq-paper-header .myq-hd-moe{ box-shadow:none !important; }
-  .myq-hd-know-wrap.bordered{ border:none !important; }
+  /* §V19.59 图文要点勾选的「框」改为照常打印：原 §V19.25 把它当编辑辅助框 border:none 抹掉了，但它是内容框(勾选才出现)，所见即所得保留其边框 */
 }
 /* 正在被拖动的卡片：半透明 + 提起感（指令八） */
 .myq-paper-header .myq-hd-sec.cardrow-dragging{opacity:.55;box-shadow:0 10px 28px rgba(86,57,138,.28) !important;}
@@ -8401,7 +8409,8 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
   .paper-q{ font-size:13px; }
   .pq-no{ font-size:13.5px; }
   .pq-title-inline .pq-stem-cn,.myq-a4-paper .pq-stem{ font-size:14px; line-height:1.5; margin-bottom:8px; }
-  .pq-title-inline .pq-stem-en,.myq-a4-paper .pq-stem-en,.pq-en{ font-size:11.5px; }
+  .pq-en{ font-size:11.5px; }
+  .pq-title-inline .pq-stem-en,.myq-a4-paper .pq-stem-en{ font-size:14px; }
   .pq-title-inline .pq-type-cube{ width:20px; height:20px; }
   /* 选项卡片 A/B/C/D：字号、内边距、间距收紧 */
   .pq-cn{ font-size:15px; }
@@ -8434,14 +8443,16 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 }
 .pq-title-inline .pq-type-cube .mb-ico{font-size:12px;}
 .pq-title-inline .pq-stem-cn{font-family:var(--font-han);font-size:16.5px;font-weight:700;line-height:1.55;color:var(--ink,#2b2540);}
-.pq-title-inline .pq-stem-en{font-size:13px;font-weight:500;color:var(--ink3,#6b6385);}
+.pq-stem-col{display:inline-flex;flex-direction:column;align-items:flex-start;min-width:0;}   /* §V19.63 中文+英文竖排成一列：英文对齐中文左缘，不再顶到序号下 */
+.pq-stem-ar{font-family:"Geeza Pro","Noto Naskh Arabic","Arial",sans-serif;direction:rtl;unicode-bidi:isolate;text-align:left;align-self:flex-start;}   /* §V19.67 阿语行左对齐(B：末字对齐中文首字)，文字仍 RTL */
+.pq-title-inline .pq-stem-en{font-size:16.5px;font-weight:500;color:var(--ink,#2b2540);}   /* §V19.62 同字号同色、第二排(§V19.63 对齐中文) */
 .pq-no{font-weight:800;font-size:15.5px;color:var(--ink,#2b2540);}
 .pq-type{font-weight:700;font-size:14.5px;color:var(--ink2,#5b3fa8);}
 /* §V13.3.10 A4 题卷题干区比题项区更明显（像正式题目说明）。仅作用于 A4 题卷区，不影响题卡区。 */
 .myq-a4-paper .pq-stem{font-size:16.5px;font-weight:700;line-height:1.55;margin:2px 0 12px;color:var(--ink,#2b2540);font-family:var(--font-han);}
-.myq-a4-paper .pq-stem-en{font-size:13px;font-weight:500;color:var(--ink3,#6b6385);}
+.myq-a4-paper .pq-stem-en{font-size:16.5px;font-weight:500;color:var(--ink,#2b2540);}   /* §V19.62 同字号同色 */
 .pq-stem{margin:2px 0 12px;line-height:1.7;color:var(--ink,#2b2540);font-family:var(--font-han);}
-.pq-stem-en{color:var(--ink3,#6b6385);font-size:13px;}
+.pq-stem-en{color:var(--ink,#2b2540);font-size:16.5px;}   /* §V19.62 同字号同色 */
 /* §V13.3.7 配对连线：逐行 two-col grid，每对左右同一 grid row、整行垂直居中 */
 .pq-match-grid{
   display:grid;grid-template-columns:1fr 1fr;column-gap:48px;row-gap:4px;
@@ -9466,18 +9477,8 @@ requestAnimationFrame(tick);
     </div>
     <!-- 右侧: 语言 | 学生预览 | 我的题卷 | 导出 / 预览 | 模式 -->
     <div class="nav-right">
-      <div class="lang-picker" id="nav-lang-picker">
-        <button class="lang-picker-btn" onclick="toggleLangPicker('nav-lang-picker')">
-          <span class="lang-icon lang-icon-zh">文</span>
-          <span class="lang-label">中文</span>
-          <svg class="lang-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="2,4 6,8 10,4"/></svg>
-        </button>
-        <div class="lang-picker-menu">
-          <button data-lang="zh" onclick="pickLang('zh')"><span class="lang-icon lang-icon-zh">文</span><span class="lang-opt-label">中文</span></button>
-          <button data-lang="en" onclick="pickLang('en')"><span class="lang-icon lang-icon-en">Aa</span><span class="lang-opt-label">English</span></button>
-          <button data-lang="ar" onclick="pickLang('ar')"><span class="lang-icon lang-icon-ar">ع</span><span class="lang-opt-label">العربية</span></button>
-        </div>
-      </div>
+      <!-- §V19.64 工作台原三语栏已移除（界面只用中文；语言改由题卷顶栏的"题干第二语言"控制）。登录页 auth-lang-picker 保留不动 -->
+
       <button class="demo-switch" id="demo-switch">→ <span data-i18n="stu_preview">学生预览</span></button>
       <button class="btn btn-ghost" id="my-quiz-btn" onclick="openMyQuizModal()"><span style="font-size:1.25em;line-height:1;">📚</span> <span data-i18n="my_q">我的题卷</span><span id="my-quiz-count" class="my-quiz-count"></span></button>
       <button class="btn btn-purple" id="open-export-btn">📤 <span data-i18n="btn_share">导出 / 预览</span></button>
@@ -9985,6 +9986,11 @@ requestAnimationFrame(tick);
     </div>
     <div class="pt-inline-tip" id="ptInlineTip" aria-live="polite"></div>
     <span class="pt-spacer"></span>
+    <div class="pt-secondlang" id="ptSecondLang" title="题干区语言选择栏（题卷题干显示 中英 / 中阿 / 仅中文）">
+      <span class="slb zh" aria-hidden="true">文</span>
+      <button type="button" class="slb l en on" data-slang="en" onclick="setStemLang('en')" title="中英（点亮=显示英文）">Aa</button>
+      <button type="button" class="slb l arb" data-slang="ar" onclick="setStemLang('ar')" title="中阿（点亮=显示阿拉伯文）" lang="ar">ع</button>
+    </div>
     <div class="pt-order-tools">
       <button type="button" class="pt-otool on" id="ptHeaderDesignToggle" onclick="toggleHeaderPanelFromTopbar()" title="表头设计（点击开关）"><span class="pt-otool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="17" height="17" style="display:block"><rect x="4" y="3" width="16" height="18" rx="2"/><rect x="4" y="3" width="16" height="5" rx="2" fill="currentColor" stroke="none"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="15" x2="17" y2="15"/><line x1="7" y1="18" x2="13" y2="18"/></svg></span><span class="pt-otool-tx" data-i18n="mq_header_design">表头设计</span></button>
       <button type="button" class="pt-microblock on" id="ptMicroblock" onclick="toggleLibMicroblock(this)" title="题型积木图示（开启发光，点击关闭）">
@@ -32496,25 +32502,25 @@ function diffLevel(dc){return dc==='diff-high'?3:dc==='diff-mid'?2:dc==='diff-lo
 
 // 题型双语主题干
 const TYPE_STEMS={
-  'image-choice':   {cn:'请根据图片选择正确的选项。', en:'Please choose the correct option from the image.', needImage:true},
-  'fixed-dialog':   {cn:'请根据问题选择正确的回答。', en:'Please choose the correct reply to the question.'},
-  'tf':             {cn:'请根据图片判断对或错。', en:'Please judge true or false from the image.', needImage:true},
-  'cloze':          {cn:'请根据图片填空。', en:'Please fill in the blank based on the image.', needImage:true},
-  'open-text':      {cn:'请根据要求输入答案。', en:'Please type your answer.'},
-  'open-draw':      {cn:'请根据要求绘图。', en:'Please draw according to the prompt.'},
-  'circle-wrong':   {cn:'请圈出错别字。', en:'Please circle the incorrect characters.'},
-  'reorder':        {cn:'请给以下字词按正确的句子排序。', en:'Please reorder the words into a correct sentence.'},
-  'match-cn-en':    {cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', subCn:'把中文词语和英文意思连起来。', subEn:'Match words with meanings.'},
-  'match-cn-ar':    {cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', subCn:'把中文词语和阿拉伯文意思连起来。', subEn:'Match words with meanings.'},
-  'match-cn-pinyin':{cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', subCn:'把中文词语和拼音连起来。', subEn:'Match words with pinyin.'},
+  'image-choice':   {cn:'请根据图片选择正确的选项。', en:'Please choose the correct option from the image.', ar:'اختر الخيار الصحيح من الصورة.', needImage:true},
+  'fixed-dialog':   {cn:'请根据问题选择正确的回答。', en:'Please choose the correct reply to the question.', ar:'اختر الإجابة الصحيحة للسؤال.'},
+  'tf':             {cn:'请根据图片判断对或错。', en:'Please judge true or false from the image.', ar:'احكم بالصواب أو الخطأ حسب الصورة.', needImage:true},
+  'cloze':          {cn:'请根据图片填空。', en:'Please fill in the blank based on the image.', ar:'املأ الفراغ حسب الصورة.', needImage:true},
+  'open-text':      {cn:'请根据要求输入答案。', en:'Please type your answer.', ar:'اكتب إجابتك حسب المطلوب.'},
+  'open-draw':      {cn:'请根据要求绘图。', en:'Please draw according to the prompt.', ar:'ارسم حسب المطلوب.'},
+  'circle-wrong':   {cn:'请圈出错别字。', en:'Please circle the incorrect characters.', ar:'ضع دائرة حول الحروف الخاطئة.'},
+  'reorder':        {cn:'请给以下字词按正确的句子排序。', en:'Please reorder the words into a correct sentence.', ar:'رتّب الكلمات لتكوّن جملة صحيحة.'},
+  'match-cn-en':    {cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', ar:'اختر التوصيلات الصحيحة!', subCn:'把中文词语和英文意思连起来。', subEn:'Match words with meanings.', subAr:'صِل الكلمات الصينية بمعانيها.'},
+  'match-cn-ar':    {cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', ar:'اختر التوصيلات الصحيحة!', subCn:'把中文词语和阿拉伯文意思连起来。', subEn:'Match words with meanings.', subAr:'صِل الكلمات الصينية بمعانيها العربية.'},
+  'match-cn-pinyin':{cn:'请选择正确的搭配连线！', en:'Choose the correct matches!', ar:'اختر التوصيلات الصحيحة!', subCn:'把中文词语和拼音连起来。', subEn:'Match words with pinyin.', subAr:'صِل الكلمات الصينية بالبينيين.'},
 };
 
 function buildQ(brick,num,vocab){
   const t=brick.type,dc=brick.diff||'diff-none';
   const stem=TYPE_STEMS[t]||{cn:'',en:''};
   const base={num,type:t,diff:dc,typeName:brick.name,
-              mainCn:stem.cn,mainEn:stem.en,
-              subCn:stem.subCn,subEn:stem.subEn,    /* §3.1 小题干透传 */
+              mainCn:stem.cn,mainEn:stem.en,mainAr:stem.ar,
+              subCn:stem.subCn,subEn:stem.subEn,subAr:stem.subAr,    /* §3.1 小题干透传(§V19.64 含阿语) */
               needImage:stem.needImage};
 
   // ── 连线题 ──────────────────────────
@@ -33248,18 +33254,18 @@ window.MatchGen = (function(){
 
   // ─── 题干 · 随子形式变化 §七 ───
   const STEMS = {
-    [SUBTYPES.WORD_IMAGE]:       {cn:'把中文词语和图片连起来。',         en:'Match words with pictures.'},
-    [SUBTYPES.WORD_ENGLISH]:     {cn:'把中文词语和英文意思连起来。',     en:'Match words with meanings.'},
-    [SUBTYPES.WORD_PINYIN]:      {cn:'把中文词语和拼音连起来。',         en:'Match words with pinyin.'},
-    [SUBTYPES.WORD_SPLIT]:       {cn:'把可以组成词语的两部分连起来。',   en:'Match word parts.'},
-    [SUBTYPES.WORD_PATTERN]:     {cn:'把词语和合适的句型连起来。',       en:'Match words with patterns.'},
-    [SUBTYPES.SENTENCE_HALVES]:  {cn:'把句子的前后两部分连起来。',       en:'Match sentence parts.'},
-    [SUBTYPES.FUNCTION_PATTERN]: {cn:'把表达功能和合适句型连起来。',     en:'Match functions with patterns.'},
-    [SUBTYPES.RESTRICTED_QA]:    {cn:'把问句和合适的答句连起来。',       en:'Match questions with answers.'},
-    [SUBTYPES.RESTRICTED_TASK]:  {cn:'把任务和合适的中文表达连起来。',   en:'Match tasks with expressions.'},
-    [SUBTYPES.IMAGE_TO_SENTENCE]:{cn:'看图或信息，连一连合适的句子。',   en:'Match pictures or clues with sentences.'},
-    [SUBTYPES.SENTENCE_TO_ENGLISH]:{cn:'把中文句子和英文意思连起来。', en:'Match Chinese sentences with English meanings.'},
-    [SUBTYPES.INFO_COMBO_TO_SENTENCE]:{cn:'看信息组合，连一连合适的句子。', en:'Match information clues with sentences.'}
+    [SUBTYPES.WORD_IMAGE]:       {cn:'把中文词语和图片连起来。',         en:'Match words with pictures.', ar:'صِل الكلمات الصينية بالصور.'},
+    [SUBTYPES.WORD_ENGLISH]:     {cn:'把中文词语和英文意思连起来。',     en:'Match words with meanings.', ar:'صِل الكلمات الصينية بمعانيها.'},
+    [SUBTYPES.WORD_PINYIN]:      {cn:'把中文词语和拼音连起来。',         en:'Match words with pinyin.', ar:'صِل الكلمات الصينية بالبينيين.'},
+    [SUBTYPES.WORD_SPLIT]:       {cn:'把可以组成词语的两部分连起来。',   en:'Match word parts.', ar:'صِل جزأي الكلمة معًا.'},
+    [SUBTYPES.WORD_PATTERN]:     {cn:'把词语和合适的句型连起来。',       en:'Match words with patterns.', ar:'صِل الكلمات بالأنماط المناسبة.'},
+    [SUBTYPES.SENTENCE_HALVES]:  {cn:'把句子的前后两部分连起来。',       en:'Match sentence parts.', ar:'صِل جزأي الجملة معًا.'},
+    [SUBTYPES.FUNCTION_PATTERN]: {cn:'把表达功能和合适句型连起来。',     en:'Match functions with patterns.', ar:'صِل الوظائف بالأنماط المناسبة.'},
+    [SUBTYPES.RESTRICTED_QA]:    {cn:'把问句和合适的答句连起来。',       en:'Match questions with answers.', ar:'صِل الأسئلة بالإجابات المناسبة.'},
+    [SUBTYPES.RESTRICTED_TASK]:  {cn:'把任务和合适的中文表达连起来。',   en:'Match tasks with expressions.', ar:'صِل المهام بالتعبيرات الصينية المناسبة.'},
+    [SUBTYPES.IMAGE_TO_SENTENCE]:{cn:'看图或信息，连一连合适的句子。',   en:'Match pictures or clues with sentences.', ar:'صِل الصور أو المعلومات بالجمل المناسبة.'},
+    [SUBTYPES.SENTENCE_TO_ENGLISH]:{cn:'把中文句子和英文意思连起来。', en:'Match Chinese sentences with English meanings.', ar:'صِل الجمل الصينية بمعانيها الإنجليزية.'},
+    [SUBTYPES.INFO_COMBO_TO_SENTENCE]:{cn:'看信息组合，连一连合适的句子。', en:'Match information clues with sentences.', ar:'صِل مجموعات المعلومات بالجمل المناسبة.'}
   };
 
   // ─── 词分类提示（用于词配图筛选 §二.2）───
@@ -34056,6 +34062,7 @@ window.MatchGen = (function(){
         en: 'Choose the correct matches!',
         subCn: STEMS[SUBTYPES.IMAGE_TO_SENTENCE].cn,
         subEn: STEMS[SUBTYPES.IMAGE_TO_SENTENCE].en,
+        subAr: STEMS[SUBTYPES.IMAGE_TO_SENTENCE].ar,
         stem: '',
         kind: 'match',
         pairs: [],
@@ -34387,6 +34394,7 @@ window.MatchGen = (function(){
         en: 'Choose the correct matches!',
         subCn: STEMS[SUBTYPES.SENTENCE_TO_ENGLISH].cn,
         subEn: STEMS[SUBTYPES.SENTENCE_TO_ENGLISH].en,
+        subAr: STEMS[SUBTYPES.SENTENCE_TO_ENGLISH].ar,
         stem: '',
         kind: 'match',
         pairs: [],
@@ -34583,6 +34591,7 @@ window.MatchGen = (function(){
         en: 'Choose the correct matches!',
         subCn: STEMS[SUBTYPES.INFO_COMBO_TO_SENTENCE].cn,
         subEn: STEMS[SUBTYPES.INFO_COMBO_TO_SENTENCE].en,
+        subAr: STEMS[SUBTYPES.INFO_COMBO_TO_SENTENCE].ar,
         stem: '',
         kind: 'match',
         pairs: [],
@@ -34612,6 +34621,7 @@ window.MatchGen = (function(){
       en: 'Choose the correct matches!',
       subCn: stem.cn,
       subEn: stem.en,
+      subAr: stem.ar,
       stem: '',
       kind: 'match',
       pairs: cns.map((c,i)=>({cn:_withPy(c, cnPy), en:shuffledEns[i]})),
@@ -34847,6 +34857,7 @@ window.MatchGen = (function(){
       en: 'Choose the correct matches!',
       subCn: STEMS[SUBTYPES.WORD_ENGLISH].cn,
       subEn: STEMS[SUBTYPES.WORD_ENGLISH].en,
+      subAr: STEMS[SUBTYPES.WORD_ENGLISH].ar,
       stem: '',
       kind: 'match',
       pairs: [],
@@ -36700,9 +36711,13 @@ function renderPaperQuestion(q, displayNum){
   const typeName = (q && (q.typeName || (st&&st.typeName))) || (q&&q.type==='matching-link'?'配对连线':'');
   // 题干：中文 + 英文（括号同行）。优先 subCn/subEn，回退 mainCn/mainEn / stem
   const cn = (q && (q.subCn || q.mainCn)) || (st && (st.subCn)) || '';
-  const en = (q && (q.subEn || q.mainEn)) || (st && (st.subEn)) || '';
+  const _slang = (typeof paperHeaderConfig!=='undefined' && paperHeaderConfig && paperHeaderConfig.stemLang) || 'en';   /* §V19.64 题干第二语言：en/ar/none */
+  let en = '';
+  if(_slang==='en') en = (q && (q.subEn || q.mainEn)) || (st && (st.subEn)) || '';
+  else if(_slang==='ar') en = (q && (q.subAr || q.mainAr)) || (st && (st.subAr)) || '';
+  const _stemAr = (_slang==='ar' && !!en);
   const cnHtml = cn ? withPinyin(cn) : '';
-  const enHtml = en ? `（${escapeHtmlMyq(en)}）` : '';
+  const enHtml = en ? `${escapeHtmlMyq(en)}` : '';
   // §V13.3.8 汉字↔拼音题：题卷里左侧汉字同样不能注拼音（V1 用 type，V2 用 subtype/structured）
   const _sub = (q && (q.subtype || (q.structured && q.structured._subtype))) || '';
   const hideCnPy = (q && q.type==='match-cn-pinyin') || _sub==='word-pinyin';
@@ -36734,8 +36749,7 @@ function renderPaperQuestion(q, displayNum){
       <span class="pq-no">${String(displayNum).padStart(2,'0')}.</span>
       ${iconHtml}
       ${showTypeName&&typeName?`<span class="pq-type">${escapeHtmlMyq(typeName)}</span>`:''}
-      ${cnHtml?`<span class="pq-stem-cn">${cnHtml}</span>`:''}
-      ${enHtml?`<span class="pq-stem-en">${enHtml}</span>`:''}
+      <span class="pq-stem-col">${cnHtml?`<span class="pq-stem-cn">${cnHtml}</span>`:''}${enHtml?`<span class="pq-stem-en${_stemAr?' pq-stem-ar':''}"${_stemAr?' dir="rtl"':''}>${enHtml}</span>`:''}</span>
     </div>`;
 
   if(isMatch){
@@ -36850,8 +36864,8 @@ function renderPaperHeader(){
         }
         const hasCustomCol=Array.isArray(sec.moeColW)&&sec.moeColW.some(v=>typeof v==='number'&&v>0);
         const effW=(typeof sec.moeTableW==='number'&&sec.moeTableW>0)? sec.moeTableW : colSum;
-        const twOrphan=(typeof sec.moeTableW==='number'&&sec.moeTableW>0)&&!hasCustomCol;   // 存了总宽却没列宽=旧压缩残留
-        if(effW < 60*nc || twOrphan){ sec.moeColW=new Array(nc).fill(null); sec.moeRowH=[]; sec.moeTableW=null; sec.moeBoxH=null; }
+        const twOrphan=(typeof sec.moeTableW==='number'&&sec.moeTableW>0)&&!hasCustomCol&&!sec.moeTableWManual;   // 存了总宽却没列宽=旧压缩残留；§V19.61 排除用户手动拖过的宽(manual)，否则每次重渲会误清你拖的卡宽→目标列表自己弹宽
+        if(effW < 60*nc || twOrphan){ sec.moeColW=new Array(nc).fill(null); sec.moeRowH=[]; sec.moeTableW=null; sec.moeBoxH=null; sec.moeTableWManual=false; }
       })();
       const colW = sec.moeColW||[null,null];
       const rowH = sec.moeRowH||[];
@@ -38857,12 +38871,16 @@ function wireCardRowDrag(){
         // 在对方行高内、且水平落在对方身上 → 交换（上下对调，都靠左）
         intent='swap';
         const myRow=HL[dragType].row, otherRow=HL[other].row;
-        let nr_my, nr_other;
-        if(myRow===otherRow){ nr_my=1; nr_other=2; }
-        else { nr_my=otherRow; nr_other=myRow; }
         layout={};
-        layout[dragType]={row:nr_my, order:1};
-        layout[other]={row:nr_other, order:1};
+        if(myRow===otherRow){
+          // §V19.60 并排时落在对方身上 → 交换左右次序（修复:之前会误改成上下排列=并排不能交换）
+          layout[dragType]={row:myRow, order:HL[other].order};
+          layout[other]={row:otherRow, order:HL[dragType].order};
+        }else{
+          // 上下排列 → 交换排号（都靠左）
+          layout[dragType]={row:otherRow, order:1};
+          layout[other]={row:myRow, order:1};
+        }
       }else if(inOtherY && rightOfOther){
         // 在对方行高内、且在对方右边 → 并排：两张同排，对方左、被拖卡右
         intent='sidebyside';
@@ -39044,6 +39062,20 @@ function wireCardRowDrag(){
   },true);
 }
 window.wireCardRowDrag = wireCardRowDrag;
+// §V19.64 题卷题干第二语言切换：en=中英 / ar=中阿 / none=仅中文（再点已亮的=熄灭→仅中文，互斥）
+function setStemLang(v){
+  const cur = paperHeaderConfig.stemLang || 'en';
+  paperHeaderConfig.stemLang = (cur===v) ? 'none' : v;
+  if(typeof _syncSecondLangUI==='function') _syncSecondLangUI();
+  if(typeof renderLibPaper==='function') renderLibPaper();
+}
+window.setStemLang=setStemLang;
+function _syncSecondLangUI(){
+  const box=document.getElementById('ptSecondLang'); if(!box) return;
+  const cur=paperHeaderConfig.stemLang || 'en';
+  box.querySelectorAll('button[data-slang]').forEach(b=>b.classList.toggle('on', b.dataset.slang===cur));
+}
+window._syncSecondLangUI=_syncSecondLangUI;
 // §V18.57 表格选中状态：{cells:Set("ri-ci"), all:bool}
 window._hdMoeSel = window._hdMoeSel || {cells:new Set(), all:false};
 function _moeClearSel(){
@@ -39314,7 +39346,7 @@ function _moeWireWedges(card){
       document.body.classList.add('myq-grip-drag-ew');
       const move=ev=>{
         let nw=Math.round(startW+(ev.clientX-sx)/sc); nw=Math.max(MINW, Math.min(_availW(), nw));
-        s.moeTableW=nw; card.style.width=nw+'px';
+        s.moeTableW=nw; s.moeTableWManual=true; card.style.width=nw+'px';
         if(window._moePlaceResize)_moePlaceResize();
       };
       const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; document.body.classList.remove('myq-grip-drag-ew'); _moeBuildWedges(); };
@@ -39358,7 +39390,7 @@ function _wireMoeSelection(cont){
     tResize.addEventListener('dblclick',function(e){
       e.preventDefault(); e.stopPropagation();
       const s=myqSection('moe'); if(!s)return;
-      s.moeColW=new Array(_moeColCount(s)).fill(null); s.moeRowH=[]; s.moeTableW=null; s.moeBoxH=null; s.moeScale=1;
+      s.moeColW=new Array(_moeColCount(s)).fill(null); s.moeRowH=[]; s.moeTableW=null; s.moeTableWManual=false; s.moeBoxH=null; s.moeScale=1;
       if(typeof renderLibPaper==='function') renderLibPaper();
     });
     tResize.addEventListener('mousedown',function(e){
@@ -39375,7 +39407,7 @@ function _wireMoeSelection(cont){
       const move=(ev)=>{
         let nw=Math.round(startW+(ev.clientX-sx)/sc); nw=Math.max(160, Math.min(availW(), nw));
         let nh=Math.round(startH+(ev.clientY-sy)/sc); nh=Math.max(46, nh);
-        s.moeTableW=nw; s.moeBoxH=nh; card.style.width=nw+'px'; card.style.height=nh+'px';
+        s.moeTableW=nw; s.moeTableWManual=true; s.moeBoxH=nh; card.style.width=nw+'px'; card.style.height=nh+'px';
         if(window._moeMarkClip)_moeMarkClip(card);
         if(window._moePlaceResize)_moePlaceResize();
       };
@@ -39743,7 +39775,7 @@ function wireHeaderA4Edit(){
             }
           }
         };
-        const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; };
+        const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; if(typeof _refreshClipWarn==='function')_refreshClipWarn(); };   /* §V19.57 拉大文本框/图片后重检：内容显示全→自动隐藏打印保护提示 */
         document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
       });
     });
@@ -39800,7 +39832,7 @@ function wireHeaderA4Edit(){
       const sx=e.clientX, sc=measureScale(), sw=secEl.getBoundingClientRect().width/sc;
       document.body.classList.add('myq-grip-drag-w');
       const move=(ev)=>{ const nw=Math.max(80,sw+(ev.clientX-sx)/sc); s.hdW=Math.round(nw); secEl.style.width=Math.round(nw)+'px'; };
-      const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; document.body.classList.remove('myq-grip-drag-w'); };
+      const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; document.body.classList.remove('myq-grip-drag-w'); if(typeof _refreshClipWarn==='function')_refreshClipWarn(); };   /* §V19.57 拉宽整卡后重检：同上 */
       document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); document.body.style.userSelect='none';
     });
     // §V18.24 统一 transform 合成：等比 hdScale × 垂直 hdScaleY，避免下把手与角把手互相覆盖
