@@ -32339,7 +32339,7 @@ function toggleDrawer(){
 /* §V19.349 微软神经语音（方案B，用户拍板）：edge-tts 同款接口，任何浏览器统一晓晓/云希级音质。
    如实声明：非官方接口，微软可能调整导致失效——失效/超时自动回退系统语音（不失声，顶多退回旧音质）。
    默认音色 女=晓晓 男=云希；localStorage bqNeuralVoiceM/F 可换（微软 zh Natural 全名，如 zh-CN-XiaochenNeural）。 */
-window.BQ_NEURAL_VOICE={ m:'zh-CN-YunxiNeural', f:'zh-CN-XiaoxiaoNeural' };
+window.BQ_NEURAL_VOICE={ m:'zh-CN-YunyangNeural', f:'zh-CN-XiaoxiaoNeural' };   /* §V19.352 用户定稿：女=晓晓 男=云扬（播音腔） */
 (function(){
   const TOKEN='6A5AA1D4EAFF4E9FB37E23D68491D6F4';
   const CACHE=new Map();   // g:text → objectURL（上限 40）
@@ -51180,7 +51180,7 @@ function zoneMarkWave(){
   //   ② 一次性迁移：把早期版本可能写坏的 bqXzDragDX 清一次(以后正常拖拽仍会记住位置)。
   // §V19.120 方案2：「已看过引导」标志绑定版本号 —— 真实用户只看一次；每发一个新版本就把下面的版本号 +1，
   //   该版本第一次打开会自动播一次(不受浏览器里旧标志/file:// 跨文件共享影响)，之后同版本不再自动播(可 ?xzintro 重看)。
-  var XZ_INTRO_KEY='bqXzIntroSeen_v351';
+  var XZ_INTRO_KEY='bqXzIntroSeen_v352';
   try{
     if(location.search.indexOf('xzintro')>=0) localStorage.removeItem('bqXzDragDX');
     if(!localStorage.getItem('bqXzDragReset1')){ localStorage.removeItem('bqXzDragDX'); localStorage.setItem('bqXzDragReset1','1'); }
