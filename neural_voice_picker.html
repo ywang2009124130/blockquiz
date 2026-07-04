@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>神经语音音色试听 · 小积木</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#F5F3FA;padding:34px 18px;}
+h1{font-size:19px;color:#3A2E55;text-align:center;margin:0 0 4px;}
+.sub{font-size:13px;color:#8B7FB0;text-align:center;margin:0 0 18px;}
+.panel{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:20px 22px;box-shadow:0 2px 12px rgba(90,60,160,.09);}
+.ctrl{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap;}
+.ctrl label{font-size:13.5px;color:#5B3FA8;font-weight:700;flex:none;}
+.ctrl input[type=text]{flex:1;min-width:180px;border:1.5px solid #E4DBF7;border-radius:9px;padding:8px 11px;font-family:inherit;font-size:14px;outline:none;}
+.grp{font-size:13px;color:#9C86CF;font-weight:700;margin:14px 0 4px;}
+.vrow{display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid #F0EBFA;}
+.vrow:last-child{border-bottom:none;}
+.vname{flex:1;min-width:0;font-size:14.5px;color:#3A2E55;}
+.vsub{font-size:11.5px;color:#A79ACB;}
+.play{border:1.5px solid #C9BCE8;background:#FAF7FF;color:#5B3FA8;border-radius:9px;padding:6px 14px;font-size:13.5px;cursor:pointer;font-family:inherit;flex:none;min-width:74px;}
+.play:hover{background:#F1E9FF;}
+.pick{accent-color:#7C3AED;width:17px;height:17px;flex:none;cursor:pointer;}
+.chosen{margin-top:14px;padding:12px 14px;background:#F4EEFF;border-radius:11px;font-size:14px;color:#4A3A70;display:none;line-height:1.8;}
+.chosen b{color:#7C3AED;}
+.err{margin-top:12px;padding:11px 13px;background:#FFF3F0;border-radius:10px;font-size:13px;color:#B4533E;display:none;}
+</style>
+</head>
+<body>
+<h1>神经语音音色试听</h1>
+<p class="sub">这里试听到的＝小积木产品里真实播放的声音（同一接口）。<br>男声、女声各选一个，把名字发给 Claude。</p>
+<div style="max-width:640px;margin:0 auto 14px;background:#FFF6DE;border:1px solid #F2DFA0;border-radius:12px;padding:10px 14px;font-size:13px;color:#8A6A1B;line-height:1.7;">⚠️ 本页要<b>传到 Vercel 后从 https 网址打开</b>（本地双击 file:// 会被挡）。项目文件夹结构：<b>bq.html、本文件、api/tts.js</b>（新建 api 文件夹放 tts.js）。部署后打开本页试听：先走直连、不通自动走你域名下的转发接口，都不通才报错——把红字发给 Claude。</div>
+<div class="panel">
+  <div class="ctrl">
+    <label>试听文本</label>
+    <input type="text" id="txt" value="你好，欢迎来到小积木。听录音，判断下面的拼音对不对。">
+  </div>
+  <div id="list"></div>
+  <div class="chosen" id="chosen"></div>
+  <div class="err" id="err"></div>
+</div>
+<script>
+const VOICES=[
+ {g:'女声（普通话）',items:[
+   {n:'zh-CN-XiaoxiaoNeural', c:'晓晓 · 温暖亲切（当前默认女声）'},
+   {n:'zh-CN-XiaoyiNeural',   c:'晓伊 · 活泼年轻'}]},
+ {g:'男声（普通话）',items:[
+   {n:'zh-CN-YunxiNeural',    c:'云希 · 阳光少年感（当前默认男声）'},
+   {n:'zh-CN-YunjianNeural',  c:'云健 · 沉稳成熟'},
+   {n:'zh-CN-YunyangNeural',  c:'云扬 · 新闻播音腔'},
+   {n:'zh-CN-YunxiaNeural',   c:'云夏 · 少年童声'}]},
+ {g:'方言（仅供参考，不建议教学用）',items:[
+   {n:'zh-CN-liaoning-XiaobeiNeural', c:'晓北 · 东北话（女）'},
+   {n:'zh-CN-shaanxi-XiaoniNeural',   c:'晓妮 · 陕西话（女）'}]}
+];
+const TOKEN='6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const CACHE=new Map();
+async function gec(){
+  const ticks=Math.floor(Date.now()/1000)+11644473600;
+  const win=(ticks-(ticks%300))*10000000;
+  const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(win)+TOKEN));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+function uuid(){ return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)).replace(/-/g,''); }
+function fetchTts(text, vName, _retry){
+  return new Promise(async (resolve,reject)=>{
+    const key=vName+':'+text;
+    if(CACHE.has(key)) return resolve(CACHE.get(key));
+    const sec=await gec();
+    const ws=new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken='+TOKEN+'&Sec-MS-GEC='+sec+'&Sec-MS-GEC-Version=1-131.0.2903.99&ConnectionId='+uuid());
+    ws.binaryType='arraybuffer';
+    const chunks=[]; let done=false; let openedOk=false;
+    const to=setTimeout(()=>{ if(!done){done=true; try{ws.close();}catch(e){} reject('timeout 6秒无响应');} },6000);
+    ws.onclose=(ev)=>{ if(!done){ done=true; clearTimeout(to);
+      const diag='连接关闭 code='+ev.code+(openedOk?'（握手成功后被断=签名/协议被拒）':'（握手即败=网络不通或来源被拒）')
+        +' · 页面协议='+location.protocol;
+      if(!_retry) return fetchTts(text,vName,true).then(resolve).catch(()=>reject(diag));
+      reject(diag); } };
+    ws.onerror=()=>{};   /* 细节都在 onclose 的 code 里 */
+    ws.onopen=()=>{ openedOk=true;
+      ws.send('X-Timestamp:'+new Date().toISOString()+'\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n'
+        +JSON.stringify({context:{synthesis:{audio:{metadataoptions:{sentenceBoundaryEnabled:false,wordBoundaryEnabled:false},outputFormat:'audio-24khz-48kbitrate-mono-mp3'}}}}));
+      const short=[...text].length<=4;
+      const esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const ssml="<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='"+vName+"'><prosody rate='"+(short?'-28%':'-8%')+"'>"+(short?("<break time='120ms'/>"+esc+"<break time='150ms'/>"):esc)+"</prosody></voice></speak>";
+      ws.send('X-RequestId:'+uuid()+'\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:'+new Date().toISOString()+'\r\nPath:ssml\r\n\r\n'+ssml);
+    };
+    ws.onmessage=(ev)=>{
+      if(typeof ev.data==='string'){
+        if(ev.data.indexOf('Path:turn.end')>=0){
+          done=true; clearTimeout(to); try{ws.close();}catch(e){}
+          if(!chunks.length) return reject('empty');
+          const url=URL.createObjectURL(new Blob(chunks,{type:'audio/mpeg'}));
+          CACHE.set(key,url); resolve(url);
+        } return;
+      }
+      try{ const dv=new DataView(ev.data); const hl=dv.getUint16(0);
+        const head=new TextDecoder().decode(new Uint8Array(ev.data,2,hl));
+        if(head.indexOf('Path:audio')>=0 && ev.data.byteLength>2+hl) chunks.push(ev.data.slice(2+hl));
+      }catch(e){}
+    };
+  });
+}
+const list=document.getElementById('list'), chosen=document.getElementById('chosen'), err=document.getElementById('err');
+let audio=null; const picked={};
+VOICES.forEach(grp=>{
+  const h=document.createElement('div'); h.className='grp'; h.textContent=grp.g; list.appendChild(h);
+  grp.items.forEach(v=>{
+    const row=document.createElement('div'); row.className='vrow';
+    const r=document.createElement('input'); r.type='radio'; r.className='pick';
+    r.name=grp.g.startsWith('男')?'pm':(grp.g.startsWith('女')?'pf':'px');
+    r.addEventListener('change',()=>{
+      if(r.name==='pm') picked.m=v; if(r.name==='pf') picked.f=v;
+      chosen.style.display='block';
+      chosen.innerHTML='已选——'
+        +(picked.f?('女声：<b>'+picked.f.n+'</b>（'+picked.f.c.split(' · ')[0]+'）<br>'):'女声：还没选<br>')
+        +(picked.m?('男声：<b>'+picked.m.n+'</b>（'+picked.m.c.split(' · ')[0]+'）<br>'):'男声：还没选<br>')
+        +'男女都选好后，把这段发给 Claude。';
+    });
+    const n=document.createElement('div'); n.className='vname';
+    n.innerHTML=v.c+'<br><span class="vsub">'+v.n+'</span>';
+    const b=document.createElement('button'); b.className='play'; b.textContent='▶ 试听';
+    b.addEventListener('click',async ()=>{
+      b.textContent='…合成中'; err.style.display='none';
+      try{
+        const t=document.getElementById('txt').value||'你好';
+        let url;
+        try{ url=await fetchTts(t, v.n); }
+        catch(e1){
+          if(location.protocol==='file:') throw e1+'（file:// 下无代理可用——请传到 Vercel 打开）';
+          const r=await fetch('/api/tts?voice='+encodeURIComponent(v.n)+'&text='+encodeURIComponent(t))
+            .catch(e=>{ throw '直连:'+e1+' ｜ 代理请求失败:'+e.message; });
+          if(!r.ok) throw '直连:'+e1+' ｜ 代理:'+r.status+' '+(await r.text()).slice(0,120);
+          url=URL.createObjectURL(await r.blob());
+        }
+        if(audio){ try{audio.pause();}catch(e){} }
+        audio=new Audio(url); audio.play();
+        b.textContent='▶ 再听';
+      }catch(e){
+        b.textContent='▶ 试听';
+        err.style.display='block';
+        err.textContent='合成失败（'+e+'）——网络问题或接口暂不可达，稍后再试；若一直失败请截图告诉 Claude。';
+      }
+    });
+    row.appendChild(r); row.appendChild(n); row.appendChild(b);
+    list.appendChild(row);
+  });
+});
+</script>
+</body>
+</html>
