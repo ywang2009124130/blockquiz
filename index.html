@@ -978,6 +978,7 @@ button{white-space:nowrap;}
   object-fit:cover;background:#000;border:1px solid #E5E1F1;
 }
 video.dc-mthumb{object-fit:contain;}
+.dc-mthumb-aud{flex-shrink:0;height:34px;max-width:220px;border-radius:6px;}   /* §V19.368 总材料区音频条 */
 .dc-mcap{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .dc-mchip .x{
   position:absolute;right:6px;top:50%;transform:translateY(-50%);
@@ -1161,22 +1162,36 @@ html[lang="ar"] .level-folder-tab .lft-name{transform:rotate(90deg);direction:rt
   animation:lftHeartPop .34s cubic-bezier(.34,1.56,.64,1);
 }
 
-/* —— 非激活态（§V14.1.4 定稿值）：耳朵右推 28px 让其右缘与当前耳朵对齐、贴紧题卡左边框，
-       再用 clip 裁切量 26 只在边框左侧露出半颗档位色心；文字隐藏不露字。
-       耳朵盒仍占原 40px 宽，三耳竖列居中、不移动布局。push/cut 由调参工具实测确定。 —— */
+/* —— 非激活态（§V19.384 重做：把小字放进"露出来的、放得下的"空间，完整不裁）——
+   问题(用户实拍)：上一版露 20px + clip 裁 20 → 11px upright 汉字实宽≈15px，被切成半个("选"只剩一半)。
+   修法：露出宽度 = 24px（放下 upright 小字+左右呼吸），字在这 24px 里居中，不靠左硬塞、不被 clip 切。
+   几何：耳朵原宽 40，右推 16 → 左侧露出 40-16=24px；clip 从右裁 16（把藏进题卡框的那截切掉），保留左侧 24px。 */
 .level-folder-tab:not(.active){
   position:relative;
-  transform:translateX(28px);                          /* 右推：橙绿往右移，右缘与当前黄耳朵对齐、贴题卡边框 */
-  clip-path:inset(0 26px 0 0 round 12px 0 0 12px);     /* 裁切量26：只露左缘半颗心，其余藏进题卡框后 */
+  transform:translateX(16px);                          /* §V19.384 右推 16：露出左侧 24px 放小字 */
+  clip-path:inset(0 16px 0 0 round 12px 0 0 12px);     /* §V19.384 裁右 16：保留左侧 24px 可见区 */
   transition:transform .22s ease, clip-path .22s ease;
-  z-index:0;            /* §V14.1.4 低于题卡 stage(z:1)：非当前半心被题卡边框压在下层，边框完整可见 */
+  z-index:0;            /* 低于题卡 stage(z:1)：非当前被题卡边框压在下层，边框完整可见 */
   cursor:pointer;
 }
-.level-folder-tab:not(.active) .lft-name,
-.level-folder-tab:not(.active) .lft-micro{ display:none !important; }   /* 非当前不露字 */
-/* §V19.215 去掉档位色心（橙/绿等阶梯色）：耳朵不再表达难度阶梯、只表示做题形式，故非当前耳朵不再显示任何颜色心；当前耳朵仍是红心。 */
+/* §V19.385 非当前耳朵小字：字号小、不加粗；居中在露出的 24px 里完整显示。
+   注：耳朵 justify-content 默认 center(1071)，字自然居中于耳朵——但耳朵被右推16、可见区是左24px，
+   要让字落在"可见左区"而非"耳朵几何中心"，用 padding-right 把内容往左推(抵消右推)。
+   §V19.385 修上下挤压(用户报)：竖排 vertical-rl 下字符上下距=letter-spacing；原 .06em 太小、叠 line-height:1 两字贴死。
+   放宽到 .28em + line-height 1.35 松开，两字之间有呼吸。 */
+.level-folder-tab:not(.active) .lft-name{
+  display:block !important;
+  font-size:11px;
+  font-weight:400;
+  color:inherit;
+  letter-spacing:.28em;
+  line-height:1.35;
+}
+.level-folder-tab:not(.active){ padding-right:16px; }   /* §V19.384 内容左移 16px，落进可见左区正中 */
+.level-folder-tab:not(.active) .lft-micro{ display:none !important; }
+/* §V19.215 去掉档位色心：非当前耳朵不显示任何颜色心；当前耳朵仍是红心。 */
 .level-folder-tab:not(.active) .lft-half{ display:none !important; }
-.level-folder-tab:not(.active):hover{ transform:translateX(24px); clip-path:inset(0 22px 0 0 round 12px 0 0 12px); }  /* hover 回拉+多露一点，提示可点 */
+.level-folder-tab:not(.active):hover{ transform:translateX(12px); clip-path:inset(0 12px 0 0 round 12px 0 0 12px); }  /* §V19.384 hover 多露一点提示可点 */
 .level-folder-tab:not(.active):focus-visible{ outline:2px solid rgba(124,58,237,.45); outline-offset:2px; }
 
 @keyframes lftHeartPop{
@@ -1220,16 +1235,25 @@ html[lang="ar"] .level-folder-tab .lft-name{transform:rotate(90deg);direction:rt
    §V19.195 关键修正：要「内容少时撑满一屏（不缩成小团）、内容多时才自然增高 + 外层滚动」两者兼得：
      卡片用 min-height:100%（撑满画布作下限，内容少也不缩）+ height:auto + flex:0 0 auto（内容多了往下长→溢出触发 #magic-canvas 滚动）。
      不用 flex:1（那是固定等于画布高，内容多了会被压缩挤压）；也不用 flex:0 0 auto+min-height:0（内容少会缩到 0）。 */
+/* §V19.379 lp-ex（阅读理解·问答槽等第四形式）并入 lp-low/lp-high 的「自适应高度+外层滚动」：
+   此前 lp-ex/lp-mid 未纳入 → 问答内容短(~194px)却被 base 的 panel min-height:560 撑成 560、
+   叠加卡级头部(333)=893px 巨大留白（用户报「问答卡被放大」）。加 lp-ex 后与连线/判断同款处理：
+   panel 随内容长、卡取一屏最小、不再有 366px 死白。lp-mid（选择）仍按原注刻意不碰。 */
 #magic-canvas .drop-card:has(.level-panel.lp-low.active),
-#magic-canvas .drop-card:has(.level-panel.lp-high.active){flex:0 0 auto;overflow:visible;min-height:100%;height:auto;}
+#magic-canvas .drop-card:has(.level-panel.lp-high.active),
+#magic-canvas .drop-card:has(.level-panel.lp-ex.active){flex:0 0 auto;overflow:visible;min-height:100%;height:auto;}
 #magic-canvas .drop-card:has(.level-panel.lp-low.active) .level-folder-shell,
-#magic-canvas .drop-card:has(.level-panel.lp-high.active) .level-folder-shell{flex:1 1 auto;min-height:0;}
+#magic-canvas .drop-card:has(.level-panel.lp-high.active) .level-folder-shell,
+#magic-canvas .drop-card:has(.level-panel.lp-ex.active) .level-folder-shell{flex:1 1 auto;min-height:0;}
 #magic-canvas .drop-card:has(.level-panel.lp-low.active) .level-card-stage,
-#magic-canvas .drop-card:has(.level-panel.lp-high.active) .level-card-stage{flex:1 1 auto;min-height:0;}
+#magic-canvas .drop-card:has(.level-panel.lp-high.active) .level-card-stage,
+#magic-canvas .drop-card:has(.level-panel.lp-ex.active) .level-card-stage{flex:1 1 auto;min-height:0;}
 #magic-canvas .level-panel.lp-low.active,
-#magic-canvas .level-panel.lp-high.active{flex:1 1 auto;min-height:0;height:auto;}
+#magic-canvas .level-panel.lp-high.active,
+#magic-canvas .level-panel.lp-ex.active{flex:1 1 auto;min-height:0;height:auto;}
 #magic-canvas .level-panel.lp-low.active  .dc-ta-wrap,
-#magic-canvas .level-panel.lp-high.active .dc-ta-wrap{flex:1 1 auto;min-height:0;}
+#magic-canvas .level-panel.lp-high.active .dc-ta-wrap,
+#magic-canvas .level-panel.lp-ex.active .dc-ta-wrap{flex:1 1 auto;min-height:0;}
 /* §6 v11.2 三档极淡同色系背景（alpha .08-.12），与耳朵主色呼应 */
 .level-panel.lp-low {
   border-color:#EEC53F;
@@ -1279,10 +1303,14 @@ html[lang="ar"] .level-folder-tab .lft-name{transform:rotate(90deg);direction:rt
    3D 灯只控制「当前 active 耳朵」的色。覆盖原 tab-low/mid/high 的固定形式色。 */
 /* §V19.215 未点击的两个耳朵：由浅到略深的紫区分彼此（不再统一一个浅紫、也不再靠颜色心区分）；三档各一档紫，任意两个未用耳朵都能分清，且都保持浅、最深也不太深。 */
 /* §V19.219 兜底（正常由 paintTabs 内联覆盖）：浅紫=上方小积木同款，其余=中紫。 */
-.drop-card .level-folder-tab.tab-low:not(.active){  background:#CFC6EF !important; border-color:#B6A6E2 !important; }
-.drop-card .level-folder-tab.tab-mid:not(.active){  background:#9268CE !important; border-color:#7650B8 !important; }
-.drop-card .level-folder-tab.tab-high:not(.active){ background:#9268CE !important; border-color:#7650B8 !important; }
-.drop-card .level-folder-tab.tab-ex:not(.active){   background:#9268CE !important; border-color:#7650B8 !important; }   /* §V19.332 */
+/* §V19.389 兜底＝纯安全底：正常由 paintTabs 内联按「露出顺序」覆盖成紫色阶梯。
+   关键教训：CSS 只能按「固定难度档位(low/mid/high/ex)」选择器，但「谁是非当前耳朵」取决于当前选中谁、与档位无关，
+   旧版按档位给深浅+深档白字，在 paintTabs 未及时跑的真机时序下会露出「白字+颜色错配到不对的耳朵」。
+   故兜底一律给第1档浅紫+黑字（即使短暂露出也只是三档同浅、绝不白字、绝不错配）；真正的阶梯区分由 paintTabs 唯一负责。 */
+.drop-card .level-folder-tab.tab-low:not(.active),
+.drop-card .level-folder-tab.tab-mid:not(.active),
+.drop-card .level-folder-tab.tab-high:not(.active),
+.drop-card .level-folder-tab.tab-ex:not(.active){  background:#CFC6EF !important; border-color:#B6A6E2 !important; color:#1a1a1a !important; }
 /* 当前 active 耳朵：跟随卡级难度色 */
 .drop-card.lv-card-low  .level-folder-tab.active{ background:#FFF285 !important; border-color:#EEC53F !important; }
 .drop-card.lv-card-mid  .level-folder-tab.active{ background:#FFCC9B !important; border-color:#ED9747 !important; }
@@ -1950,6 +1978,38 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
   background:transparent !important;
   box-shadow:none !important;
 }
+/* §V19.392 入选校验飘红（甲·半改 + 口径X·空位全覆盖）：由 JS 在入选被拦时精确挂 .dc-need-fix 到「拦人的那个具体元素」，
+   补救即灭、绿灯放行即清（与 §V19.236 那套 CSS placeholder 驱动的正交，本类不依赖 body.bq-remind-manual）。
+   §引擎约定：红 #E05D5D、box-shadow 扩散式 1.6s ease-in-out infinite。 */
+@keyframes dc-needfix-breathe{
+  0%,100%{ box-shadow:0 0 0 1.6px #E05D5D inset, 0 0 0 0 rgba(224,93,93,0); }
+  50%    { box-shadow:0 0 0 2px   #E05D5D inset, 0 0 10px 3px rgba(224,93,93,.55); }
+}
+/* §V19.393 图片槽专用红呼吸（方案甲·实红环+外发光）：图槽里有图时 inset 阴影会被图盖住看不见，
+   故改用画在 border-box 外、图盖不住的实红环(box-shadow 非inset 0扩散实边) + 呼吸外发光。 */
+@keyframes dc-needfix-breathe-img{
+  0%,100%{ box-shadow:0 0 0 3px #E05D5D, 0 0 0 0 rgba(224,93,93,0); }
+  50%    { box-shadow:0 0 0 3px #E05D5D, 0 0 12px 4px rgba(224,93,93,.6); }
+}
+.dc-need-fix{
+  background:#FEF2F2 !important;
+  animation:dc-needfix-breathe 1.6s ease-in-out infinite;
+  border-radius:8px;
+}
+/* 图片槽标红：不套底色（透出图）、不用 inset，用外圈实红环+发光；z 序抬高确保环在图上层 */
+.dc-need-fix.dc-pair-imgslot,
+.dc-need-fix.dc-need-fix-img{
+  background:transparent !important;
+  animation:dc-needfix-breathe-img 1.6s ease-in-out infinite !important;
+  position:relative;
+  z-index:4;
+}
+/* 让被标红容器内部 input/预览层透明，透出红底（与 §V19.236 同理，避免白底盖红） */
+.dc-need-fix input,
+.dc-need-fix .ruby-preview{
+  background:transparent !important;
+  box-shadow:none !important;
+}
 /* §V19.184 选择题每道删除手柄：绝对定位卡片右上角（不挤占布局），拖到右下角垃圾桶删整道 */
 .dc-imgchoice-grip{position:absolute;right:8px;top:10px;z-index:3;}
 /* §V19.189 每道内部图：卡片已定高，图改为在卡片内 flex 填充（不再写死像素），contain 保证不裁切 */
@@ -2011,6 +2071,7 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .dc-fopts.dc-textjudge .dc-textjudge-card .dc-item-x{position:absolute;top:7px;right:9px;width:20px;height:20px;}
 .dc-fopts.dc-textjudge .dc-textjudge-card .dc-item-x svg{width:10px;height:10px;}
 .dc-fopts.dc-textjudge .dc-textjudge-card .dc-fi-opt{flex:1;min-width:0;}
+.dc-fi-opt{text-align:center;}   /* §V19.373 选项框一律短词居中(铁律) */
 .dc-imgjudge-num{flex:none;width:24px;height:24px;border-radius:7px;border:1px solid #DDD6FE;color:#4C1D95;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
 /* §V19.300 句子判断·材料条（方案A·用户定）：左侧图槽变形为条状材料区，图/文可选一或共存；
    宽度随内容自适应（inline-flex 收缩 + max-width 上限，防长文本挤压句子框——fit-content 漂移教训）。 */
@@ -2021,7 +2082,7 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
   padding:3px 8px;cursor:pointer;white-space:nowrap;user-select:none;line-height:1.4;}
 .dc-sj-matbtn:hover{background:#E9DDFC;}
 .dc-sj-matimg{width:auto;max-width:96px;height:42px;border-radius:8px;object-fit:contain;background:#F7F4FE;border:1px solid #E0D6F5;cursor:pointer;flex:none;}   /* §V19.329 教学图完整呈现（项目定案 §2452）：cover 裁竖图（用户报），改高定宽随+contain */
-.dc-sj-mattxt{border:none;background:transparent;font-family:inherit;font-size:13.5px;color:#4A3A70;outline:none;min-width:8ch;max-width:100%;}
+.dc-sj-mattxt{border:none;background:transparent;font-family:inherit;font-size:13.5px;color:#4A3A70;outline:none;min-width:8ch;max-width:100%;text-align:center;}   /* §V19.373 文本居中(铁律)：输入文本居中+JS自适应宽度 */
 .dc-sj-mattxt::placeholder{color:#A79AC6;font-size:12px;}
 /* §V19.314 手动积木四枚：语段区/语段填空/开放回答/听音AB选择 */
 .dc-passage{margin:2px 0 10px;}
@@ -2081,8 +2142,9 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .hz-chars-inp:focus{border-color:rgba(124,58,237,.55)}
 .hz-stroke-inp:focus{border-color:rgba(124,58,237,.55)}
 .hz-cards{display:flex;flex-wrap:wrap;gap:14px}
-.hz-card{display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.6);border:1.5px solid #E9E2F8;border-radius:13px;padding:10px}   /* §V19.333 纵向：上=图+田字格，下=笔画框 */
-.hz-card-top{display:flex;align-items:stretch;gap:10px}
+.hz-card{flex:1 1 0;max-width:calc((100% - 56px) / 5);box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.6);border:1.5px solid #E9E2F8;border-radius:13px;padding:10px}   /* §V19.333 纵向：上=图+田字格，下=笔画框；§V19.405 flex 五等分铺满整行(56=4×14gap)，不足五张保持宽度靠左不拉伸(解法P) */
+.hz-card-top{display:flex;align-items:stretch;gap:10px;justify-content:center}   /* §V19.405 内容(样板图+拼音田字格)在加宽的卡内水平居中，教学元素保持标准尺寸(做法乙) */
+.hz-cell-wrap{display:flex;flex-direction:column;flex:none;}
 .hz-sq-row{position:relative;display:flex;align-items:center}
 .hz-stroke-inp{flex:1;min-width:0;border:1.5px solid #E4DBF7;border-radius:9px;background:#fff;padding:6px 30px 6px 10px;font-family:inherit;font-size:13.5px;color:#3A2E55;outline:none;box-sizing:border-box}
 .hz-stroke-inp:focus{border-color:rgba(124,58,237,.55)}
@@ -2090,19 +2152,36 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .hz-sq-x svg{width:10px;height:10px}
 .hz-sq-add{border:1.5px dashed rgba(124,58,237,.4);background:#FAF7FF;color:#9C86CF;border-radius:9px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
 .hz-sq-add:hover{background:#F1E9FF}
-.hz-imgslot{width:96px;min-height:104px;border:1.5px dashed rgba(124,58,237,.35);border-radius:10px;background:#FAF7FF;
+.hz-imgslot{width:104px;min-height:156px;border:1.5px dashed rgba(124,58,237,.35);border-radius:10px;background:#FAF7FF;
   display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;flex:none}
 .hz-imgslot .hz-imghint{font-size:11px;color:#B4A8D4;text-align:center;line-height:1.5;padding:4px}
-.hz-imgslot img{max-width:100%;max-height:132px;object-fit:contain;display:block}
+/* §V19.395 彩虹字加载态（丙）：毛笔呼吸 + 「彩虹字生成中」，居中盖在样板图槽 */
+.hz-imgslot .hz-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;pointer-events:none;z-index:1}
+.hz-loading .hz-loading-brush{font-size:22px;animation:hz-loading-pulse 1.1s ease-in-out infinite}
+.hz-loading .hz-loading-txt{font-size:11px;color:#7C3AED;font-weight:600;letter-spacing:.5px}
+@keyframes hz-loading-pulse{0%,100%{opacity:.4;transform:scale(.94)}50%{opacity:.9;transform:scale(1.06)}}
+.hz-imgslot img{max-width:100%;max-height:156px;object-fit:contain;display:block}
 .hz-grid{width:104px;height:104px;border:2.5px solid var(--hz-c,#1E9E40);border-radius:2px;position:relative;background:#fff;flex:none;align-self:center}
 .hz-grid::before{content:'';position:absolute;left:2px;right:2px;top:50%;margin-top:-0.75px;border-top:1.5px dashed var(--hz-c,#1E9E40)}
 .hz-grid::after{content:'';position:absolute;top:2px;bottom:2px;left:50%;margin-left:-0.75px;border-left:1.5px dashed var(--hz-c,#1E9E40)}
 .hz-trace{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;line-height:1;
   font-family:var(--font-han);   /* §V19.333 临摹体用霞鹜文楷（用户定） */
-  color:rgba(130,130,130,.32);user-select:none;pointer-events:none;z-index:1}
+  color:rgba(130,130,130,var(--hz-trace-a,.32));user-select:none;pointer-events:none;z-index:1}
 .hz-card.notrace .hz-trace{display:none}
+/* §V19.377 描摹体浓淡滑杆 + 样板图右上紫叉（用户定） */
+.hz-trace-range{display:inline-flex;align-items:center;gap:6px}
+.hz-trace-range input{width:92px;height:4px;accent-color:#7C3AED;cursor:pointer}
+.hz-trace-range .hz-range-lab{font-size:12px;font-weight:700;color:#9C86CF}
+.hz-img-x{position:absolute;top:1px;right:1px;width:13px!important;height:13px!important;z-index:2}
+.hz-img-x svg{width:7px!important;height:7px!important}
 /* §V19.332 拼音基础·填空/选择 + 音频图片媒体小槽 */
 .dc-pyfill{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px;margin:4px 0 12px}
+/* §V19.387 汉字填空列：条框宽度随内容自适应、一排可排多题（flex-wrap 自动换行），三合一媒体条 + 纯文本框（左对齐楷体，不注音）。 */
+.dc-hzfill{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 12px;margin:4px 0 12px}
+.dc-hzfill .py-fill-cell{width:auto;flex:0 1 auto;max-width:100%;box-sizing:border-box}
+.dc-hzfill .py-fill-text.hz-fill-text{flex:0 1 auto;min-width:0;width:auto;max-width:100%;text-align:left;font-family:var(--font-han);font-size:16px;
+  border:1.5px solid #C9BCE8;border-radius:8px;background:#fff;padding:6px 10px;color:#3A2E55;outline:none;box-sizing:border-box}
+.dc-hzfill .py-fill-text.hz-fill-text:focus{border-color:rgba(124,58,237,.55)}
 .py-fill-cell{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.6);border:1.5px solid #E9E2F8;border-radius:11px;padding:8px 9px;min-width:0}
 .py-fill-cell .dc-field-wrap{flex:1;min-width:0}
 .py-fill-cell .py-fill-text{width:100%;min-width:0;border:1.5px solid #C9BCE8;border-radius:8px;background:#fff;padding:5px 8px;font-family:inherit;font-size:15px;text-align:center;color:#3A2E55;outline:none;box-sizing:border-box}
@@ -2111,12 +2190,14 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .py-fill-ans{width:5ch;min-width:4ch;border:1.5px solid #C9BCE8;border-radius:8px;background:#fff;padding:5px 6px;font-family:inherit;font-size:15px;text-align:center;color:#3A2E55;outline:none;flex:none}
 .py-fill-ans:focus{border-color:rgba(124,58,237,.55)}
 .py-fill-tail{width:5ch;min-width:4ch;border:none;border-bottom:1.5px dashed #C9BCE8;background:transparent;padding:5px 3px;font-family:inherit;font-size:15px;text-align:center;color:#3A2E55;outline:none;flex:none}
-.py-mslot{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border:1.5px dashed rgba(124,58,237,.35);border-radius:8px;background:#FAF7FF;cursor:pointer;flex:none;overflow:hidden}
+.py-mslot{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border:1.5px dashed rgba(124,58,237,.35);border-radius:8px;background:#FAF7FF;cursor:pointer;flex:none;overflow:visible}   /* §V19.361 relative+overflow visible：容纳编辑浮层不被裁 */
+.py-mslot.empty{border:none;background:transparent;min-width:0;overflow:visible;gap:4px}   /* §V19.358 空槽态外层去框去底，消除套娃(两入口 py-mentry 自带框)——用户报 */
+.py-mslot.empty:hover{background:transparent}
 .py-mslot img{height:32px;width:auto;max-width:64px;object-fit:contain;background:#F7F4FE;border-radius:6px;cursor:pointer}
 .py-maud{font-size:17px;cursor:pointer;padding:0 6px;user-select:none}
 .py-mhint{font-size:11px;color:#B4A8D4;padding:0 4px;user-select:none;white-space:nowrap}
-.py-mslot.empty:hover{background:#F1E9FF}
-.dc-pychoice{display:flex;flex-direction:column;gap:10px;margin:4px 0 12px}
+.dc-pychoice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:4px 0 12px}
+@media (max-width:820px){ .dc-pychoice{grid-template-columns:1fr;} }
 .py-choice-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.6);border:1.5px solid #E9E2F8;border-radius:11px;padding:8px 12px}
 .py-opt{display:inline-flex;align-items:center;gap:5px;border-radius:9px;padding:2px 4px}
 .py-opt.is-correct{background:rgba(127,182,89,.14);box-shadow:0 0 0 1.5px #7FB659}
@@ -2142,6 +2223,15 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .py-mentry-pop{position:absolute;z-index:30;top:calc(100% + 4px);left:0;display:flex;flex-direction:column;gap:3px;background:#fff;border:1.5px solid #E4DBF7;border-radius:9px;padding:5px;box-shadow:0 6px 18px rgba(90,60,160,.16);white-space:nowrap}
 .py-mentry-pop .pmp-item{padding:7px 11px;border-radius:6px;font-size:12.5px;color:#3A2E55;cursor:pointer}
 .py-mentry-pop .pmp-item:hover{background:#F4EEFF}
+.py-mtts-badges{display:inline-flex;flex-direction:column;gap:1px;flex:none;margin-left:2px}   /* §V19.364 附属小符号:右侧竖排 */
+.py-badge-ed,.py-badge-cl{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;font-size:11px;line-height:1;cursor:pointer;user-select:none;color:#B4A8CE;transition:color .12s}
+.py-badge-ed:hover{color:#6D4FC1}
+.py-badge-cl:hover{color:#C97A7A}
+.dc-mat-wrap{position:relative;display:inline-flex;flex:none}   /* §V19.362 材料条图示+✎角标容器 */
+.py-tts-editpop{position:absolute;z-index:40;left:0;top:calc(100% + 4px);display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #C9BCE8;border-radius:10px;padding:5px 7px;box-shadow:0 6px 20px rgba(90,60,160,.22);white-space:nowrap}
+.py-tts-editpop .py-mtts-gava{gap:4px}
+.py-tts-editpop .py-mtts-inp{width:6ch;border:1.5px solid #C9BCE8;border-radius:7px;padding:4px 7px;font-size:14px;font-family:inherit;outline:none;color:#3A2E55}
+.py-mslot:not(.empty){min-width:34px;width:auto;padding:0 2px;gap:1px}   /* §V19.364 成品态容纳 图示+右侧竖排小符号 */
 .py-mtts-gava{display:inline-flex;gap:4px;flex:none}
 .py-mtts-gava .ga{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#F7F4FE;cursor:pointer;padding:3px;box-sizing:border-box;border:2px solid transparent}
 .py-mtts-gava .ga.on{border-color:#7C3AED;background:#EDE6FA}
@@ -2173,17 +2263,19 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .dc-open-ans{display:flex;align-items:flex-end;gap:7px;margin:36px 10px 16px 34px;}
 .dc-open-amark{line-height:1;}
 .dc-open-line{flex:1;height:0;border-bottom:1.8px solid #C9BCE8;border-radius:1px;margin:0;}
-.dc-abchoice-row{flex-wrap:wrap;display:flex;align-items:stretch;gap:12px;margin:8px 0;}   /* §V19.332 */
-.dc-ab-slot{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:1.5px solid #E4DBF7;border-radius:11px;
-  background:#fff;padding:7px 10px;position:relative;transition:border-color .15s,box-shadow .15s;}
+.dc-abchoice-row{flex-wrap:nowrap;display:flex;align-items:stretch;gap:8px;margin:8px 0;}   /* §V19.332/366 nowrap:ABCD一排(用户定) */
+.dc-ab-slot{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:5px;border:1.5px solid #E4DBF7;border-radius:11px;padding:6px 8px;box-sizing:border-box;background:#fff;position:relative;transition:border-color .15s,box-shadow .15s;}   /* §V19.366 缩窄 */
 .dc-ab-slot.is-correct{border-color:#34D399;box-shadow:0 0 0 2px rgba(52,211,153,.18);}
 .dc-ab-lab{width:24px;height:24px;border-radius:50%;background:#F1EAFB;color:#6D4FC1;font-weight:800;font-size:13px;
   display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;user-select:none;}
 .dc-ab-slot.is-correct .dc-ab-lab{background:#34D399;color:#fff;}
-.dc-ab-img{width:auto;min-width:26px;max-width:90px;height:40px;border-radius:8px;object-fit:contain;background:#F7F4FE;border:1px solid #E0D6F5;cursor:pointer;flex:none;}   /* §V19.329 同上；min-width 保空态可点 */
-.dc-ab-img.empty{background:#F4F0FC;border-style:dashed;}
-.dc-ab-txt{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:14px;color:#4A3A70;outline:none;}
+.dc-ab-img{width:auto;min-width:26px;max-width:64px;height:34px;border-radius:8px;object-fit:contain;background:#F7F4FE;border:1px solid #E0D6F5;cursor:pointer;flex:none;}   /* §V19.366 缩小配合ABCD一排 */
+.dc-ab-img.empty{background:#F4F0FC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239B84D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpath d='M21 15l-5-5L5 21'/%3E%3C/svg%3E") center/20px no-repeat;border-style:dashed;min-width:34px;width:34px;}   /* §V19.366 空态显示图片图示(用户定:补齐加图标识) */
+.dc-ab-txt{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:14px;color:#4A3A70;outline:none;text-align:center;}   /* §V19.373 选项文本居中(铁律) */
 .dc-ab-txt::placeholder{color:#B4A8D4;font-size:12.5px;}
+.dc-ab-aud{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#F1EAFB;font-size:16px;cursor:pointer;user-select:none;flex:none;}   /* §V19.366 题项行首音频块 */
+.dc-ab-aud:hover{background:#E9DDFC;}
+.dc-audlink-wrap{display:inline-flex;align-items:center;min-height:40px;}   /* §V19.370 听音连线左栏音频条 */
 /* §V19.315 阅读理解·上下两部：下部题项区自带框顶线（同一张卡内，不分离；线色中性紫融各梯度） */
 .dc-read-items{margin-top:16px;padding-top:16px;border-top:2px solid rgba(124,58,237,.22);}
 /* §V19.316 阅读理解·真卡级头部：head 承接 panel 上半框（上圆角+左右上边），panel 去顶框上圆角，
@@ -2744,7 +2836,7 @@ html[lang="ar"] .dc-pair-imgline .dc-pair-img-preview:empty::before{ content:'ب
 .dc-pair-imgline-close:hover{background:#7C3AED;color:#fff;border-color:#7C3AED;}
 
 /* §3.4 区分两种「＋」：题项级 ＋ 圆点 / 材料区 ＋ 添加材料 胶囊 — 视觉语言要不同 */
-.dc-fi-pcn,.dc-fi-pen{font-size:14.5px;}
+.dc-fi-pcn,.dc-fi-pen{font-size:14.5px;text-align:center;}   /* §V19.373 连线词框短词居中(铁律) */
 .dc-fi-pen{color:#64748B;}  /* §3.2 英文不使用斜体 */
 
 
@@ -8324,9 +8416,32 @@ html[lang="ar"] .dialog-card-grid:empty::before{ content:'حدّد الجمل ع
   cursor:pointer;
 }
 .main-area .blocks-rail .qblock.bq-special{
-  /* §V19.309 专项积木=旧版(V95)浅紫观感（用户定，只取颜色）：不覆盖变量、回落 .qblock 默认组
-     （浅紫底 rgba(150,110,225,.6)、紫字 rgba(40,5,80,.88)、白影柔光图示原样回归）。 */
+  /* §V19.309/381 专项积木=浅紫（用户定，两专项积木汉字工坊/拼音基础）。
+     根因修：解锁时(V332)给这两块加了 bq-manual → 带入中紫变量(8351)盖过浅紫意图。
+     bq-special 原只写 cursor、指望回落默认浅紫，但同挂 bq-manual 特异性相同时中紫仍生效。
+     修法(方案乙,只改色不动 class)：把默认 .qblock 浅紫组的值照抄到此(特异性同 bq-manual 且排其后 → 稳覆盖)。 */
+  --g-bg-l:rgba(206,191,255,.5);
+  --g-bg-d:rgba(150,110,225,.6);
+  --g-bd:rgba(124,58,237,.55);
+  --g-bevel-lt:rgba(255,255,255,.55);
+  --g-bevel-lf:rgba(255,255,255,.4);
+  --g-bevel-rt:rgba(95,55,160,.55);
+  --g-bevel-dk:rgba(70,40,130,.8);
+  --g-inner-hi:rgba(255,255,255,.45);
+  --g-inner-dk:rgba(70,40,130,.32);
+  --g-shadow:rgba(60,30,110,.4);
+  --g-ground:rgba(48,22,95,.62);
+  --g-text:rgba(40,5,80,.88);
   cursor:pointer;
+}
+/* §V19.381 浅紫底配深紫字 → 文字影回落"白影提亮"(基础 .qblock 默认)，
+   而非 bq-manual 给深底白字的"近黑锐影"(8374)——否则浅底深字上加近黑影会发糊。 */
+/* §V19.382 修重影(用户报)：两专项积木同挂 bq-manual → 被近黑锐影(深底白字用)作用，
+   叠在浅紫底深紫字上 = 重影发糊。改回基础 .qblock(616 行)的单层白影提亮(浅底深字用，即 V291/参考图的无重影观感)。
+   ⚠必须用双类 .bq-special.bq-manual 提高特异性——单类 .bq-special .qn 与 .bq-manual .qn 特异性相同，
+   而后者(8393)排在后面会胜出，导致压不住(V381 单类写法失效教训)。 */
+.main-area .blocks-rail .qblock.bq-special.bq-manual .qn{
+  text-shadow:1px 1px 0 rgba(255,255,255,.35);
 }
 /* 摘锁后恢复 hover 活力（覆盖上面 bq-lock 的禁用） */
 .main-area .blocks-rail .qblock.bq-manual:hover,
@@ -8600,6 +8715,51 @@ html[lang="ar"] .dialog-card-grid:empty::before{ content:'حدّد الجمل ع
   box-shadow:inset 0 3px 4px rgba(255,255,255,.35),inset -2px -3px 5px rgba(60,32,115,.3),0 2px 4px -1px rgba(60,30,110,.4);}
 .bq-cap[data-side="diy"]:active .bq-cap-key{transform:translateX(calc(100% + 6px)) translateY(2px);}
 .bq-cap-key-tx{font-size:13.5px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 2px rgba(50,25,95,.4);}
+/* §V19.401 单字/词句 模式胶囊：复用 bq-cap 立体胶囊配方（紫凹槽轨道+浮键紫/金滑动+积木光影+按下凹陷），缩小到适配题项头行 */
+.hz-modecap{position:relative;display:inline-flex;width:132px;height:32px;border-radius:16px;cursor:pointer;user-select:none;flex:none;
+  background:linear-gradient(180deg,#DCD2F0,#EFE9FB 60%,#F6F2FE);
+  box-shadow:inset 0 2px 4px rgba(76,42,140,.28),inset 0 -1px 2px rgba(255,255,255,.85),0 1px 0 rgba(255,255,255,.9);
+  border:1px solid rgba(139,92,246,.25);}
+.hz-modecap-lab{position:absolute;top:0;bottom:0;width:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#8A7BAE;letter-spacing:.3px;}
+.hz-modecap-lab-gen{left:0;} .hz-modecap-lab-diy{right:0;}
+.hz-modecap-key{position:absolute;top:2px;left:2px;width:calc(50% - 4px);height:calc(100% - 4px);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  background:radial-gradient(130% 120% at 32% 25%,#A98BE8 0%,#7C3AED 100%);
+  border-top:1.5px solid rgba(255,255,255,.55);border-left:1.5px solid rgba(255,255,255,.35);
+  border-right:1.5px solid rgba(70,40,130,.5);border-bottom:2px solid rgba(60,32,115,.75);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.4),inset -1px -2px 4px rgba(60,32,115,.3),
+    0 3px 6px -2px rgba(60,30,110,.45),0 6px 11px -6px rgba(48,22,95,.5);
+  transition:transform .28s cubic-bezier(.34,1.4,.5,1),background .28s;}
+.hz-modecap[data-side="diy"] .hz-modecap-key{transform:translateX(calc(100% + 4px));}
+.hz-modecap:active .hz-modecap-key{transform:translateY(1px);}
+.hz-modecap[data-side="diy"]:active .hz-modecap-key{transform:translateX(calc(100% + 4px)) translateY(1px);}
+.hz-modecap-key-tx{font-size:12px;font-weight:800;color:#fff;letter-spacing:.3px;text-shadow:0 1px 2px rgba(50,25,95,.4);}
+/* §V19.401 词句大卡：左配图 + 右侧带拼音田字格无缝连排 */
+.hz-phrase-card{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;}
+.hz-phrase-imgslot{width:120px;min-height:132px;align-self:stretch;border:1.5px dashed rgba(139,92,246,.4);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#FAF8FF;color:#B3A5D6;
+  font-size:12px;text-align:center;cursor:pointer;flex:none;position:relative;overflow:hidden;line-height:1.5;}
+.hz-phrase-imgslot img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;}
+.hz-phrase-imgx{position:absolute;top:3px;right:3px;width:18px;height:18px;border:none;border-radius:50%;background:rgba(124,58,237,.85);
+  color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;z-index:2;}
+.hz-phrase-imgx svg{width:12px;height:12px;stroke:#fff;stroke-width:2.4;fill:none;}
+.hz-phrase-row{display:flex;flex-wrap:wrap;}
+.hz-phrase-cell{display:flex;flex-direction:column;}
+/* 拼音格：104宽（对齐田字格）、52高（田字格一半）、同 --hz-c 绿、四线三格、连体（共享底边=田字格顶边）*/
+.hz-py-grid{width:104px;height:52px;position:relative;box-sizing:border-box;background:#fff;
+  border:2.5px solid var(--hz-c,#1E9E40);border-bottom:none;border-radius:2px 2px 0 0;}
+.hz-py-grid::before,.hz-py-grid::after{content:'';position:absolute;left:2px;right:2px;height:0;
+  border-top:1.2px dashed var(--hz-c,#1E9E40);opacity:.72;}
+.hz-py-grid::before{top:17px;} .hz-py-grid::after{top:34px;}
+.hz-py-inp{position:absolute;left:0;right:0;top:9px;height:34px;border:none;background:transparent;text-align:center;
+  font-family:var(--font-py);font-size:19px;color:#333;letter-spacing:.5px;padding:0;line-height:34px;outline:none;}
+.hz-py-inp:focus{background:rgba(30,158,64,.06);}
+/* 词句田字格：连体（顶边与拼音格共用，去圆角顶部）*/
+.hz-phrase-grid{border-radius:0 0 2px 2px;}
+/* 无缝连排：相邻 cell 的拼音格/田字格共边（除首格外去左边框）*/
+.hz-phrase-cell:not(:first-child) .hz-py-grid{border-left:none;}
+.hz-phrase-cell:not(:first-child) .hz-phrase-grid{border-left:none;}
 /* —— DIY 排序：每题「输句→空格分块→标字母打乱」输入行 —— */
 .dc-order-diyrow{margin:2px 0 6px;}
 .dc-order-diyin{width:100%;box-sizing:border-box;padding:6px 10px;border-radius:8px;
@@ -31898,7 +32058,7 @@ const I={
     splitConfirm:'拆词加入？',splitConfirmHint:'再次点击将把「{text}」拆成 {n} 个词加入{kind}',
     previewPending:'预览待生成',fillCorpusThenRefresh:'请先在右侧语料区添加并确认材料，题目会自动生成',preview:'预览',untitledQuiz2:'未命名题卷',
     inLibrary:'已入库',allLibrary:'全部题库',unitQuestions:'题',genLibrary:'生成题库',pinyinTip:'为所有汉字添加拼音注音',refreshTip:'重新随机生成一题',exportShare:'导出/分享',
-    addMaterial:'添加材料',pasteLinkPlaceholder:'粘贴图片 / 视频 / 网页链接，回车确认',replaceImage:'更换',imageAdded:'已添加图片',
+    addMaterial:'添加材料',pasteLinkPlaceholder:'粘贴图片 / 视频 / 音频 / 网页链接，回车确认',replaceImage:'更换',imageAdded:'已添加图片',
     emptyExamples:'暂无例句。完整句、问句、答句会自动归到这里。',emptyPatterns:'暂无句型。含 <code>/</code>（替换组）、<code>______</code>（灰槽）、<code>（ ）</code>（可选槽）的句型会自动归到这里。',
     noSentencesUnderFilter:'当前筛选下无句子。试试切换「来源筛选」。',dragToTargetOrCard:'拖动到目标区/对话卡',checkToGenerateDialog:'勾选此句生成对话卡',
   },
@@ -32722,7 +32882,12 @@ window._alignReadTabs=function(card){
     const kids=[...tabs.children];
     kids.forEach(k=>{ k.style.height=''; k.style.minHeight=''; });
     const th=kids.reduce((h,c)=>h+c.getBoundingClientRect().height,0) + (kids.length-1)*6;
-    let top=(hr.bottom - sr.top) + 10;
+    /* §V19.380 耳朵改「对整卡竖直居中」（用户定案 C：跟其它题型一致——耳朵组对整张卡居中，不是对头部）。
+       历程：原钉「头部下缘+10」→ paddingTop≈343、4耳从343撑到713 反把问答卡撑大；V379 改「对头部居中」
+       但4耳(≈370)＞头高(≈333)→ 居中值(hr.height-th)/2 为负、被 Math.max(6) 夹到顶 → 4耳全贴顶(用户报「耳朵都往上」)。
+       C 方案锚点换成整卡 shell：top=(卡可用高 sr.height − 4耳总高 th)/2，上下留白均等。卡高(≈744)＞4耳(≈370)→ 居中值恒正、不触发夹底。
+       头部为三列共享单份 → 对卡居中仍稳定不随列跳。clamp 仅作极端矮卡兜底。 */
+    let top=(sr.height - th)/2;
     top=Math.max(6, Math.min(top, sr.height - th - 6));
     tabs.style.justifyContent='flex-start';
     tabs.style.paddingTop=Math.round(top)+'px';
@@ -34448,6 +34613,12 @@ function renderPinyinSafe(text, isPy){
         if(han!=null) return hanRuby(han);                          // 汉字
         // other：标点/英文/数字/emoji/空格 —— 逐字符判定
         return [...other].map(ch=>{
+          // §V19.376 答案符号（√ ✗ ✓ ✔ ✘ ✕ ×）优先于 EMOJI 判定：这些字符落在 emoji 码段会被误当表情→task-icon（脱离基线跑到拼音行）。
+          //   判断题题干「填 √ 或 ✗」的 ✗ 正是此坑。强制走 py-punct（拼音态）/punct（关闭态），与汉字同排。
+          if(/[\u221A\u2713\u2714\u2717\u2718\u2715\u00D7]/.test(ch)){
+            if(isPy) return `<ruby class="py-punct"><rb>${esc(ch)}</rb><rt> </rt></ruby>`;
+            return `<span class="punct">${esc(ch)}</span>`;
+          }
           if(EMOJI.test(ch)) return `<span class="task-icon">${ch}</span>`;
           if(PUNCT.test(ch)){
             // §V12.5.6q 拼音开启时标点也用 ruby.py-punct 包裹，与汉字 ruby 基线对齐（避免标点上跳）
@@ -35297,9 +35468,9 @@ window.MatchGen = (function(){
     [SUBTYPES.FUNCTION_PATTERN]: {cn:'把表达功能和合适句型连起来。',     en:'Match functions with patterns.', ar:'صِل الوظائف بالأنماط المناسبة.'},
     [SUBTYPES.RESTRICTED_QA]:    {cn:'把问句和合适的答句连起来。',       en:'Match questions with answers.', ar:'صِل الأسئلة بالإجابات المناسبة.'},
     [SUBTYPES.RESTRICTED_TASK]:  {cn:'把任务和合适的中文表达连起来。',   en:'Match tasks with expressions.', ar:'صِل المهام بالتعبيرات الصينية المناسبة.'},
-    [SUBTYPES.IMAGE_TO_SENTENCE]:{cn:'看图或信息，连一连合适的句子。',   en:'Match pictures or clues with sentences.', ar:'صِل الصور أو المعلومات بالجمل المناسبة.'},
+    [SUBTYPES.IMAGE_TO_SENTENCE]:{cn:'请把图片或信息和合适的句子连起来。',   en:'Please match the pictures or clues with the correct sentences.', ar:'من فضلك صِل الصور أو المعلومات بالجمل المناسبة.'},
     [SUBTYPES.SENTENCE_TO_ENGLISH]:{cn:'把中文句子和英文意思连起来。', en:'Match Chinese sentences with English meanings.', ar:'صِل الجمل الصينية بمعانيها الإنجليزية.'},
-    [SUBTYPES.INFO_COMBO_TO_SENTENCE]:{cn:'看信息组合，连一连合适的句子。', en:'Match information clues with sentences.', ar:'صِل مجموعات المعلومات بالجمل المناسبة.'}
+    [SUBTYPES.INFO_COMBO_TO_SENTENCE]:{cn:'请把信息组合和合适的句子连起来。', en:'Please match the information clues with the correct sentences.', ar:'من فضلك صِل مجموعات المعلومات بالجمل المناسبة.'}
   };
 
   // ─── 词分类提示（用于词配图筛选 §二.2）───
@@ -37100,11 +37271,11 @@ window.MatchGen = (function(){
     'custom_cloze':['link'],                        // 句子填空：选词填空一张卡（题级材料区图槽）
     'custom_judge':['link'],                        // 句子判断：判断一张卡（题级图槽）
     /* §V19.314 手动积木四枚（用户口述规格）：无语料生成器，拖出=直接可编辑手编卡 */
-    'custom_reading':['link','choice','judge'],     // 阅读理解：连线/选择/判断三形式，共用卡级语段材料
+    'custom_reading':['link','choice','judge','extra'], // §V19.375 阅读理解：连线/选择/判断/问答(ex槽=问答,复用开放回答题项)
     'custom_para_cloze':['link'],                   // 语段填空：单卡（占 low 槽，真实形式=语段挖空）
     'custom_open':['link'],                         // 开放回答：单卡（问句+作答横线）
-    'custom_audio':['choice','judge'],              // 听音辨音：AB图文选择 + 长条判断（材料用右侧卡级材料面板）
-    'custom_hanzi':['link','choice','judge'],       // §V19.331 汉字工坊：书写(田字格)/选择/判断
+    'custom_audio':['link','choice','judge','extra'], // §V19.370 听音辨音：连线(low)+选择(mid)+判断(high)+填空(ex)
+    'custom_hanzi':['link','choice','judge','extra'],   // §V19.331/378 汉字工坊：书写/选择/判断/填空
     'custom_pinyin':['link','choice','judge','extra'] // §V19.332 拼音基础：填空/选择/判断/连线（首个四形式积木）
   };
   /* §V19.278 各积木耳朵标签覆盖（缺省=连线/选择/正误） */
@@ -37113,11 +37284,11 @@ window.MatchGen = (function(){
     custom_cloze:{low:'选择'},
     custom_judge:{low:'判断'},
     custom_word_split:{low:'连线',mid:'选择'},
-    custom_reading:{low:'连线',mid:'选择',high:'判断'},
+    custom_reading:{low:'连线',mid:'选择',high:'判断',ex:'问答'},   /* §V19.375 加问答档(ex槽) */
     custom_para_cloze:{low:'填空'},
     custom_open:{low:'问答'},
-    custom_audio:{mid:'选择',high:'判断'},
-    custom_hanzi:{low:'书写',mid:'选择',high:'判断'},   /* §V19.331 */
+    custom_audio:{low:'连线',mid:'选择',high:'判断',ex:'填空'},   /* §V19.369/370 连线+选择+判断+填空 */
+    custom_hanzi:{low:'书写',mid:'选择',high:'判断',ex:'填空'},   /* §V19.331/378 */
     custom_pinyin:{low:'填空',mid:'选择',high:'判断',ex:'连线'}   /* §V19.332 槽名与语义解耦（link槽=填空） */
   };
   const _FORM_BY_COL={low:'link',mid:'choice',high:'judge',ex:'extra'};   /* §V19.332 第四槽 */
@@ -37841,6 +38012,16 @@ window.MatchGen = (function(){
       if(formType==='choice') return Object.assign({},rb,{kind:'choice',_isMultiChoice:true,_isTextChoice:true,
         _choiceItems:Array.from({length:4},()=>({img:'',stemWord:'',options:['','','',''],correctIdx:-1,_forceImgLevel:'none',_needManual:true})),
         answerKey:{type:'text_choice_multi',marks:[-1,-1,-1,-1]},_subtype:'manual_read_choice'});
+      if(formType==='extra'){   /* §V19.375 阅读理解·问答：复用开放回答题项(kind:open)，顶部卡级语段材料保留 */
+        let items=[];
+        try{ const st=(window.CorpusV2&&CorpusV2.state)||{};
+          const qs=[].concat(st.examples||[]).filter(x=>x&&x.enabled!==false&&!x.draft&&/[？?]\s*$/.test(String(x.text||'')));
+          items=qs.slice(0,2).map(q=>({q:String(q.text),_isReview:q.source==='温故'}));
+        }catch(_e){}
+        while(items.length<2) items.push({q:'',_needManual:true});
+        return Object.assign({},rb,{kind:'open',_openItems:items,
+          answerKey:{type:'open'},_subtype:'manual_reading_qa'});
+      }
       return Object.assign({},rb,{kind:'choice',_autoImgJudge:true,_autoJudge:true,_noItemSlot:true,
         _imgJudgeItems:Array.from({length:4},()=>({img:'',word:'',correct:null,_needManual:true})),
         answerKey:{type:'img_judge',marks:[false,false,false,false]},_subtype:'manual_read_judge'});
@@ -37865,16 +38046,17 @@ window.MatchGen = (function(){
       if(formType==='link') return Object.assign({},base,{kind:'pyfill',
         /* §V19.336 单框＋____挖空（用户定）：p___＝挖韵母、___à＝挖声母、h___o＝挖中间；
            渲染走 renderPinyinSafe 现成 blank-line 体系→横线统一长度（输入几个 _ 都一样） */
-        _pyFillItems:[{text:'b___',media:''},{text:'___à',media:''},{text:'h___o',media:''},{text:'___ǔ',media:''}],
+        _pyFillItems:[{text:'b___',media:'tts:f:白'},{text:'___à',media:'tts:f:那'},{text:'h___o',media:'tts:f:好'},{text:'___ǔ',media:'tts:f:土'}],   /* §V19.362 默认预置四字女声朗读(用户定)：白bái/那nà/好hǎo/土tǔ,与各题挖空音节对应 */
         answerKey:{type:'py_fill'}, _subtype:'manual_py_fill'});
       if(formType==='choice') return Object.assign({},base,{kind:'pychoice',
+        /* §V19.362 换组避开"佛"(宗教牵涉,用户定)+预置默认朗读字：爸bà/马mǎ/女nǚ/踢tī,均常用字、声母易混对 */
         _pyChoiceItems:[
-          {media:'',options:['bà','pà','bǎ','pá'],correctIdx:0},
-          {media:'',options:['mó','fó','mō','fō'],correctIdx:1},
-          {media:'',options:['nǔ','lǔ','nǚ','lǚ'],correctIdx:0},
-          {media:'',options:['dī','tī','dí','tí'],correctIdx:1}
+          {media:'tts:f:爸',options:['bà','pà','bǎ','pá'],correctIdx:0},
+          {media:'tts:f:马',options:['mǎ','nǎ','mā','nà'],correctIdx:0},
+          {media:'tts:f:女',options:['nǔ','lǔ','nǚ','lǚ'],correctIdx:2},
+          {media:'tts:f:踢',options:['dī','tī','dí','tí'],correctIdx:1}
         ],
-        answerKey:{type:'py_choice',marks:[0,1,0,1]}, _subtype:'manual_py_choice'});
+        answerKey:{type:'py_choice',marks:[0,0,2,1]}, _subtype:'manual_py_choice'});
       if(formType==='judge') return Object.assign({},base,{kind:'choice',_autoImgJudge:true,_autoJudge:true,_noItemSlot:true,_pyAudioMat:true,
         /* §V19.334 范例（用户定）：声调标错位置的判断——lǎo 调号应标 a（laǒ 标 o 为错）、xiè 应标 e（xìe 标 i 为错） */
         _imgJudgeItems:[
@@ -37898,7 +38080,7 @@ window.MatchGen = (function(){
     }
     if(blockType==='custom_hanzi'){
       if(formType==='link') return Object.assign({},base,{kind:'hzwrite',
-        _hzItems:[{chars:'汉字', strokeQs:{0:'笔画总数（　　）',1:'笔画总数（　　）'}, imgs:{0:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20256%20721%20Q%20281%20699%20309%20673%20Q%20325%20658%20343%20660%20Q%20355%20661%20360%20676%20Q%20364%20694%20354%20727%20Q%20342%20758%20249%20775%20Q%20231%20779%20224%20775%20Q%20218%20771%20221%20756%20Q%20225%20743%20256%20721%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20140%20542%20Q%20195%20482%20229%20469%20Q%20245%20466%20255%20481%20Q%20261%20494%20258%20512%20Q%20246%20557%20155%20583%20Q%20154%20584%20153%20584%20Q%20135%20588%20125%20585%20Q%20118%20584%20122%20570%20Q%20123%20557%20140%20542%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20144%20150%20Q%20131%20146%20134%20127%20Q%20146%2049%20186%2027%20Q%20193%2020%20204%2023%20Q%20213%2024%20213%2051%20Q%20220%20105%20337%20394%20Q%20344%20410%20343%20418%20Q%20342%20428%20333%20421%20Q%20321%20414%20309%20395%20Q%20246%20292%20191%20199%20Q%20176%20174%20144%20150%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20544%20273%20Q%20471%20174%20299%2075%20Q%20283%2065%20292%2060%20Q%20299%2057%20325%2067%20Q%20439%20109%20510%20159%20Q%20544%20184%20577%20225%20L%20611%20271%20Q%20621%20289%20634%20307%20Q%20691%20395%20725%20521%20Q%20737%20569%20771%20600%20Q%20792%20619%20773%20634%20Q%20748%20650%20715%20658%20Q%20685%20668%20657%20652%20Q%20617%20639%20547%20620%20Q%20468%20607%20387%20602%20Q%20368%20602%20363%20596%20Q%20359%20583%20383%20567%20Q%20413%20546%20482%20568%20Q%20635%20611%20652%20606%20Q%20665%20606%20666%20582%20Q%20638%20426%20572%20313%20L%20544%20273%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20577%20225%20Q%20628%20158%20691%2087%20Q%20710%2062%20742%2059%20Q%20842%2046%20926%2049%20Q%20969%2050%20967%2062%20Q%20964%2071%20769%20151%20Q%20690%20193%20611%20271%20L%20572%20313%20Q%20526%20365%20478%20429%20Q%20444%20477%20405%20481%20Q%20386%20484%20381%20479%20Q%20378%20472%20394%20458%20Q%20448%20416%20544%20273%20L%20577%20225%20Z%22%20fill%3D%22%23A855F7%22/%3E%3C/g%3E%3C/svg%3E',1:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20467%20799%20Q%20497%20777%20529%20750%20Q%20545%20737%20564%20739%20Q%20576%20740%20580%20756%20Q%20584%20774%20571%20807%20Q%20556%20841%20457%20853%20Q%20438%20854%20432%20852%20Q%20426%20846%20429%20832%20Q%20435%20819%20467%20799%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20277%20656%20Q%20277%20677%20254%20696%20Q%20236%20712%20233%20686%20Q%20237%20656%20194%20602%20Q%20149%20554%20165%20507%20Q%20166%20498%20171%20491%20Q%20184%20464%20206%20491%20Q%20221%20512%20268%20623%20L%20277%20656%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20268%20623%20Q%20289%20611%20326%20619%20Q%20476%20665%20705%20681%20Q%20730%20684%20741%20681%20Q%20759%20668%20756%20661%20Q%20756%20657%20725%20583%20Q%20718%20570%20725%20565%20Q%20732%20561%20749%20573%20Q%20804%20613%20850%20627%20Q%20887%20640%20887%20649%20Q%20886%20659%20812%20712%20Q%20788%20730%20707%20714%20Q%20503%20690%20373%20668%20Q%20324%20661%20277%20656%20C%20247%20653%20239%20632%20268%20623%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20518%20399%20Q%20642%20495%20669%20501%20Q%20688%20508%20683%20524%20Q%20680%20540%20614%20578%20Q%20595%20588%20572%20580%20Q%20511%20558%20418%20532%20Q%20393%20525%20335%20527%20Q%20311%20528%20319%20508%20Q%20326%20495%20346%20483%20Q%20377%20467%20411%20486%20Q%20433%20493%20546%20534%20Q%20559%20538%20571%20532%20Q%20584%20525%20578%20511%20Q%20545%20465%20508%20409%20C%20491%20384%20494%20381%20518%20399%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20551%20333%20Q%20536%20381%20518%20399%20L%20508%20409%20Q%20498%20419%20487%20424%20Q%20477%20431%20471%20423%20Q%20467%20419%20474%20405%20Q%20490%20371%20500%20328%20L%20507%20289%20Q%20525%20120%20490%2066%20Q%20489%2065%20487%2062%20Q%20478%2058%20377%2089%20Q%20367%2092%20360%2088%20Q%20354%2087%20370%2074%20Q%20437%2019%20475%20-30%20Q%20493%20-49%20511%20-40%20Q%20535%20-27%20553%2027%20Q%20578%20120%20558%20293%20L%20551%20333%20Z%22%20fill%3D%22%23A855F7%22/%3E%3Cpath%20d%3D%22M%20558%20293%20Q%20718%20311%20889%20296%20Q%20911%20293%20918%20301%20Q%20925%20314%20914%20325%20Q%20886%20352%20844%20371%20Q%20831%20377%20806%20369%20Q%20737%20356%20667%20346%20Q%20600%20340%20551%20333%20L%20500%20328%20Q%20491%20331%20308%20309%20Q%20241%20299%20139%20298%20Q%20126%20299%20124%20288%20Q%20123%20276%20141%20262%20Q%20157%20250%20187%20238%20Q%20197%20234%20214%20242%20Q%20230%20246%20303%20259%20Q%20393%20280%20507%20289%20L%20558%20293%20Z%22%20fill%3D%22%23FF6B35%22/%3E%3C/g%3E%3C/svg%3E'}}],   /* §V19.335 范例样板图=彩虹笔画字（hanzi-writer 逐笔数据+糖果色、无笔顺数字，用户定） */
+        _hzItems:[{chars:'欢迎使用小积木', mode:'single', strokeQs:{0:'笔画总数（　　）',1:'笔画总数（　　）',2:'笔画总数（　　）',3:'笔画总数（　　）',4:'笔画总数（　　）',5:'笔画总数（　　）',6:'笔画总数（　　）'}, imgAuto:{0:'欢',1:'迎',2:'使',3:'用',4:'小',5:'积',6:'木'}, imgs:{0:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20332%20341%20Q%20366%20413%20398%20520%20Q%20408%20550%20425%20569%20Q%20441%20585%20428%20597%20Q%20415%20607%20383%20616%20Q%20359%20622%20335%20606%20Q%20308%20593%20272%20580%20Q%20235%20568%20174%20558%20Q%20161%20557%20156%20549%20Q%20152%20542%20171%20535%20Q%20208%20523%20255%20540%20Q%20309%20562%20318%20563%20Q%20343%20564%20341%20536%20Q%20323%20439%20292%20370%20L%20269%20328%20Q%20206%20229%2078%20184%20Q%2066%20177%2078%20172%20Q%2084%20165%20125%20169%20Q%20224%20181%20303%20293%20L%20332%20341%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20303%20293%20Q%20405%20182%20415%20179%20Q%20422%20178%20429%20186%20Q%20439%20196%20430%20234%20Q%20421%20273%20332%20341%20L%20292%20370%20Q%20213%20428%20168%20455%20Q%20161%20459%20158%20449%20Q%20157%20439%20166%20429%20Q%20215%20384%20269%20328%20L%20303%20293%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20526%20595%20Q%20548%20637%20572%20692%20Q%20584%20726%20596%20743%20Q%20603%20755%20596%20766%20Q%20590%20778%20559%20794%20Q%20531%20806%20512%20802%20Q%20496%20798%20507%20778%20Q%20531%20745%20485%20615%20Q%20463%20554%20429%20486%20Q%20422%20476%20420%20469%20Q%20419%20457%20432%20463%20Q%20459%20475%20511%20568%20L%20526%20595%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20511%20568%20Q%20538%20552%20566%20561%20Q%20641%20600%20728%20615%20Q%20741%20619%20749%20619%20Q%20765%20609%20764%20601%20Q%20765%20598%20761%20585%20Q%20737%20516%20745%20513%20Q%20752%20510%20767%20523%20Q%20815%20563%20855%20578%20Q%20889%20593%20887%20601%20Q%20886%20611%20813%20653%20Q%20789%20668%20723%20647%20Q%20695%20647%20526%20595%20C%20497%20586%20484%20581%20511%20568%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20616%20342%20Q%20628%20414%20647%20449%20Q%20657%20468%20640%20477%20Q%20622%20492%20607%20498%20Q%20585%20513%20564%20506%20Q%20551%20502%20556%20486%20Q%20589%20426%20543%20275%20Q%20542%20272%20540%20266%20Q%20494%20145%20371%2062%20Q%20359%2053%20348%2044%20Q%20335%2035%20347%2032%20Q%20408%2032%20489%20102%20Q%20535%20139%20565%20197%20Q%20604%20288%20608%20305%20L%20616%20342%20Z%22%20fill%3D%22%23A855F7%22/%3E%3Cpath%20d%3D%22M%20608%20305%20Q%20618%20295%20626%20279%20Q%20776%2033%20808%2024%20Q%20892%2024%20934%2030%20Q%20949%2031%20954%2038%20Q%20958%2044%20949%2048%20Q%20802%20130%20742%20195%20Q%20691%20247%20629%20328%20Q%20623%20338%20616%20342%20C%20594%20363%20589%20328%20608%20305%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3C/g%3E%3C/svg%3E',1:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20457%20618%20Q%20503%20643%20533%20663%20Q%20603%20711%20631%20720%20Q%20653%20729%20644%20747%20Q%20631%20766%20606%20782%20Q%20584%20798%20570%20796%20Q%20557%20795%20560%20781%20Q%20561%20747%20499%20689%20Q%20472%20664%20443%20634%20C%20422%20612%20431%20604%20457%20618%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20443%20634%20Q%20421%20653%20405%20656%20Q%20392%20657%20386%20654%20Q%20376%20647%20388%20633%20Q%20421%20573%20408%20423%20Q%20401%20375%20389%20357%20Q%20376%20336%20385%20314%20Q%20397%20283%20414%20270%20Q%20424%20263%20437%20282%20Q%20467%20322%20568%20423%20Q%20586%20439%20587%20446%20Q%20588%20459%20567%20447%20Q%20530%20425%20487%20401%20Q%20468%20388%20459%20392%20Q%20452%20396%20451%20416%20Q%20452%20561%20459%20598%20Q%20460%20610%20457%20618%20L%20443%20634%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20680%20581%20Q%20750%20605%20802%20614%20Q%20815%20615%20817%20613%20Q%20827%20600%20823%20562%20Q%20817%20460%20795%20414%20Q%20782%20384%20755%20387%20Q%20731%20391%20710%20398%20Q%20688%20404%20704%20383%20Q%20747%20347%20767%20319%20Q%20786%20300%20802%20317%20Q%20851%20359%20868%20458%20Q%20883%20602%20894%20618%20Q%20904%20630%20899%20638%20Q%20890%20647%20845%20664%20Q%20827%20671%20811%20658%20Q%20787%20640%20670%20613%20C%20641%20606%20652%20571%20680%20581%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20627%20126%20Q%20633%20104%20639%2094%20Q%20643%2088%20651%2090%20Q%20663%2099%20670%20153%20Q%20676%20213%20674%20273%20Q%20671%20324%20674%20522%20Q%20674%20538%20680%20581%20C%20683%20605%20683%20605%20670%20613%20Q%20642%20632%20628%20634%20Q%20616%20638%20602%20630%20Q%20595%20623%20601%20613%20Q%20620%20580%20621%20539%20Q%20625%20128%20627%20126%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20238%20718%20Q%20262%20696%20287%20671%20Q%20302%20656%20319%20657%20Q%20331%20658%20337%20673%20Q%20341%20689%20332%20721%20Q%20320%20749%20232%20770%20Q%20216%20774%20208%20771%20Q%20202%20767%20204%20753%20Q%20208%20740%20238%20718%20Z%22%20fill%3D%22%23A855F7%22/%3E%3Cpath%20d%3D%22M%20296%20187%20Q%20309%20191%20314%20212%20Q%20320%20245%20284%20309%20Q%20254%20370%20335%20452%20Q%20335%20453%20337%20454%20Q%20359%20470%20340%20487%20Q%20321%20503%20287%20520%20Q%20265%20533%20247%20517%20Q%20213%20495%20169%20482%20Q%20111%20461%2093%20466%20Q%2086%20467%2083%20462%20Q%2082%20456%2089%20452%20Q%20126%20431%20235%20464%20Q%20245%20467%20253%20454%20Q%20272%20432%20251%20406%20Q%20203%20360%20253%20278%20Q%20280%20214%20278%20194%20Q%20277%20193%20276%20189%20C%20274%20169%20274%20169%20296%20187%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20276%20189%20Q%20236%20192%20192%20179%20Q%20149%20164%2085%20162%20Q%2079%20162%2075%20154%20Q%2071%20147%2079%20137%20Q%2095%20118%20119%20104%20Q%20129%2097%20149%20111%20Q%20233%20162%20308%20144%20Q%20374%20128%20505%2066%20Q%20734%20-48%20816%20-21%20Q%20879%20-2%20933%2035%20Q%20957%2050%20932%2051%20Q%20697%2051%20529%20107%20Q%20462%20129%20381%20163%20Q%20339%20182%20296%20187%20L%20276%20189%20Z%22%20fill%3D%22%23FFB300%22/%3E%3C/g%3E%3C/svg%3E',2:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20230%20513%20Q%20270%20571%20313%20646%20Q%20338%20697%20361%20722%20Q%20371%20732%20365%20747%20Q%20361%20760%20330%20783%20Q%20302%20801%20281%20800%20Q%20262%20797%20271%20775%20Q%20287%20744%20276%20715%20Q%20242%20621%20187%20532%20Q%20135%20447%2062%20352%20Q%2052%20342%2050%20335%20Q%2046%20323%2061%20326%20Q%20101%20336%20195%20466%20Q%20199%20473%20206%20481%20L%20230%20513%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20206%20481%20Q%20231%20421%20232%20362%20Q%20232%20233%20205%20119%20Q%20190%2070%20227%2022%20Q%20228%2019%20232%2016%20Q%20251%200%20263%2028%20Q%20278%2070%20278%20118%20Q%20278%20365%20286%20421%20Q%20293%20449%20283%20460%20Q%20265%20482%20251%20496%20Q%20242%20506%20230%20513%20C%20205%20530%20195%20509%20206%20481%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20629%20632%20Q%20678%20645%20732%20655%20Q%20777%20667%20783%20673%20Q%20792%20680%20787%20689%20Q%20780%20699%20752%20707%20Q%20725%20711%20631%20678%20L%20586%20666%20Q%20525%20653%20456%20644%20Q%20422%20638%20447%20622%20Q%20489%20598%20544%20614%20Q%20563%20620%20587%20622%20L%20629%20632%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20449%20523%20Q%20439%20527%20409%20532%20Q%20397%20533%20395%20529%20Q%20389%20523%20398%20508%20Q%20425%20459%20445%20375%20Q%20449%20350%20464%20334%20Q%20482%20315%20486%20329%20Q%20487%20336%20489%20346%20L%20486%20377%20Q%20476%20410%20463%20490%20C%20458%20520%20458%20520%20449%20523%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20772%20413%20Q%20802%20492%20831%20508%20Q%20847%20527%20833%20545%20Q%20760%20605%20698%20575%20Q%20661%20563%20627%20553%20L%20587%20544%20Q%20520%20532%20449%20523%20C%20419%20519%20434%20485%20463%20490%20Q%20473%20491%20486%20495%20Q%20535%20505%20586%20513%20L%20626%20521%20Q%20660%20528%20698%20535%20Q%20725%20542%20735%20530%20Q%20744%20523%20741%20506%20Q%20732%20457%20721%20417%20C%20713%20388%20761%20385%20772%20413%20Z%22%20fill%3D%22%23A855F7%22/%3E%3Cpath%20d%3D%22M%20622%20365%20Q%20691%20374%20784%20380%20Q%20794%20381%20795%20389%20Q%20795%20396%20772%20413%20C%20758%20424%20750%20423%20721%20417%20Q%20669%20407%20623%20397%20L%20581%20389%20Q%20530%20383%20486%20377%20C%20456%20373%20459%20345%20489%20346%20Q%20496%20346%20504%20347%20Q%20534%20354%20578%20359%20L%20622%20365%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20599%20195%20Q%20620%20258%20622%20365%20L%20623%20397%20Q%20624%20461%20626%20521%20L%20627%20553%20Q%20628%20593%20629%20632%20L%20631%20678%20Q%20634%20705%20657%20773%20Q%20664%20786%20653%20798%20Q%20631%20816%20592%20827%20Q%20567%20833%20559%20826%20Q%20550%20819%20558%20807%20Q%20580%20771%20584%20725%20Q%20585%20697%20586%20666%20L%20587%20622%20Q%20587%20583%20587%20544%20L%20586%20513%20Q%20585%20452%20581%20389%20L%20578%20359%20Q%20572%20275%20560%20229%20L%20547%20192%20Q%20508%20105%20347%2041%20Q%20334%2035%20333%2031%20Q%20334%2027%20345%2025%20Q%20364%2022%20408%2035%20Q%20483%2054%20534%20100%20Q%20562%20125%20583%20158%20L%20599%20195%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20583%20158%20Q%20623%20118%20650%2087%20Q%20693%2042%20751%20-6%20Q%20776%20-30%20821%20-27%20Q%20864%20-23%20913%20-18%20Q%20949%20-14%20960%20-7%20Q%20979%20-1%20962%208%20Q%20935%2020%20815%2051%20Q%20749%2069%20599%20195%20L%20560%20229%20Q%20481%20298%20468%20301%20Q%20440%20310%20408%20301%20Q%20395%20298%20395%20291%20Q%20396%20284%20409%20281%20Q%20457%20281%20524%20214%20Q%20536%20204%20547%20192%20L%20583%20158%20Z%22%20fill%3D%22%2322C55E%22/%3E%3C/g%3E%3C/svg%3E',3:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20312%20737%20Q%20264%20773%20237%20761%20Q%20225%20752%20233%20739%20Q%20251%20712%20258%20659%20Q%20258%20416%20232%20316%20Q%20207%20219%20133%2077%20Q%20129%2070%20127%2063%20Q%20126%2051%20136%2054%20Q%20166%2063%20231%20179%20Q%20247%20213%20262%20251%20Q%20316%20413%20318%20594%20Q%20321%20688%20323%20695%20C%20326%20725%20326%20728%20312%20737%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20506%20728%20Q%20582%20741%20671%20751%20Q%20696%20755%20706%20741%20Q%20722%20732%20727%20662%20Q%20746%20428%20734%20161%20Q%20733%20121%20719%20111%20Q%20704%20101%20631%20118%20Q%20613%20122%20614%20111%20Q%20615%20102%20629%2096%20Q%20695%2047%20729%209%20Q%20751%20-13%20766%20-10%20Q%20779%20-6%20791%2025%20Q%20809%2074%20807%20146%20Q%20786%20513%20788%20650%20Q%20788%20692%20801%20717%20Q%20814%20741%20803%20753%20Q%20793%20769%20741%20796%20Q%20717%20808%20646%20787%20Q%20492%20756%20312%20737%20C%20282%20734%20294%20687%20323%20695%20Q%20327%20701%20454%20720%20L%20506%20728%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20536%20519%20Q%20641%20546%20643%20548%20Q%20650%20555%20647%20562%20Q%20640%20572%20615%20578%20Q%20591%20582%20537%20562%20L%20481%20546%20Q%20439%20539%20391%20532%20Q%20360%20526%20382%20512%20Q%20410%20497%20481%20507%20L%20536%20519%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20534%20361%20Q%20546%20364%20650%20378%20Q%20660%20377%20669%20390%20Q%20670%20402%20647%20411%20Q%20617%20432%20537%20408%20Q%20536%20408%20534%20407%20L%20479%20395%20Q%20455%20391%20434%20388%20Q%20406%20385%20376%20381%20Q%20348%20377%20370%20360%20Q%20403%20336%20434%20343%20Q%20453%20347%20479%20351%20L%20534%20361%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20481%20126%20Q%20487%20101%20494%2091%20Q%20500%2084%20507%2086%20Q%20522%2096%20529%20155%20Q%20533%20203%20534%20361%20L%20534%20407%20Q%20534%20455%20536%20519%20L%20537%20562%20Q%20537%20616%20549%20681%20Q%20552%20700%20538%20709%20Q%20519%20722%20506%20728%20C%20480%20742%20440%20747%20454%20720%20Q%20454%20717%20469%20693%20Q%20481%20672%20481%20546%20L%20481%20507%20Q%20481%20455%20479%20395%20L%20479%20351%20Q%20472%20221%20481%20126%20Z%22%20fill%3D%22%23A855F7%22/%3E%3C/g%3E%3C/svg%3E',4:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20499%20695%20Q%20503%20661%20501%20132%20Q%20500%20110%20488%20101%20Q%20478%2092%20448%20100%20Q%20414%20107%20383%20113%20Q%20347%20123%20351%20112%20Q%20352%20105%20375%2091%20Q%20456%2042%20479%2010%20Q%20504%20-26%20523%20-25%20Q%20538%20-26%20552%2011%20Q%20568%2057%20564%20133%20Q%20531%20583%20572%20723%20Q%20590%20754%20532%20778%20Q%20498%20797%20477%20789%20Q%20459%20782%20475%20759%20Q%20497%20731%20499%20695%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20266%20475%20Q%20223%20408%20170%20349%20Q%20160%20339%20155%20320%20Q%20148%20292%20154%20273%20Q%20158%20251%20185%20261%20Q%20213%20274%20237%20308%20Q%20273%20357%20284%20404%20Q%20297%20441%20293%20470%20Q%20289%20480%20283%20484%20Q%20273%20484%20266%20475%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20706%20472%20Q%20769%20411%20842%20323%20Q%20860%20299%20878%20293%20Q%20888%20292%20897%20303%20Q%20913%20318%20900%20370%20Q%20887%20431%20709%20508%20Q%20699%20515%20696%20500%20Q%20695%20484%20706%20472%20Z%22%20fill%3D%22%2322C55E%22/%3E%3C/g%3E%3C/svg%3E',5:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20306%20664%20Q%20430%20724%20453%20730%20Q%20469%20731%20473%20740%20Q%20476%20750%20463%20761%20Q%20399%20800%20367%20793%20Q%20360%20789%20360%20778%20Q%20361%20736%20152%20620%20Q%20148%20610%20154%20608%20Q%20166%20608%20279%20653%20L%20306%20664%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20338%20484%20Q%20383%20494%20441%20503%20Q%20457%20506%20458%20513%20Q%20459%20526%20441%20534%20Q%20408%20549%20340%20527%20L%20296%20516%20Q%20149%20485%2076%20474%20Q%2063%20473%2061%20465%20Q%2058%20455%2073%20443%20Q%20110%20419%20171%20438%20Q%20229%20459%20275%20469%20L%20338%20484%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20337%20399%20Q%20337%20441%20338%20484%20L%20340%20527%20Q%20341%20588%20348%20619%20Q%20349%20632%20343%20638%20Q%20322%20656%20306%20664%20C%20280%20680%20269%20681%20279%20653%20Q%20294%20628%20296%20516%20L%20295%20395%20Q%20295%20215%20273%20126%20Q%20252%2089%20306%2015%20Q%20310%209%20316%206%20Q%20328%205%20333%2018%20Q%20345%2049%20342%2081%20Q%20338%20241%20337%20378%20L%20337%20399%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20275%20469%20Q%20218%20337%2050%20139%20Q%2044%20129%2056%20127%20Q%2078%20124%20195%20249%20Q%20247%20307%20295%20395%20C%20349%20492%20287%20496%20275%20469%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20337%20378%20Q%20343%20372%20357%20361%20Q%20387%20336%20418%20307%20Q%20428%20297%20441%20298%20Q%20450%20298%20453%20309%20Q%20457%20319%20450%20343%20Q%20446%20362%20416%20377%20Q%20350%20404%20337%20399%20C%20318%20396%20318%20396%20337%20378%20Z%22%20fill%3D%22%23A855F7%22/%3E%3Cpath%20d%3D%22M%20531%20573%20Q%20518%20580%20487%20585%20Q%20474%20589%20471%20583%20Q%20464%20577%20473%20560%20Q%20504%20488%20521%20371%20Q%20524%20337%20543%20312%20Q%20562%20290%20567%20305%20Q%20570%20315%20571%20329%20L%20571%20367%20Q%20558%20436%20545%20538%20C%20541%20568%20541%20569%20531%20573%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20798%20394%20Q%20826%20512%20866%20544%20Q%20885%20565%20868%20585%20Q%20849%20600%20790%20627%20Q%20771%20636%20746%20626%20Q%20658%20592%20531%20573%20C%20501%20568%20516%20531%20545%20538%20Q%20689%20574%20736%20574%20Q%20749%20575%20757%20569%20Q%20770%20557%20767%20533%20Q%20757%20460%20742%20402%20C%20735%20373%20791%20365%20798%20394%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20571%20329%20Q%20581%20328%20594%20330%20Q%20661%20346%20810%20357%20Q%20822%20358%20824%20369%20Q%20824%20376%20798%20394%20L%20742%20402%20Q%20739%20403%20736%20402%20Q%20645%20380%20571%20367%20C%20541%20362%20541%20330%20571%20329%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20542%20237%20Q%20532%20170%20377%2033%20Q%20355%2017%20384%2021%20Q%20448%2027%20572%20150%20Q%20575%20156%20620%20201%20Q%20630%20214%20628%20224%20Q%20625%20239%20597%20246%20Q%20566%20256%20553%20253%20Q%20546%20252%20542%20237%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3Cpath%20d%3D%22M%20723%20220%20Q%20784%20150%20854%2051%20Q%20870%2026%20886%2019%20Q%20896%2016%20905%2027%20Q%20921%2040%20913%2091%20Q%20906%20154%20729%20255%20Q%20719%20262%20715%20248%20Q%20712%20233%20723%20220%20Z%22%20fill%3D%22%23A855F7%22/%3E%3C/g%3E%3C/svg%3E',6:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%201024%201024%22%3E%3Cg%20transform%3D%22scale%281%2C-1%29%20translate%280%2C-900%29%22%3E%3Cpath%20d%3D%22M%20524%20533%20Q%20537%20536%20755%20560%20Q%20768%20557%20779%20573%20Q%20780%20586%20754%20600%20Q%20709%20627%20634%20603%20Q%20526%20582%20524%20580%20L%20479%20572%20Q%20404%20563%20234%20546%20Q%20200%20542%20226%20521%20Q%20265%20491%20291%20494%20Q%20309%20503%20446%20521%20L%20524%20533%20Z%22%20fill%3D%22%23FF4FA0%22/%3E%3Cpath%20d%3D%22M%20524%20580%20Q%20524%20682%20544%20758%20Q%20559%20783%20532%20802%20Q%20516%20814%20485%20833%20Q%20460%20851%20439%20834%20Q%20433%20828%20440%20813%20Q%20474%20762%20476%20711%20Q%20477%20647%20479%20572%20L%20477%20458%20Q%20474%20208%20466%20155%20Q%20442%2046%20456%205%20Q%20460%20-7%20466%20-21%20Q%20473%20-40%20481%20-43%20Q%20488%20-50%20495%20-41%20Q%20504%20-37%20514%20-15%20Q%20524%2010%20523%2044%20Q%20522%2090%20523%20480%20L%20524%20580%20Z%22%20fill%3D%22%23FFB300%22/%3E%3Cpath%20d%3D%22M%20446%20521%20Q%20368%20337%20127%20132%20Q%20114%20119%20124%20117%20Q%20134%20113%20146%20119%20Q%20276%20176%20403%20344%20Q%20472%20450%20477%20458%20C%20528%20538%20464%20563%20446%20521%20Z%22%20fill%3D%22%2322C55E%22/%3E%3Cpath%20d%3D%22M%20523%20480%20Q%20607%20338%20716%20186%20Q%20737%20159%20774%20157%20Q%20901%20147%20942%20150%20Q%20954%20151%20957%20157%20Q%20957%20164%20941%20173%20Q%20773%20251%20721%20302%20Q%20628%20398%20523%20532%20Q%20523%20533%20524%20533%20L%20524%20533%20C%20506%20558%20508%20506%20523%20480%20Z%22%20fill%3D%22%2300B8FF%22/%3E%3C/g%3E%3C/svg%3E'}}],   /* §V19.401 范例默认「欢迎使用小积木」：预置 7 字彩虹笔画字（hanzi-writer 逐笔+糖果5色，同款渲染，离线即显）；单字/词句共用此 chars */
         _hzColor:'#1E9E40', _hzTrace:true,
         answerKey:{type:'hz_write'}, _subtype:'manual_hz_write'});   /* §V19.333 strokeQ 改 per-char（strokeQs 映射，用户定：笔画框放进每张书写卡） */
       if(formType==='choice') return Object.assign({},base,{kind:'choice',_isMultiChoice:true,_isTextChoice:true,
@@ -37909,7 +38091,17 @@ window.MatchGen = (function(){
           {img:'',stemWord:'「字」字的笔画总数是（　）',options:['5画','6画','7画','8画'],correctIdx:1,_forceImgLevel:'none'}
         ],
         answerKey:{type:'text_choice_multi',marks:[1,0,1,1]},_subtype:'manual_hz_choice'});
-      return Object.assign({},base,{kind:'choice',_autoImgJudge:true,_autoJudge:true,_noItemSlot:true,
+      if(formType==='extra') return Object.assign({},base,{kind:'hzfill',
+        /* §V19.378 汉字填空（用户定）：题干"请写出正确的汉字"；三合一条框(音频+图片+文本)。
+           默认音频读词句；两句在文本框预置挖空，两词文本框留整空(____，听音写全词)。 */
+        _hzFillItems:[
+          {text:'____', media:'tts:f:你好'},
+          {text:'我上八____。', media:'tts:f:我上八年级。'},
+          {text:'____', media:'tts:f:上学'},
+          {text:'我____唱歌。', media:'tts:f:我喜欢唱歌'}
+        ],
+        answerKey:{type:'hz_fill'}, _subtype:'manual_hz_fill'});
+      return Object.assign({},base,{kind:'choice',_autoImgJudge:true,_autoJudge:true,_noItemSlot:true,_hzMediaJudge:true,
         _imgJudgeItems:[
           {img:'',word:'「汉」字共有 5 画。',correct:true},
           {img:'',word:'「字」字的第一笔是 ㇔ 。',correct:true},   /* §V19.333 笔画字符 */
@@ -37919,9 +38111,15 @@ window.MatchGen = (function(){
         answerKey:{type:'img_judge',marks:[true,true,false,false]},_subtype:'manual_hz_judge'});
     }
     /* custom_audio */
+    if(formType==='link') return Object.assign({},base,{kind:'match',_audioBarLink:true,   /* §V19.370/371 听音连线：左=音频条(纯音频,无文本框)、右=图文框(可图可文,参考图文搭配) */
+      pairs:Array.from({length:4},(_,i)=>({cn:'',en:'',audioTts:'',audioTtsG:'',audio:'',imgSrc:null,_imgSrc:null,_hasImg:false,_correctLeft:i,_needManual:true})),
+      _linkCorrect:[[0,2],[1,3],[2,0],[3,1]],   /* 交叉呈现（正确配对不平行） */
+      answerKey:{type:'img_link',pairs:[[0,2],[1,3],[2,0],[3,1]]},_subtype:'manual_audio_link'});
     if(formType==='choice') return Object.assign({},base,{kind:'choice',_abChoice:true,_isMultiChoice:true,
       _choiceItems:Array.from({length:4},()=>({img:'',stemWord:'',options:['','','',''],optImgs:['','','',''],correctIdx:-1,_needManual:true})),
       answerKey:{type:'text_choice_multi',marks:[-1,-1,-1,-1]},_subtype:'manual_audio_choice'});   /* §V19.332 AB→ABCD（用户定） */
+    if(formType==='extra') return Object.assign({},base,{kind:'para',_paraText:'',_paraOpts:'',   /* §V19.369 听音填空(extra槽)：复用语段填空 para 渲染，顶部卡级材料区放总音频 */
+      answerKey:{type:'para_cloze',options:[]},_subtype:'manual_audio_cloze'});
     return Object.assign({},base,{kind:'choice',_autoImgJudge:true,_autoJudge:true,
       _imgJudgeItems:Array.from({length:4},()=>({img:'',word:'',matText:'',correct:null,_needManual:true})),
       answerKey:{type:'img_judge',marks:[false,false,false,false]},_subtype:'manual_audio_judge'});
@@ -37972,39 +38170,43 @@ window.MatchGen = (function(){
     // §V19.149 指令题干「按做题形式」走，不按积木类型 —— 连线就是连线、选择就是选择、正误就是正误，
     //   与连的是图/字/拼音无关。三个自动化积木共用同一套形式题干。
     const _cpByForm={
-      link:  {cn:'请把相关的内容连起来。', en:'Match the related items.', ar:'صِل المحتوى المرتبط ببعضه.'},
-      choice:{cn:'请选择正确的答案。',     en:'Choose the correct answer.', ar:'اختر الإجابة الصحيحة.'},
-      judge: {cn:'请判断对错，在括号里填 √ 或 ✗。', en:'Choose True or False, Please write √ or ✗ in the brackets.', ar:'احكم بالصواب أو الخطأ، وضع √ أو ✗ بين القوسين.'}
+      link:  {cn:'请把词语和对应的图片连起来。', en:'Please match each word with the correct picture.', ar:'من فضلك صِل كل كلمة بالصورة المناسبة.'},
+      choice:{cn:'请选择正确的答案。',     en:'Please choose the correct answer.', ar:'من فضلك اختر الإجابة الصحيحة.'},
+      judge: {cn:'请判断正误，在括号里填“√”或“✗”。', en:'Please decide whether each statement is true or false, and write √ or ✗ in the brackets.', ar:'من فضلك احكم على صحة كل عبارة، وضع √ أو ✗ بين القوسين.'}
     };
     // §V19.256 问答对话专属题干（连线=问答配对 / 选择=回应选择）；其余积木沿用形式通用题干。
     //   （阿语为初稿，建议母语者复核。）
     const _cpQaByForm={
-      link:  {cn:'请把问句和相应的回答连起来。', en:'Match each question with its answer.', ar:'صِل كل سؤال بإجابته الصحيحة.'},
-      choice:{cn:'请选择正确的回应。', en:'Choose the correct response.', ar:'اختر الرد الصحيح.'}
+      link:  {cn:'请把合适的问答对话连起来。', en:'Please match each question with its correct answer.', ar:'من فضلك صِل كل سؤال بإجابته الصحيحة.'},
+      choice:{cn:'请选择正确的选项回答问题。', en:'Please choose the correct response.', ar:'من فضلك اختر الرد الصحيح.'}
     };
     /* §V19.278 新四积木专属题干（阿语初稿，需母语者复核） */
     const _cpCustom={
-      custom_word_split:{ link:{cn:'请把词语的两半连起来。',en:'Match the two halves of each word.',ar:'صِل نصفي كل كلمة.'},
-                          choice:{cn:'请选择正确的字，组成词语。',en:'Choose the correct character to form the word.',ar:'اختر الحرف الصحيح لتكوين الكلمة.'} },
-      custom_word_order:{ link:{cn:'请把词语按正确的顺序连成句子，在横线上写出字母。',en:'Put the words in the correct order. Write the letters on the lines.',ar:'رتّب الكلمات لتكوين جملة، واكتب الحروف على الخطوط.'} },
-      custom_cloze:{ link:{cn:'请选择正确的词语填空。',en:'Choose the correct word to fill in the blank.',ar:'اختر الكلمة الصحيحة لملء الفراغ.'} },
-      custom_judge:{ link:{cn:'请判断句子对错，在括号里填 √ 或 ✗。',en:'Decide if each sentence is right or wrong. Write √ or ✗.',ar:'احكم على كل جملة، وضع √ أو ✗.'} },
+      custom_word_split:{ link:{cn:'请把合适的词语搭配连起来。',en:'Please match the words into correct pairs.',ar:'من فضلك صِل الكلمات لتكوّن تراكيب صحيحة.'},
+                          choice:{cn:'请选择正确的汉字组成词语。',en:'Please choose the correct character to form the word.',ar:'من فضلك اختر الحرف الصحيح لتكوين الكلمة.'} },
+      custom_word_order:{ link:{cn:'请按正确的顺序，将字词排列成一个通顺的句子。（横线上只填词序字母即可。）',en:'Please arrange the words into a correct sentence. Write only the order letters on the lines.',ar:'رتّب الكلمات لتكوين جملة، واكتب الحروف على الخطوط.'} },
+      custom_cloze:{ link:{cn:'请选择正确的词语填空。',en:'Please choose the correct word to fill in the blank.',ar:'من فضلك اختر الكلمة الصحيحة لملء الفراغ.'} },
+      custom_judge:{ link:{cn:'请判断句子正误，在括号里填“√”或“✗”。',en:'Please decide whether each sentence is right or wrong, and write √ or ✗ in the brackets.',ar:'من فضلك احكم على صحة كل جملة، وضع √ أو ✗ بين القوسين.'} },
       /* §V19.314 手动积木四枚题干（阿语初稿，需母语者复核） */
-      custom_reading:{ link:{cn:'请阅读语段，把相关的内容连起来。',en:'Read the passage and match the related items.',ar:'اقرأ الفقرة وصِل المحتوى المرتبط.'},
-                       choice:{cn:'请阅读语段，选择正确的答案。',en:'Read the passage and choose the correct answer.',ar:'اقرأ الفقرة واختر الإجابة الصحيحة.'},
-                       judge:{cn:'请阅读语段，判断对错，在括号里填 √ 或 ✗。',en:'Read the passage. Write √ or ✗ in the brackets.',ar:'اقرأ الفقرة واحكم بالصواب أو الخطأ.'} },
+      custom_reading:{ link:{cn:'请阅读短文，把相关的内容连起来。',en:'Please read the passage and match the related items.',ar:'من فضلك اقرأ النص وصِل المحتوى المرتبط.'},
+        extra:{cn:'请阅读短文，然后回答问题。',en:'Please read the passage and answer the questions.',ar:'من فضلك اقرأ النص ثم أجب عن الأسئلة.'},   /* §V19.375 阅读理解问答 */
+                       choice:{cn:'请阅读短文，选择正确的答案。',en:'Please read the passage and choose the correct answer.',ar:'من فضلك اقرأ النص واختر الإجابة الصحيحة.'},
+                       judge:{cn:'请阅读短文，判断正误，在括号里填“√”或“✗”。',en:'Please read the passage and write √ or ✗ in the brackets.',ar:'من فضلك اقرأ النص وضع √ أو ✗ بين القوسين.'} },
       custom_para_cloze:{ link:{cn:'请在语段的空格处填入合适的内容。',en:'Fill in the blanks in the passage.',ar:'املأ الفراغات في الفقرة.'} },
-      custom_open:{ link:{cn:'请阅读问题，写出你的回答。',en:'Read the question and write your answer.',ar:'اقرأ السؤال واكتب إجابتك.'} },
-      custom_audio:{ choice:{cn:'听录音，选择正确的答案。',en:'Listen and choose the correct answer.',ar:'استمع واختر الإجابة الصحيحة.'},
-                     judge:{cn:'听录音，判断对错，在括号里填 √ 或 ✗。',en:'Listen and write √ or ✗ in the brackets.',ar:'استمع واحكم بالصواب أو الخطأ.'} },
+      custom_open:{ link:{cn:'请根据问题作答！',en:'Answer the question.',ar:'أجب عن السؤال!'} },   /* §V19.375 题干改文案(用户定) */
+      custom_audio:{ link:{cn:'请把音频和对应的内容连起来。',en:'Please match the audio with the correct content.',ar:'من فضلك صِل الصوت بالمحتوى المناسب.'},   /* §V19.370 听音连线 */
+        choice:{cn:'请听录音，选择正确的答案。',en:'Please listen and choose the correct answer.',ar:'استمع واختر الإجابة الصحيحة.'},
+        extra:{cn:'请听音频，在短文的空格处填入合适的内容。',en:'Please listen to the audio and fill in the blanks in the passage.',ar:'استمع إلى الصوت واملأ الفراغات في الفقرة.'},   /* §V19.369 听音填空(extra槽) */
+                     judge:{cn:'请听录音，判断正误，在括号里填“√”或“✗”。',en:'Please listen and write √ or ✗ in the brackets.',ar:'استمع واحكم بالصواب أو الخطأ.'} },
       /* §V19.331 汉字工坊题干（阿语初稿，需母语者复核） */
-      custom_pinyin:{ link:{cn:'请根据录音，补全下列音节。',en:'Listen and complete the syllables.',ar:'استمع وأكمل المقاطع الصوتية.'},   /* §V19.341 题干按范例形态校准（用户定稿） */
-        choice:{cn:'听录音，圈出你听到的音节。',en:'Listen and circle the syllable you hear.',ar:'استمع واختر المقطع الصحيح.'},
-        judge:{cn:'听录音，判断下面的拼音对不对，对的填 √，错的填 ✗。',en:'Listen and check the pinyin. Write √ or ✗.',ar:'استمع وتحقق من صحة البينيين ثم اكتب √ أو ✗.'},   /* §V19.341 范例=音频对照拼音判断（非声调比较） */
-        extra:{cn:'看一看，把拼音和对应的图片连起来。',en:'Match the pinyin with the correct pictures.',ar:'صل البينيين بالصور المناسبة.'} },   /* §V19.338 题干贴合默认形态（拼音连图，用户定） */
-      custom_hanzi:{ link:{cn:'请在田字格里正确书写下面的汉字。',en:'Write the characters correctly in the grids.',ar:'اكتب الحروف الصينية بشكل صحيح في المربعات.'},
-                     choice:{cn:'请选择正确的答案。',en:'Choose the correct answer.',ar:'اختر الإجابة الصحيحة.'},
-                     judge:{cn:'请判断对错，在括号里填 √ 或 ✗。',en:'Write √ or ✗ in the brackets.',ar:'ضع √ أو ✗ بين القوسين.'} }
+      custom_pinyin:{ link:{cn:'请根据录音，补全下列音节。',en:'Please listen and complete the syllables.',ar:'استمع وأكمل المقاطع الصوتية.'},   /* §V19.341 题干按范例形态校准（用户定稿） */
+        choice:{cn:'请听录音，选出你听到的音节。',en:'Please listen and choose the syllable you hear.',ar:'من فضلك استمع واختر المقطع الذي تسمعه.'},
+        judge:{cn:'请听录音，判断下面的拼音是否正确，正确填“√”，错误填“✗”。',en:'Please listen and check the pinyin, then write √ or ✗.',ar:'استمع وتحقق من صحة البينيين ثم اكتب √ أو ✗.'},   /* §V19.341 范例=音频对照拼音判断（非声调比较） */
+        extra:{cn:'请把拼音和对应的图片连起来。',en:'Please match the pinyin with the correct pictures.',ar:'من فضلك صِل البينيين بالصور المناسبة.'} },   /* §V19.338 题干贴合默认形态（拼音连图，用户定） */
+      custom_hanzi:{ link:{cn:'请在田字格里正确书写下面的汉字。',en:'Please write the characters correctly in the grids.',ar:'اكتب الحروف الصينية بشكل صحيح في المربعات.'},
+                     choice:{cn:'请选择正确的答案。',en:'Please choose the correct answer.',ar:'من فضلك اختر الإجابة الصحيحة.'},
+                     judge:{cn:'请判断正误，在括号里填“√”或“✗”。',en:'Please write √ or ✗ in the brackets.',ar:'من فضلك ضع √ أو ✗ بين القوسين.'},
+                     extra:{cn:'请写出正确的汉字。',en:'Please write the correct characters.',ar:'من فضلك اكتب الحروف الصحيحة.'} }
     };
     const _cp = (_cpCustom[blockType] && _cpCustom[blockType][formType])
       ? _cpCustom[blockType][formType]
@@ -38692,6 +38894,17 @@ window.MatchGen = (function(){
     //   按「当前露出的上下位置」分配（不按固定档位），保证任何时候露出的两条永远一浅一中、一眼分清。
     const TAB_LIGHT={ bg:'#CFC6EF', bd:'#B6A6E2' };   // = 上方小积木那个浅紫
     const TAB_MED  ={ bg:'#9268CE', bd:'#7650B8' };   // 一个有差异的中紫
+    // §V19.388 非当前耳朵紫色阶梯（方案B·全域阶梯）：题卡可有 4+ 个题型，仅两档紫不够区分。
+    //   按「当前露出的上下顺序」（不按固定档位）套一条由浅到深的紫，任意相邻两条一眼分清；
+    //   首档 = 上方小积木同款浅紫做呼应；最深两档底色偏暗，文字改白色保证可读；超出档数则末档循环。
+    /* §V19.390 关键修复：真机上非当前耳朵出现白字。根因是 _inact 在某些渲染路径下溢出、取到了带白字的深档。
+       事实：本产品任何卡最多 4 个耳朵、当前占 1 个、非当前最多 3 个 → 永远只该用前 3 档，白字档是「死代码+白字风险源」。
+       故：①阶梯全档一律黑字（深档也黑字，绝不再出白字）；②_pc 取值钳在前 3 档，溢出一律回落，不进深档。双保险。 */
+    const TAB_LADDER=[
+      { bg:'#CFC6EF', bd:'#B6A6E2', fg:'#1a1a1a' },   // 1 浅紫（=小积木）
+      { bg:'#B49CE5', bd:'#9A80D6', fg:'#1a1a1a' },   // 2 中浅紫
+      { bg:'#9A76D8', bd:'#8060C6', fg:'#1a1a1a' }    // 3 中紫（本产品非当前耳朵封顶到此）
+    ];
     function paintTabs(){
       const lv=card._levelKey||'low';
       const c=LV_TAB_COLOR[lv]||LV_TAB_COLOR.low;
@@ -38703,11 +38916,13 @@ window.MatchGen = (function(){
         if(tab.classList.contains('active')){
           tab.style.setProperty('background', c.bg, 'important');
           tab.style.setProperty('border-color', c.bd, 'important');
+          tab.style.setProperty('color', '#0f0f0f', 'important');   // §V19.388 当前耳朵恒黑字（防从深档白字切回残留）
         }else{
-          const _pc = (_inact===0) ? TAB_LIGHT : TAB_MED;   // 最上面的未用耳朵=浅紫，其余=中紫
+          const _pc = TAB_LADDER[Math.min(_inact, TAB_LADDER.length-1)];   // 按露出顺序取阶梯档，超出用末档
           _inact++;
           tab.style.setProperty('background', _pc.bg, 'important');
           tab.style.setProperty('border-color', _pc.bd, 'important');
+          tab.style.setProperty('color', _pc.fg, 'important');   // §V19.388 深档白字、浅档黑字
         }
         void tab.offsetWidth;   // 强制 reflow，让无过渡的新色落定
         tab.style.removeProperty('transition');   // 恢复 transition（供后续 hover 等动效）
@@ -38926,6 +39141,12 @@ window.MatchGen = (function(){
             vid.title = m.name || '本地视频';   // §V12.5.6w 文件名挪到 hover tooltip
             chip.appendChild(vid);
             // §V12.5.6w 去掉文件名标签
+          }else if(m.kind==='file' && /^audio\//.test(m.mime)){
+            /* §V19.368 总材料区支持 MP3/音频（用户定）：渲染可播放的音频条 */
+            const aud=document.createElement('audio');
+            aud.className='dc-mthumb-aud'; aud.src=m.url; aud.controls=true; aud.preload='metadata';
+            aud.title = m.name || '本地音频';
+            chip.appendChild(aud);
           }else if(m.kind==='text'){
             // §二（本轮）整道题文本材料 chip — 文本仍显示内容（无缩略图可看）
             const sp=document.createElement('span'); sp.className='dc-mcap dc-mcap-text';
@@ -38968,7 +39189,7 @@ window.MatchGen = (function(){
         +   '<label class="dc-ml-row dc-ml-row-file">'
         +     '<span class="dc-ml-lbl" data-i18n="addLocalMaterial">'+T('addLocalMaterial')+'</span>'
         +     '<span class="dc-ml-btn dc-ml-btn-up" data-i18n="chooseLocalFile">'+T('chooseLocalFile')+'</span>'
-        +     '<input type="file" accept="image/*,video/*" multiple hidden class="dc-ml-file">'
+        +     '<input type="file" accept="image/*,video/*,audio/*" multiple hidden class="dc-ml-file">'
         +     '<button type="button" class="dc-mlayer-collapse" data-i18n="collapse" data-i18n-prefix="︿ " data-i18n-title="collapse" title="'+T('collapse')+'">︿ '+T('collapse')+'</button>'
         +   '</label>'
         +   '<label class="dc-ml-row dc-ml-row-link">'
@@ -39378,9 +39599,9 @@ window.MatchGen = (function(){
           // 复用外壳：只清「题项」(题项是 topSplit 的兄弟、在 taWrap 内)，绝不清 topSplit / 题干(dc-stem-elevated / dc-frow-cn|en)
           // §V19.190 关键修复：原列表漏了 .dc-imgjudge(图文正误题项区) 和 .dc-imgchoice-multi(选择题多道grid)，
           //   导致每次 buildForm 重渲时旧题项区未清除、新区 append 叠加 → 题项「复制翻倍」(新增/焕新都触发)。
-          [...taWrap.querySelectorAll('.dc-fopts,.dc-fgrid,.dc-substem,.dc-additem,.match-empty-state,.dc-frow-stem,.dc-imgjudge,.dc-imgchoice-multi,.dc-order-multi,.dc-open,.dc-para,.dc-abchoice,.dc-read-items,.dc-hzwrite,.dc-pyfill,.dc-pychoice')].forEach(n=>n.remove());   /* §V19.279；§V19.328；§V19.331；§V19.332 拼音登记 */
+          [...taWrap.querySelectorAll('.dc-fopts,.dc-fgrid,.dc-substem,.dc-additem,.match-empty-state,.dc-frow-stem,.dc-imgjudge,.dc-imgchoice-multi,.dc-order-multi,.dc-open,.dc-para,.dc-abchoice,.dc-read-items,.dc-hzwrite,.dc-pyfill,.dc-pychoice,.dc-hzfill')].forEach(n=>n.remove());   /* §V19.279；§V19.328；§V19.331；§V19.332 拼音登记 */
         } else {
-          [...taWrap.querySelectorAll('.dc-frow,.dc-fopts,.dc-fgrid,.dc-card-head,.dc-substem,.dc-stem-elevated,.card-top-split,.dc-additem,.match-empty-state,.dc-imgjudge,.dc-imgchoice-multi,.dc-order-multi,.dc-open,.dc-para,.dc-abchoice,.dc-read-items,.dc-hzwrite,.dc-pyfill,.dc-pychoice')].forEach(n=>n.remove());   /* §V19.279；§V19.328；§V19.331；§V19.332 */
+          [...taWrap.querySelectorAll('.dc-frow,.dc-fopts,.dc-fgrid,.dc-card-head,.dc-substem,.dc-stem-elevated,.card-top-split,.dc-additem,.match-empty-state,.dc-imgjudge,.dc-imgchoice-multi,.dc-order-multi,.dc-open,.dc-para,.dc-abchoice,.dc-read-items,.dc-hzwrite,.dc-pyfill,.dc-pychoice,.dc-hzfill')].forEach(n=>n.remove());   /* §V19.279；§V19.328；§V19.331；§V19.332 */
         }
         fields.opts=[]; fields.pairCn=[]; fields.pairEn=[];
         fields.subCn=null; fields.subEn=null; fields.subAr=null;   /* §六（本轮）副题干字段引用（§V19.70 含阿语） */
@@ -39418,6 +39639,128 @@ window.MatchGen = (function(){
           b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onAdd(); });
           return b;
         };
+        const _mkPyMedia=(holder)=>{
+          const slot=document.createElement('span'); slot.className='py-mslot'+((holder.media)?'':' empty');
+          const pick=document.createElement('input'); pick.type='file'; pick.accept='audio/*,image/*'; pick.hidden=true;
+          /* §V19.364 ✎×作为头像的附属小符号（用户定）：右侧竖排、淡灰纯字符、悬停变色、小。
+             ✎=编辑当前材料（停在该编辑层），×=清除回两入口。服从图示、不喧宾夺主。 */
+          const _mkBadges=(editFn, editTip)=>{
+            const stk=document.createElement('span'); stk.className='py-mtts-badges';
+            const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title=editTip||'编辑';
+            ed.addEventListener('click',e=>{ e.stopPropagation(); editFn(); });
+            const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除材料（回到 声音/图片 重选）';
+            cl.addEventListener('click',e=>{ e.stopPropagation();
+              holder.media=''; slot._pl=null; formData._userEdited=true; formData._manualEdit=true; _paint(); });
+            stk.appendChild(ed); stk.appendChild(cl); return stk;
+          };
+          /* §V19.343 TTS 通道：media='tts:汉字'（存文本、播放现场合成）；与上传音频/图片并行 */
+          const _paint=()=>{
+            slot.querySelectorAll('img,.py-maud,.py-mhint,.py-mtts,.py-mtts-inp,.py-mtts-ava,.py-mtts-add,.py-mtts-gava,.py-mentry,.py-mentry-pop,.py-mtts-badges,.py-tts-editpop').forEach(x=>x.remove());   /* §V19.355/356/364 +附属小符号badges */
+            const m=holder.media||'';
+            if(/^tts:/.test(m)){
+              /* §V19.344 协议 tts:m:文本 / tts:f:文本（旧 tts:文本 兼容=女声） */
+              const mm2=m.match(/^tts:(?:([mf]):)?(.*)$/); let _g=mm2[1]||'f'; const tx=mm2[2]||'';
+              /* §V19.354 头像朗读钮（用户定）：单击=切换性别→存→朗读新性别；双击=改字。不显示汉字。 */
+              const tt=document.createElement('span'); tt.className='py-mtts-ava';
+              const _render=()=>{ tt.innerHTML=window.bqAvatarSVG(_g,'#6D4FC1',26);
+                tt.title='「'+tx+'」'+(_g==='m'?'男声':'女声')+' · 点击换声音、朗读 · 双击改字'; };
+              _render();
+              let _clk=null;
+              tt.addEventListener('click',e=>{ e.stopPropagation();
+                if(_clk){ clearTimeout(_clk); _clk=null; return; }   /* 双击不触发单击 */
+                _clk=setTimeout(()=>{ _clk=null;
+                  _g=(_g==='m')?'f':'m'; holder.media='tts:'+_g+':'+tx;
+                  formData._userEdited=true; formData._manualEdit=true; _render();
+                  window.bqSpeak&&window.bqSpeak(tx,_g);
+                },230); });
+              tt.addEventListener('dblclick',e=>{ e.stopPropagation(); if(_clk){clearTimeout(_clk);_clk=null;} _ttsEdit(tx,_g); });
+              slot.appendChild(tt); slot.appendChild(_mkBadges(()=>_ttsEdit(tx,_g),'改字（编辑朗读文本）')); slot.classList.toggle('empty', false); return;
+            }
+            if(/^data:audio/.test(m)){
+              const au=document.createElement('span'); au.className='py-maud'; au.textContent='🔊';
+              au.title='点击试听 · 双击更换';
+              au.addEventListener('click',e=>{ e.stopPropagation(); try{ (slot._pl=slot._pl||new Audio(m)).play(); }catch(_e){} });
+              au.addEventListener('dblclick',e=>{ e.stopPropagation(); pick.click(); });
+              slot.appendChild(au); slot.appendChild(_mkBadges(()=>{ pick.accept='audio/*'; pick.click(); },'更换音频文件'));
+            }else if(m){
+              const im=document.createElement('img'); im.src=m; im.title='点击更换材料';
+              im.addEventListener('click',e=>{ e.stopPropagation(); pick.click(); });
+              slot.appendChild(im); slot.appendChild(_mkBadges(()=>{ pick.accept='image/*'; pick.click(); },'更换图片'));
+            }else{
+              /* §V19.356 方案B 两入口（用户早定，之前漏落地）：🎤声音 / 🖼图片；点声音弹 inline 小菜单选「文字朗读／上传录音」。 */
+              const snd=document.createElement('span'); snd.className='py-mentry';
+              snd.innerHTML='<span class="pme-ic">🎤</span>声音';
+              snd.title='添加声音：文字朗读 或 上传录音';
+              snd.addEventListener('click',e=>{ e.stopPropagation(); _soundMenu(snd); });
+              const eimg=document.createElement('span'); eimg.className='py-mentry';
+              eimg.innerHTML='<span class="pme-ic">🖼️</span>图片';
+              eimg.title='上传图片材料';
+              eimg.addEventListener('click',e=>{ e.stopPropagation(); pick.accept='image/*'; pick.click(); });
+              slot.appendChild(snd); slot.appendChild(eimg);
+            }
+            slot.classList.toggle('empty', !m);
+          };
+          const _soundMenu=(host)=>{
+            slot.querySelectorAll('.py-mentry-pop').forEach(x=>x.remove());
+            const pop=document.createElement('span'); pop.className='py-mentry-pop';
+            const opt1=document.createElement('span'); opt1.className='pmp-item';
+            opt1.innerHTML='🗣 文字朗读'; opt1.title='输入汉字，中文语音现场朗读';
+            opt1.addEventListener('click',e=>{ e.stopPropagation(); pop.remove(); _ttsEdit(''); });
+            const opt2=document.createElement('span'); opt2.className='pmp-item';
+            opt2.innerHTML='🎙 上传录音'; opt2.title='老师自己的音频文件';
+            opt2.addEventListener('click',e=>{ e.stopPropagation(); pop.remove(); pick.accept='audio/*'; pick.click(); });
+            pop.appendChild(opt1); pop.appendChild(opt2); host.appendChild(pop);
+            const _close=(ev)=>{ if(!ev.target.closest('.py-mentry-pop')&&!ev.target.closest('.py-mentry')){ pop.remove(); document.removeEventListener('click',_close); } };
+            setTimeout(()=>document.addEventListener('click',_close),0);
+          };
+          const _ttsEdit=(cur, g0)=>{
+            /* §V19.361 编辑区改绝对定位浮层（用户报：原内联塞进文档流挤走右侧内容）。
+               浮在材料区上方一层，不占布局宽度；点外部关闭。保留底层两入口不清除。 */
+            slot.querySelectorAll('.py-tts-editpop').forEach(x=>x.remove());
+            let g=(g0==='m')?'m':'f';
+            const ep=document.createElement('span'); ep.className='py-tts-editpop';
+            const gb=document.createElement('span'); gb.className='py-mtts-gava';
+            const _gp=()=>{ gb.innerHTML='<span class="ga'+(g==='f'?' on':'')+'" data-g="f">'+window.bqAvatarSVG('f','#6D4FC1',24)+'</span><span class="ga'+(g==='m'?' on':'')+'" data-g="m">'+window.bqAvatarSVG('m','#6D4FC1',24)+'</span>'; };
+            _gp();
+            gb.addEventListener('mousedown',e=>{ const t=e.target.closest('.ga'); if(!t) return; e.preventDefault(); e.stopPropagation();
+              g=t.dataset.g; _gp(); });
+            const ip=document.createElement('input'); ip.type='text'; ip.className='py-mtts-inp';
+            ip.placeholder='输入汉字'; ip.value=cur||'';
+            let _did=false;
+            const _done=(reopen)=>{ if(_did) return; _did=true; const v=ip.value.trim();
+              holder.media=v?('tts:'+g+':'+v):''; formData._userEdited=true; formData._manualEdit=true;
+              ep.remove(); document.removeEventListener('mousedown',_outside); _paint(); };   /* §V19.343/344/361 */
+            ip.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); _done(); } });
+            ip.addEventListener('click',e=>e.stopPropagation());
+            /* 点浮层外部=确认关闭（不用 blur，避免点头像切性别时误触发 blur 关闭） */
+            const _outside=(ev)=>{ if(!ev.target.closest('.py-tts-editpop')){ _done(); } };
+            ep.appendChild(gb); ep.appendChild(ip);
+            slot.appendChild(ep);
+            setTimeout(()=>{ try{ ip.focus(); }catch(_e){} document.addEventListener('mousedown',_outside); },0);
+          };
+          pick.addEventListener('change',()=>{ const f=pick.files&&pick.files[0]; if(!f) return;
+            const r=new FileReader();
+            r.onload=()=>{ holder.media=String(r.result); slot._pl=null; _paint();
+              formData._userEdited=true; formData._manualEdit=true; };
+            r.readAsDataURL(f); pick.value=''; });
+          /* §V19.358 外层 slot 不再"点哪都触发上传"——方案B已有明确入口(🎤声音/🖼️图片)，
+             旧逻辑会在移动端抢先弹文件选择器、盖住声音菜单致"点声音没反应"(用户报)。
+             只在点到 slot 自身空白(非任何入口/子元素)时忽略，不做任何事。 */
+          slot.addEventListener('click',(e)=>{ if(e.target===slot && !(holder.media)){ /* 空白处点击：无操作，交给明确入口 */ } });
+          slot.title='音频 / 图片材料（可选）';
+          slot.appendChild(pick); _paint();
+          return slot;
+        };
+        /* §V19.378 判断/汉字填空复用填空列三合一媒体条：ji 用分字段(audio/tts/ttsG/img)，
+           适配成 _mkPyMedia 期望的单一 media 串（读写映射，不新增数据形状；序列化已含这些字段）。 */
+        const _pyMediaAdapter=(ji)=>({
+          get media(){ if(ji.tts) return 'tts:'+(ji.ttsG||'f')+':'+ji.tts; if(ji.audio) return ji.audio; if(ji.img) return ji.img; return ''; },
+          set media(v){ v=v||'';
+            if(/^tts:/.test(v)){ const m=v.match(/^tts:(?:([mf]):)?(.*)$/); ji.tts=(m&&m[2])||''; ji.ttsG=(m&&m[1])||'f'; ji.audio=''; ji.img=''; }
+            else if(/^data:audio/.test(v)){ ji.audio=v; ji.tts=''; ji.ttsG=''; ji.img=''; }
+            else if(v){ ji.img=v; ji.tts=''; ji.ttsG=''; ji.audio=''; }
+            else { ji.tts=''; ji.ttsG=''; ji.audio=''; ji.img=''; } }
+        });
         // 把当前 DOM 输入值同步回 formData，避免删除/新增触发 buildForm 重建时丢掉未保存编辑。
         const _syncMatchPairs = ()=>{
           const arr=[];
@@ -40007,10 +40350,100 @@ window.MatchGen = (function(){
             // Col 1: 题项编号
             const ln=document.createElement('span'); ln.className='dc-flab dc-flab-n'; ln.textContent=(i+1);
 
-            // Col 2: 中文输入 + 左侧「＋」
+            // Col 2: 中文输入 + 左侧「＋」；§V19.370 听音连线左栏=音频条（非文本）
             const ci=mkInput('dc-fi-pcn',p.cn,'中文'); fields.pairCn.push(ci);
             if(p && p._isReview){ ci.classList.add('dc-review-word'); }
-            const left = makeItemCell(ci, String(i+1));
+            /* §V19.387 拼音连线左栏：打完汉字自动转成拼音（getPinyin，按值内全部汉字整体替换旧内容）；
+               值内无汉字（英文键盘态）→ 完全不触碰，拼音可自由删改；再打汉字 → 按新汉字重新生成。
+               输入法组字期间（composition）不动手，compositionend 后再转，避免打断中文输入法上屏。 */
+            if(formData._subtype==='manual_py_link'){
+              const _hz2py=()=>{
+                const hz=(String(ci.value||'').match(/[\u3400-\u9FFF]/g)||[]).join('');
+                if(!hz) return;
+                let py=''; try{ py=getPinyin(hz)||''; }catch(_e){ py=''; }
+                if(!py) return;
+                ci.value=py;
+                try{ ci.setSelectionRange(py.length,py.length); }catch(_e){}
+                ci.dispatchEvent(new Event('input',{bubbles:true}));
+              };
+              ci.addEventListener('compositionstart',()=>{ ci._imeOn=true; });
+              ci.addEventListener('compositionend',()=>{ ci._imeOn=false; setTimeout(_hz2py,0); });
+              ci.addEventListener('input',(ev)=>{ if(ci._imeOn||(ev&&ev.isComposing)) return; _hz2py(); });
+            }
+            let left;
+            if(formData._subtype==='manual_audio_link'){
+              ci.type='hidden';   // 保持 fields.pairCn 索引对齐，但不显示文本框
+              const cell=document.createElement('div'); cell.className='dc-pair-item-cell';
+              const aw=document.createElement('span'); aw.className='dc-mat-wrap dc-audlink-wrap';
+              const apick=document.createElement('input'); apick.type='file'; apick.accept='audio/*'; apick.hidden=true;
+              const _ttsEd=(cur,g0)=>{
+                aw.querySelectorAll('.py-tts-editpop').forEach(x=>x.remove());
+                let g=(g0==='m')?'m':(g0==='f'?'f':(p.audioTtsG==='m'?'m':'f'));
+                const ep=document.createElement('span'); ep.className='py-tts-editpop';
+                const gb=document.createElement('span'); gb.className='py-mtts-gava';
+                const _gp=()=>{ gb.innerHTML='<span class="ga'+(g==='f'?' on':'')+'" data-g="f">'+window.bqAvatarSVG('f','#6D4FC1',24)+'</span><span class="ga'+(g==='m'?' on':'')+'" data-g="m">'+window.bqAvatarSVG('m','#6D4FC1',24)+'</span>'; };
+                _gp(); gb.addEventListener('mousedown',ev=>{ const t=ev.target.closest('.ga'); if(!t)return; ev.preventDefault(); ev.stopPropagation(); g=t.dataset.g; _gp(); });
+                const ip=document.createElement('input'); ip.type='text'; ip.className='py-mtts-inp'; ip.placeholder='输入汉字'; ip.value=cur||'';
+                let _did=false; const _done=()=>{ if(_did)return; _did=true; const v=ip.value.trim();
+                  p.audioTts=v||''; p.audioTtsG=v?g:''; if(v){ p.audio=''; } formData._userEdited=true; formData._manualEdit=true; p._leftTouched=true; ep.remove(); document.removeEventListener('mousedown',_out); _apaint(); };
+                ip.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); _done(); } }); ip.addEventListener('click',ev=>ev.stopPropagation());
+                const _out=(ev)=>{ if(!ev.target.closest('.py-tts-editpop')){ _done(); } };
+                ep.appendChild(gb); ep.appendChild(ip); aw.appendChild(ep);
+                setTimeout(()=>{ try{ip.focus();}catch(_e){} document.addEventListener('mousedown',_out); },0);
+              };
+              const _sndMenu=(host)=>{
+                aw.querySelectorAll('.py-mentry-pop').forEach(x=>x.remove());
+                const pop=document.createElement('span'); pop.className='py-mentry-pop';
+                const o1=document.createElement('span'); o1.className='pmp-item'; o1.innerHTML='🗣 文字朗读';
+                o1.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); _ttsEd(''); });
+                const o2=document.createElement('span'); o2.className='pmp-item'; o2.innerHTML='🎙 上传录音';
+                o2.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); apick.click(); });
+                pop.appendChild(o1); pop.appendChild(o2); host.appendChild(pop);
+                const _cl=(ev)=>{ if(!ev.target.closest('.py-mentry-pop')&&!ev.target.closest('.py-mentry')){ pop.remove(); document.removeEventListener('click',_cl); } };
+                setTimeout(()=>document.addEventListener('click',_cl),0);
+              };
+              const _apaint=()=>{
+                aw.querySelectorAll('.dc-ab-aud,.py-mentry,.py-mtts-badges,.py-mtts-ava').forEach(x=>x.remove());
+                if(p.audioTts){
+                  let _g=(p.audioTtsG==='m')?'m':'f';
+                  const tt=document.createElement('span'); tt.className='py-mtts-ava';
+                  const _rd=()=>{ tt.innerHTML=window.bqAvatarSVG(_g,'#6D4FC1',26); tt.title='「'+p.audioTts+'」'+(_g==='m'?'男声':'女声')+' · 点击换声音、朗读 · 双击改字'; };
+                  _rd(); let _c=null;
+                  tt.addEventListener('click',()=>{ if(_c){clearTimeout(_c);_c=null;return;} _c=setTimeout(()=>{ _c=null; _g=(_g==='m')?'f':'m'; p.audioTtsG=_g; formData._userEdited=true; formData._manualEdit=true; _rd(); window.bqSpeak&&window.bqSpeak(p.audioTts,_g); },230); });
+                  tt.addEventListener('dblclick',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEd(p.audioTts,_g); });
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='改字';
+                  ed.addEventListener('click',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEd(p.audioTts,_g); });
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除声音';
+                  cl.addEventListener('click',()=>{ p.audioTts=''; p.audioTtsG=''; formData._userEdited=true; formData._manualEdit=true; p._leftTouched=true; _apaint(); });
+                  stk.appendChild(ed); stk.appendChild(cl); aw.appendChild(tt); aw.appendChild(stk);
+                }else if(p.audio){
+                  const au=document.createElement('span'); au.className='dc-ab-aud'; au.textContent='🔊'; au.title='音频·点击试听·双击换';
+                  au.addEventListener('click',()=>{ try{ (aw._pl=aw._pl||new Audio(p.audio)).play(); }catch(_e){} });
+                  au.addEventListener('dblclick',()=>apick.click());
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换音频';
+                  ed.addEventListener('click',()=>apick.click());
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除声音';
+                  cl.addEventListener('click',()=>{ p.audio=''; aw._pl=null; formData._userEdited=true; formData._manualEdit=true; p._leftTouched=true; _apaint(); });
+                  stk.appendChild(ed); stk.appendChild(cl); aw.appendChild(au); aw.appendChild(stk);
+                }else{
+                  const en=document.createElement('span'); en.className='py-mentry'; en.innerHTML='<span class="pme-ic">🎤</span>声音';
+                  en.title='本项音频：文字朗读 或 上传录音';
+                  en.addEventListener('click',ev=>{ ev.stopPropagation(); _sndMenu(en); });
+                  aw.appendChild(en);
+                }
+              };
+              apick.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const rd=new FileReader();
+                rd.onload=ev=>{ p.audio=String(ev.target.result||''); p.audioTts=''; aw._pl=null; apick.value=''; formData._userEdited=true; formData._manualEdit=true; p._leftTouched=true; _apaint(); };
+                rd.readAsDataURL(f); });
+              aw.appendChild(apick); _apaint(); cell.appendChild(aw);
+              /* §V19.371 ci 仅存于 fields.pairCn 供索引对齐，不加进 DOM（避免音频条旁多出长文本框——用户报） */
+              ci.style.display='none';
+              left = { cell, plus:document.createElement('span'), plusWrap:document.createElement('span'), thumb:document.createElement('span') };
+            }else{
+              left = makeItemCell(ci, String(i+1));
+            }
 
             // Col 3: 连线槽
             const spacer=document.createElement('span'); spacer.className='dc-fgrid-spacer';
@@ -40021,9 +40454,9 @@ window.MatchGen = (function(){
             // Col 5: 右栏 —— 图文搭配「图片位」显示图片框(C 款)；其余题型显示英文/拼音文本框
             //   §V159 图片位：右栏只显图、不显文本框、点击换图。imgSrc 存进 hidden input 的 _imgSrc，
             //   让 _syncMatchPairs 入选时照旧取到图（同步逻辑无需改）。
-            const _isImgSlot = (formData._subtype==='auto_img_link'||formData._subtype==='manual_py_link') && p && p._imgSlot;   /* §V19.334 拼音连线右侧=图槽（用户定：右侧是相应图片） */
+            const _isImgSlot = (formData._subtype==='auto_img_link'||formData._subtype==='manual_py_link') && p && p._imgSlot;   /* §V19.334 拼音连线右侧=图槽；§V19.371 听音连线右侧改图文框(去掉manual_audio_link) */   /* §V19.334 拼音连线右侧=图槽（用户定：右侧是相应图片） */
             // §V19.177 是否自动连线题（图文/中英/汉拼）—— 决定是否加连线圆点（不只图文搭配）
-            const _isAutoLinkRender = formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link';   /* §V19.256；§V19.314；§V19.332 */
+            const _isAutoLinkRender = formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link' || formData._subtype==='manual_audio_link';   /* §V19.256；§V19.314；§V19.332 */
             let ei, right;
             if(_isImgSlot){
               // hidden input 占位（保持 fields.pairEn 索引对齐 + 承载 _imgSrc 供入选同步）
@@ -40048,12 +40481,57 @@ window.MatchGen = (function(){
                   const url=String(ev.target.result||'');
                   ei._imgSrc = url; img.src = url; slot.classList.remove('dc-slot-empty');   // §V19.236 选了图→撤销空标记
                   if(formData.pairs && formData.pairs[i]){ formData.pairs[i].imgSrc=url; formData.pairs[i]._imgSrc=url; }
-                  pick.value=''; formData._userEdited=true; formData._manualEdit=true; /* §V19.204 人工换图 */
+                  pick.value=''; formData._userEdited=true; formData._manualEdit=true; if(formData.pairs&&formData.pairs[i]) formData.pairs[i]._rightTouched=true; /* §V19.204 人工换图 §V19.392 甲 */
                 };
                 reader.readAsDataURL(f);
               });
               cell.appendChild(slot);
               right = { cell, plus:null, plusWrap:null, thumb:null };
+            }else if(formData._subtype==='manual_audio_link'){
+              /* §V19.372 听音连线右栏=图文框，照"句子判断"材料条图文部分复刻（用户定：用那个图文上传UI）。
+                 图/文二选一（左栏已是音频，这里不要音频）。字段：p.imgSrc(图)/p.cn(文)，同款 dc-sj-* 类+竖排小符号。 */
+              ei=document.createElement('input'); ei.type='hidden'; ei.className='dc-fi-pen'; ei.value=p.cn||''; ei._imgSrc=p.imgSrc||null;
+              fields.pairEn.push(ei);
+              const cell=document.createElement('div'); cell.className='dc-pair-item-cell';
+              const bar=document.createElement('div'); bar.className='dc-sj-matbar dc-audlink-rt';
+              const rpick=document.createElement('input'); rpick.type='file'; rpick.accept='image/*'; rpick.hidden=true;
+              const _rb=()=>{
+                bar.textContent=''; bar.appendChild(rpick);
+                const hasImg=!!p.imgSrc; const txtVal=String(p.cn||'').trim(); const showTxt=!!txtVal || bar._txtOpen===true;
+                if(hasImg){
+                  const im=document.createElement('img'); im.className='dc-sj-matimg'; im.src=p.imgSrc; im.alt='连线图'; im.title='点击更换图片';
+                  const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';
+                  im.addEventListener('click',()=>rpick.click());
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换图片';
+                  ed.addEventListener('click',()=>rpick.click());
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除图片';
+                  cl.addEventListener('click',()=>{ p.imgSrc=null; p._imgSrc=null; p._hasImg=false; ei._imgSrc=null; formData._userEdited=true; p._rightTouched=true; formData._manualEdit=true; _rb(); });
+                  stk.appendChild(ed); stk.appendChild(cl); wrap.appendChild(im); wrap.appendChild(stk); bar.appendChild(wrap);
+                }else if(!showTxt){
+                  const eimg=document.createElement('span'); eimg.className='py-mentry';
+                  eimg.innerHTML='<span class="pme-ic">🖼️</span>图片'; eimg.title='上传图片';
+                  eimg.addEventListener('click',ev=>{ ev.stopPropagation(); rpick.click(); });
+                  bar.appendChild(eimg);
+                }
+                if(showTxt){
+                  const ti=document.createElement('input'); ti.type='text'; ti.className='dc-fi dc-sj-mattxt'; ti.placeholder='输入内容'; ti.value=p.cn||'';
+                  const _fitW=()=>{ const v=ti.value||ti.placeholder||''; let u=0; for(const ch of v){ u+=/[\u4e00-\u9fff\uff01-\uff5e]/.test(ch)?2:1; } ti.style.width=Math.min(30,Math.max(8,u+2))+'ch'; };
+                  ti.addEventListener('input',()=>{ p.cn=ti.value; ei.value=ti.value; formData._userEdited=true; formData._manualEdit=true; p._rightTouched=true; _fitW(); });
+                  ti.addEventListener('blur',()=>{ if(!String(ti.value||'').trim()){ p.cn=''; bar._txtOpen=false; _rb(); } });
+                  bar.appendChild(ti); _fitW();
+                  if(bar._txtOpen===true){ bar._txtOpen=false; setTimeout(()=>{ try{ti.focus();}catch(_e){} },0); }
+                }else if(!hasImg){
+                  const bt=document.createElement('span'); bt.className='dc-sj-matbtn'; bt.textContent='✏️＋'; bt.title='输入文字内容';
+                  bt.addEventListener('click',()=>{ bar._txtOpen=true; _rb(); });
+                  bar.appendChild(bt);
+                }
+              };
+              rpick.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const rd=new FileReader();
+                rd.onload=ev=>{ const url=String(ev.target.result||''); p.imgSrc=url; p._imgSrc=url; p._hasImg=true; ei._imgSrc=url; p.cn=''; rpick.value=''; formData._userEdited=true; p._rightTouched=true; formData._manualEdit=true; _rb(); };
+                rd.readAsDataURL(f); });
+              _rb(); cell.appendChild(bar);
+              right = { cell, plus:document.createElement('span'), plusWrap:document.createElement('span'), thumb:document.createElement('span') };
             }else{
               ei=mkInput('dc-fi-pen',p.en,'English'); fields.pairEn.push(ei);
               right = makeItemCell(ei, String.fromCharCode(65+i));
@@ -40065,6 +40543,7 @@ window.MatchGen = (function(){
             ci.addEventListener('input', ()=>{
               if(formData.pairs && formData.pairs[i]) formData.pairs[i].cn = ci.value;
               formData._userEdited=true; formData._manualEdit=true;
+              if(formData.pairs && formData.pairs[i]) formData.pairs[i]._leftTouched=true;   /* §V19.392 甲·半改：老师碰过左侧 */
               try{
                 const sub=formData._subtype||'';
                 const cnv=String(ci.value||'').trim();
@@ -40091,6 +40570,7 @@ window.MatchGen = (function(){
                 ei._autoFilled=false;   // 老师手动改过右栏 → 不再被自动查词覆盖
                 if(formData.pairs && formData.pairs[i]) formData.pairs[i].en = ei.value;
                 formData._userEdited=true; formData._manualEdit=true;
+                if(formData.pairs && formData.pairs[i]) formData.pairs[i]._rightTouched=true;   /* §V19.392 甲·半改：老师碰过右侧 */
                 _reEvalManualRemind();
               });
             }
@@ -40102,7 +40582,7 @@ window.MatchGen = (function(){
             wireImgLine(left.plus, expL, String(i+1), left.thumb, ci);
             left.plusWrap.appendChild(expL);
             // 右栏：图片位无加号面板；非图片位才接旧的行内图片编辑（中英/汉拼连线右栏可手动加图）
-            if(!_isImgSlot){
+            if(!_isImgSlot && formData._subtype!=='manual_audio_link'){   /* §V19.372 听音连线右栏已有自己的图文条，不接旧行内加图 */
               const expR = makeImgLine(String.fromCharCode(65+i),  'R');
               expR.__anchorCell = right.cell;
               wireImgLine(right.plus, expR, String.fromCharCode(65+i), right.thumb, ei);
@@ -40163,7 +40643,7 @@ window.MatchGen = (function(){
           });
           taWrap.appendChild(grid);
           // §V19.170 连线题（图文/中英/汉拼三积木）：初始化画线交互（点左圆点→点右圆点→画线；点线删；answerKey 存配对）
-          if(formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link'){   /* §V19.256；§V19.314；§V19.332 */
+          if(formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link' || formData._subtype==='manual_audio_link'){   /* §V19.256；§V19.314；§V19.332 */
             grid.classList.add('dc-link-mode');
             // §V19.174/177 系统知道正确配对（右栏已打乱，正确线是交叉的）→ 默认画好打乱后的正确线，老师可改
             if(!formData.answerKey || !Array.isArray(formData.answerKey.pairs) || !formData.answerKey.pairs.length){
@@ -40262,126 +40742,46 @@ window.MatchGen = (function(){
           _renderOpts(); _pcSyncKey();
           cbox.appendChild(chead); cbox.appendChild(obox);
           wrap.appendChild(cbox); taWrap.appendChild(wrap);
-        }else if(formData.kind==='pyfill'||formData.kind==='pychoice'){
+        }else if(formData.kind==='pyfill'||formData.kind==='pychoice'||formData.kind==='hzfill'){
           /* §V19.332 拼音基础·填空/选择（用户规格+参考图）：
              填空=一排4题，每题[媒体槽(音频/图片可选)+声母答案框+韵母尾注]；
              选择=一题一排，[媒体槽]+ABCD 窄选项框（默认5字母宽自适应、点字母定正确项）。 */
-          const _mkPyMedia=(holder)=>{
-            const slot=document.createElement('span'); slot.className='py-mslot'+((holder.media)?'':' empty');
-            const pick=document.createElement('input'); pick.type='file'; pick.accept='audio/*,image/*'; pick.hidden=true;
-            /* §V19.343 TTS 通道：media='tts:汉字'（存文本、播放现场合成）；与上传音频/图片并行 */
-            const _paint=()=>{
-              slot.querySelectorAll('img,.py-maud,.py-mhint,.py-mtts,.py-mtts-inp,.py-mtts-ava,.py-mtts-add,.py-mtts-gava,.py-mentry,.py-mentry-pop').forEach(x=>x.remove());   /* §V19.355/356 补清头像类+方案B入口类 */
-              const m=holder.media||'';
-              if(/^tts:/.test(m)){
-                /* §V19.344 协议 tts:m:文本 / tts:f:文本（旧 tts:文本 兼容=女声） */
-                const mm2=m.match(/^tts:(?:([mf]):)?(.*)$/); let _g=mm2[1]||'f'; const tx=mm2[2]||'';
-                /* §V19.354 头像朗读钮（用户定）：单击=切换性别→存→朗读新性别；双击=改字。不显示汉字。 */
-                const tt=document.createElement('span'); tt.className='py-mtts-ava';
-                const _render=()=>{ tt.innerHTML=window.bqAvatarSVG(_g,'#6D4FC1',26);
-                  tt.title='「'+tx+'」'+(_g==='m'?'男声':'女声')+' · 点击换声音、朗读 · 双击改字'; };
-                _render();
-                let _clk=null;
-                tt.addEventListener('click',e=>{ e.stopPropagation();
-                  if(_clk){ clearTimeout(_clk); _clk=null; return; }   /* 双击不触发单击 */
-                  _clk=setTimeout(()=>{ _clk=null;
-                    _g=(_g==='m')?'f':'m'; holder.media='tts:'+_g+':'+tx;
-                    formData._userEdited=true; formData._manualEdit=true; _render();
-                    window.bqSpeak&&window.bqSpeak(tx,_g);
-                  },230); });
-                tt.addEventListener('dblclick',e=>{ e.stopPropagation(); if(_clk){clearTimeout(_clk);_clk=null;} _ttsEdit(tx,_g); });
-                slot.appendChild(tt); slot.classList.toggle('empty', false); return;
-              }
-              if(/^data:audio/.test(m)){
-                const au=document.createElement('span'); au.className='py-maud'; au.textContent='🔊';
-                au.title='点击试听 · 双击更换';
-                au.addEventListener('click',e=>{ e.stopPropagation(); try{ (slot._pl=slot._pl||new Audio(m)).play(); }catch(_e){} });
-                au.addEventListener('dblclick',e=>{ e.stopPropagation(); pick.click(); });
-                slot.appendChild(au);
-              }else if(m){
-                const im=document.createElement('img'); im.src=m; im.title='点击更换材料';
-                im.addEventListener('click',e=>{ e.stopPropagation(); pick.click(); });
-                slot.appendChild(im);
-              }else{
-                /* §V19.356 方案B 两入口（用户早定，之前漏落地）：🎤声音 / 🖼图片；点声音弹 inline 小菜单选「文字朗读／上传录音」。 */
-                const snd=document.createElement('span'); snd.className='py-mentry';
-                snd.innerHTML='<span class="pme-ic">🎤</span>声音';
-                snd.title='添加声音：文字朗读 或 上传录音';
-                snd.addEventListener('click',e=>{ e.stopPropagation(); _soundMenu(snd); });
-                const eimg=document.createElement('span'); eimg.className='py-mentry';
-                eimg.innerHTML='<span class="pme-ic">🖼️</span>图片';
-                eimg.title='上传图片材料';
-                eimg.addEventListener('click',e=>{ e.stopPropagation(); pick.accept='image/*'; pick.click(); });
-                slot.appendChild(snd); slot.appendChild(eimg);
-              }
-              slot.classList.toggle('empty', !m);
-            };
-            const _soundMenu=(host)=>{
-              slot.querySelectorAll('.py-mentry-pop').forEach(x=>x.remove());
-              const pop=document.createElement('span'); pop.className='py-mentry-pop';
-              const opt1=document.createElement('span'); opt1.className='pmp-item';
-              opt1.innerHTML='🗣 文字朗读'; opt1.title='输入汉字，中文语音现场朗读';
-              opt1.addEventListener('click',e=>{ e.stopPropagation(); pop.remove(); _ttsEdit(''); });
-              const opt2=document.createElement('span'); opt2.className='pmp-item';
-              opt2.innerHTML='🎙 上传录音'; opt2.title='老师自己的音频文件';
-              opt2.addEventListener('click',e=>{ e.stopPropagation(); pop.remove(); pick.accept='audio/*'; pick.click(); });
-              pop.appendChild(opt1); pop.appendChild(opt2); host.appendChild(pop);
-              const _close=(ev)=>{ if(!ev.target.closest('.py-mentry-pop')&&!ev.target.closest('.py-mentry')){ pop.remove(); document.removeEventListener('click',_close); } };
-              setTimeout(()=>document.addEventListener('click',_close),0);
-            };
-            const _ttsEdit=(cur, g0)=>{
-              slot.querySelectorAll('img,.py-maud,.py-mhint,.py-mtts,.py-mtts-inp,.py-mtts-g,.py-mtts-ava,.py-mtts-add,.py-mtts-gava').forEach(x=>x.remove());   /* §V19.355 */
-              let g=(g0==='m')?'m':'f';
-              /* §V19.354 编辑态性别用头像点选（女/男，选中高亮），替代♀♂圆钮 */
-              const gb=document.createElement('span'); gb.className='py-mtts-gava';
-              const _gp=()=>{ gb.innerHTML='<span class="ga'+(g==='f'?' on':'')+'" data-g="f">'+window.bqAvatarSVG('f','#6D4FC1',24)+'</span><span class="ga'+(g==='m'?' on':'')+'" data-g="m">'+window.bqAvatarSVG('m','#6D4FC1',24)+'</span>'; };
-              _gp();
-              gb.addEventListener('mousedown',e=>{ const t=e.target.closest('.ga'); if(!t) return; e.preventDefault(); e.stopPropagation();
-                g=t.dataset.g; _gp(); });
-              const ip=document.createElement('input'); ip.type='text'; ip.className='py-mtts-inp';
-              ip.placeholder='输入汉字'; ip.value=cur||'';
-              let _did=false;
-              const _done=()=>{ if(_did) return; _did=true; const v=ip.value.trim();
-                holder.media=v?('tts:'+g+':'+v):''; formData._userEdited=true; formData._manualEdit=true; _paint(); };   /* §V19.343/344 */
-              ip.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); _done(); } });
-              ip.addEventListener('blur',_done);
-              ip.addEventListener('click',e=>e.stopPropagation());
-              slot.appendChild(gb); slot.appendChild(ip); setTimeout(()=>{ try{ ip.focus(); }catch(_e){} },0);
-            };
-            pick.addEventListener('change',()=>{ const f=pick.files&&pick.files[0]; if(!f) return;
-              const r=new FileReader();
-              r.onload=()=>{ holder.media=String(r.result); slot._pl=null; _paint();
-                formData._userEdited=true; formData._manualEdit=true; };
-              r.readAsDataURL(f); pick.value=''; });
-            slot.addEventListener('click',()=>{ if(!(holder.media)) pick.click(); });
-            slot.title='音频 / 图片材料（可选）';
-            slot.appendChild(pick); _paint();
-            return slot;
-          };
-          if(formData.kind==='pyfill'){
-            /* §V19.336 单框＋____挖空（用户定，替代旧[声母框][韵母线]双框）：
-               输入完整音节、下划线段=挖空（p___/___à/h___o）；input 挂 dc-fi 进预览体系，
-               失焦即见 blank-line 统一横线（长短随便打、渲染统一）。旧 ans/tail 卡自动迁移。 */
-            formData._pyFillItems=Array.isArray(formData._pyFillItems)&&formData._pyFillItems.length?formData._pyFillItems:[{text:'',media:''}];
-            formData._pyFillItems.forEach(it=>{ if(it && it.text==null && (it.ans!=null||it.tail!=null)){ it.text=String(it.ans||'')+String(it.tail||''); delete it.ans; delete it.tail; } });
-            const _rk=()=>{ formData.answerKey={type:'py_fill',marks:formData._pyFillItems.map(x=>String(x.text||''))}; };
+          if(formData.kind==='pyfill'||formData.kind==='hzfill'){
+            /* §V19.336/378 填空列共用三合一媒体条 _mkPyMedia：
+               拼音填空(pyfill)——文本框挂 dc-fi 进注音/blank-line 预览体系；
+               汉字填空(hzfill)——文本框用纯 input，不进注音（中文句加拼音 ruby 违背"写汉字"本意），一排一题。 */
+            const _isHzF=(formData.kind==='hzfill');
+            const _fk=_isHzF?'_hzFillItems':'_pyFillItems';
+            const _akT=_isHzF?'hz_fill':'py_fill';
+            formData[_fk]=Array.isArray(formData[_fk])&&formData[_fk].length?formData[_fk]:[{text:'',media:''}];
+            if(!_isHzF) formData._pyFillItems.forEach(it=>{ if(it && it.text==null && (it.ans!=null||it.tail!=null)){ it.text=String(it.ans||'')+String(it.tail||''); delete it.ans; delete it.tail; } });
+            const _rk=()=>{ formData.answerKey={type:_akT,marks:formData[_fk].map(x=>String(x.text||''))}; };
             _rk();
-            const grid=document.createElement('div'); grid.className='dc-pyfill';
-            formData._pyFillItems.forEach((it,pi)=>{
+            const grid=document.createElement('div'); grid.className=_isHzF?'dc-hzfill':'dc-pyfill';
+            formData[_fk].forEach((it,pi)=>{
               const cell=document.createElement('div'); cell.className='py-fill-cell';
               const num=document.createElement('span'); num.className='dc-imgjudge-num'; num.textContent=String(pi+1);
-              const ai=mkInput('py-fill-text', it.text||'', '如 p___ 或 ___ai');
-              fields.opts.push(ai);
+              let ai;
+              if(_isHzF){
+                ai=document.createElement('input'); ai.type='text'; ai.className='py-fill-text hz-fill-text';
+                ai.value=it.text||''; ai.placeholder='如 我上八____。';
+                /* §V19.387 条框宽度随内容自适应（CJK/全角按2单位计），配合 .dc-hzfill flex-wrap 一排多题 */
+                const _fitW=()=>{ const s=ai.value||ai.placeholder||''; let u=0; for(const c of s){ u+=(c.charCodeAt(0)>0x2E7F)?2:1; } ai.style.width=Math.min(34,Math.max(11,u+2))+'ch'; };
+                _fitW(); ai.addEventListener('input',_fitW);
+              }else{
+                ai=mkInput('py-fill-text', it.text||'', '如 p___ 或 ___ai');
+                fields.opts.push(ai);
+              }
               ai.addEventListener('input',()=>{ it.text=ai.value; _rk(); formData._userEdited=true; formData._manualEdit=true; });
               cell.appendChild(num); cell.appendChild(_mkPyMedia(it)); cell.appendChild(ai);
-              cell.appendChild(makeDragGrip(()=>{ if(formData._pyFillItems.length<=1){ _toast('itemMinReached'); return; }
-                formData._pyFillItems.splice(pi,1); buildForm(); }, (it.text||'')||('题项 '+(pi+1))));
+              cell.appendChild(makeDragGrip(()=>{ if(formData[_fk].length<=1){ _toast('itemMinReached'); return; }
+                formData[_fk].splice(pi,1); buildForm(); }, (it.text||'')||('题项 '+(pi+1))));
               grid.appendChild(cell);
             });
             taWrap.appendChild(grid);
             taWrap.appendChild(makeAddItemBtn(()=>{
-              if(formData._pyFillItems.length>=ITEM_MAX){ _toast('itemMaxReached'); return; }
-              formData._pyFillItems.push({text:'',media:''});
+              if(formData[_fk].length>=ITEM_MAX){ _toast('itemMaxReached'); return; }
+              formData[_fk].push({text:'',media:''});
               formData._userEdited=true; buildForm();
             }));
           }else{
@@ -40427,6 +40827,34 @@ window.MatchGen = (function(){
           if(formData._hzColor==null) formData._hzColor='#1E9E40';
           if(formData._hzTrace==null) formData._hzTrace=true;
           const wrap=document.createElement('div'); wrap.className='dc-hzwrite';
+          /* §V19.377 样板彩虹笔顺图自动生成（用户定）：hanzi-writer-data 按字取笔画路径，糖果五色循环填充
+             （与默认演示图同款渲染：viewBox 1024 + scale(1,-1) translate(0,-900)）。在线取数（jsdelivr，与
+             pinyin-pro 同源）；离线/取数失败静默降级为「＋样板图」手动上传。数据流(skill html-function-03)：
+             结果写进 it.imgs[ci2]（dataURL），随入选/导出走；单次编码（encodeURIComponent，防双重编码隐形）。 */
+          if(!window.BQ_LOGO_IMG){ window.BQ_LOGO_IMG='data:image/webp;base64,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'; }   /* §V19.402 小积木 logo（WebP透明·压缩至~16KB）：词句大卡默认范例配图，用户可删/替换 */
+          if(!window._hzStrokeSvg){
+            const _cache={}, _pend={};
+            window._hzStrokeSvg=function(ch,cb){
+              if(ch in _cache){ cb(_cache[ch]); return; }
+              if(_pend[ch]){ _pend[ch].push(cb); return; }   /* 同字在途请求去重（打字期多次触发只发一次） */
+              _pend[ch]=[cb]; cb=function(v){ const q=_pend[ch]||[]; delete _pend[ch]; q.forEach(f=>{ try{f(v);}catch(_e){} }); };
+              fetch('https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/'+encodeURIComponent(ch)+'.json')
+                .then(r=>{ if(!r.ok){ const e=new Error('http'); e._net=true; throw e; } return r.json(); })
+                .then(d=>{
+                  const cols=['#FF4FA0','#FFB300','#22C55E','#00B8FF','#A855F7'];
+                  const paths=(d.strokes||[]).map((p,i)=>'<path d="'+p+'" fill="'+cols[i%cols.length]+'"/>').join('');
+                  if(!paths){ throw new Error('nostroke'); }   /* strokes 为空：可能真没有、也可能数据异常——一律不缓存，下次可重试 */
+                  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><g transform="scale(1,-1) translate(0,-900)">'+
+                    paths+'</g></svg>';
+                  _cache[ch]='data:image/svg+xml,'+encodeURIComponent(svg); cb(_cache[ch]);
+                })
+                .catch((e)=>{
+                  /* §V19.398 彻底不缓存 null：任何失败（网络/HTTP/数据异常/strokes 空）都不写缓存 → 下次输入同字必重新 fetch。
+                     代价：极生僻字（字库真没有）每次会白请求一次，但成本极低；远比「误判缓存 null 把常用字永久拦死」安全（修「啊等字之前能出、某次异常后永久不出」）。 */
+                  cb(null);
+                });
+            };
+          }
           const tool=document.createElement('div'); tool.className='hz-toolrow';
           try{
             const _bp=(typeof buildPalette==='function')?buildPalette:window.buildPalette;
@@ -40441,8 +40869,20 @@ window.MatchGen = (function(){
           tg.title='开＝田字格内显示浅灰临摹字；关＝空白田字格';
           tg.addEventListener('click',()=>{ formData._hzTrace=formData._hzTrace!==true; tg.classList.toggle('on',formData._hzTrace);
             formData._userEdited=true;
-            wrap.querySelectorAll('.hz-card').forEach(c=>c.classList.toggle('notrace', !formData._hzTrace)); });
+            wrap.querySelectorAll('.hz-card').forEach(c=>c.classList.toggle('notrace', !formData._hzTrace));
+            rngWrap.style.display=formData._hzTrace?'':'none'; });
           tool.appendChild(tg);
+          /* §V19.377 描摹体浓淡滑杆（用户定）：紧随开关，只调临摹字灰色深浅（--hz-trace-a）；描摹关闭时隐藏 */
+          if(formData._hzTraceA==null) formData._hzTraceA=.32;
+          const rngWrap=document.createElement('span'); rngWrap.className='hz-trace-range';
+          rngWrap.innerHTML='<span class="hz-range-lab">浅</span><input type="range" min="8" max="70" step="1"><span class="hz-range-lab">深</span>';
+          const rng=rngWrap.querySelector('input');
+          rng.value=Math.round((formData._hzTraceA||.32)*100); rng.title='调节描摹体颜色浓淡';
+          wrap.style.setProperty('--hz-trace-a', String(formData._hzTraceA));
+          rngWrap.style.display=formData._hzTrace?'':'none';
+          rng.addEventListener('input',()=>{ formData._hzTraceA=(+rng.value)/100;
+            wrap.style.setProperty('--hz-trace-a', String(formData._hzTraceA)); formData._userEdited=true; });
+          tool.appendChild(rngWrap);
           wrap.appendChild(tool);
           formData._hzItems=Array.isArray(formData._hzItems)&&formData._hzItems.length?formData._hzItems:[{chars:'',strokeQs:{},imgs:{}}];   /* §V19.333 */
           const ibox=document.createElement('div'); ibox.className='dc-hz-items';
@@ -40454,10 +40894,31 @@ window.MatchGen = (function(){
             ci.placeholder='输入汉字'; ci.value=it.chars||'';
             /* §V19.333 笔画统计框移进每张书写卡（per-char，见 renderCards）；头行只留汉字输入（用户定） */
             head.appendChild(num); head.appendChild(ci);
+            /* §V19.401 单字/词句 模式胶囊（复用「语料生成/自由编题」bq-cap 立体胶囊配方，缩小适配头行）：
+               单字=现有每字独立卡（默认）；词句=整串字连排的带拼音田字格大卡（配图辅助理解词句意思）。 */
+            it.mode = (it.mode==='phrase') ? 'phrase' : 'single';
+            const modeCap=document.createElement('div');
+            modeCap.className='hz-modecap'; modeCap.dataset.side=(it.mode==='phrase'?'diy':'gen');
+            modeCap.innerHTML='<span class="hz-modecap-lab hz-modecap-lab-gen">单字</span>'
+              +'<span class="hz-modecap-lab hz-modecap-lab-diy">词句</span>'
+              +'<span class="hz-modecap-key"><span class="hz-modecap-key-tx">'+(it.mode==='phrase'?'词句':'单字')+'</span></span>';
+            modeCap.addEventListener('click',(e)=>{
+              const r=modeCap.getBoundingClientRect();
+              const right=(e.clientX-r.left)>r.width/2;
+              const next = right ? 'phrase' : 'single';
+              if(next===it.mode) return;
+              it.mode=next; formData._userEdited=true;
+              modeCap.dataset.side=(next==='phrase'?'diy':'gen');
+              const _tx=modeCap.querySelector('.hz-modecap-key-tx'); if(_tx) _tx.textContent=(next==='phrase'?'词句':'单字');
+              setTimeout(buildForm, 300);   /* 等浮键滑动动画后重渲，切到对应形态 */
+            });
+            head.appendChild(modeCap);
             head.appendChild(makeDragGrip(()=>{ if(formData._hzItems.length<=1){ _toast('itemMinReached'); return; }
               formData._hzItems.splice(hi,1); buildForm(); }, it.chars||('题项 '+(hi+1))));
             const cards=document.createElement('div'); cards.className='hz-cards';
+            let _hzRenderSeq=0;   /* §V19.400 渲染序号：每次 renderCards 自增，回调用它判断「本次结果是否属于最新一次渲染」，取代脆弱的 slot.isConnected（缓存命中时同步回调、slot 尚未挂载 → isConnected 假为 false → 被误弃，正是「第一次出、再打就不出」的真凶）。 */
             const renderCards=()=>{
+              const _mySeq=++_hzRenderSeq;
               cards.textContent='';
               const chars=[...String(it.chars||'').replace(/\s/g,'')].filter(ch=>/[\u4e00-\u9fff]/.test(ch));
               chars.forEach((ch,ci2)=>{
@@ -40465,10 +40926,64 @@ window.MatchGen = (function(){
                 const slot=document.createElement('div'); slot.className='hz-imgslot';
                 const pick=document.createElement('input'); pick.type='file'; pick.accept='image/*'; pick.style.display='none';
                 const paint=()=>{
-                  slot.querySelectorAll('img,.hz-imghint').forEach(x=>x.remove());
+                  slot.querySelectorAll('img,.hz-imghint,.hz-img-x,.hz-loading').forEach(x=>x.remove());
+                  it.imgAuto=it.imgAuto||{}; it.imgOff=it.imgOff||{}; it.imgOffIdx=it.imgOffIdx||{};   /* §V19.398 imgOffIdx=按索引的「不自动补图」标记（取代旧的按字 imgOff） */
+                  if(it.imgs&&it.imgs[ci2]&&it.imgAuto[ci2]&&it.imgAuto[ci2]!==ch){ delete it.imgs[ci2]; delete it.imgAuto[ci2]; }   /* 字改了→旧自动图作废 */
                   const src=(it.imgs||{})[ci2];
-                  if(src){ const im=document.createElement('img'); im.src=src; slot.appendChild(im); }
-                  else{ const h=document.createElement('span'); h.className='hz-imghint'; h.textContent='＋样板图\n（可选）'; h.style.whiteSpace='pre-line'; slot.appendChild(h); }
+                  if(src){
+                    const im=document.createElement('img'); im.src=src; slot.appendChild(im);
+                    const x=document.createElement('button'); x.type='button'; x.className='dc-item-x hz-img-x'; x.title='去掉样板图';
+                    x.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>';
+                    x.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation();
+                      delete it.imgs[ci2]; delete it.imgAuto[ci2]; it.imgOffIdx=it.imgOffIdx||{}; it.imgOffIdx[ci2]=true;   /* §V19.398 改按索引：删样板图只影响本位置，不再按字全局永久屏蔽（修「某字换题项/换题型永远不出彩虹字」） */
+                      paint(); formData._userEdited=true; formData._manualEdit=true; });
+                    slot.appendChild(x);
+                  }else{
+                    const h=document.createElement('span'); h.className='hz-imghint'; h.textContent='＋样板图\n（可选）'; h.style.whiteSpace='pre-line'; slot.appendChild(h);
+                    if(!(it.imgOffIdx&&it.imgOffIdx[ci2]) && window._hzStrokeSvg){
+                      /* §V19.395 彩虹字加载态（丙·毛笔呼吸 + 「彩虹字生成中」）：请求期显示在样板图槽，
+                         拉到 → paint() 自然替换成彩虹字；失败 / 12s 超时 → 移除加载态，退回「＋样板图（可选）」可手动上传态（不无限转、不误导「一定会出」）。 */
+                      /* §V19.396 加载态占位也延迟 300ms 才显示：正常秒回则 _done 先 true、占位从不出现（免一闪而过的闪烁）；只有真慢才显形。 */
+                      let _done=false, _ld=null;
+                      const _clearLd=()=>{ _done=true; try{ if(_ld&&_ld.parentNode) _ld.parentNode.removeChild(_ld); }catch(_e){} };
+                      const _showLd=setTimeout(()=>{
+                        if(_done||!slot.isConnected) return;
+                        _ld=document.createElement('span'); _ld.className='hz-loading';
+                        _ld.innerHTML='<span class="hz-loading-brush">🖌️</span><span class="hz-loading-txt">彩虹字生成中</span>';
+                        slot.appendChild(_ld);
+                      }, 300);
+                      const _to=setTimeout(()=>{ if(!_done) _clearLd(); }, 12000);
+                      /* §V19.396 小智提醒只在「真的慢」时才弹（延迟 900ms 判据）：正常联网彩虹字秒回、_done 先 true → 取消提醒、绝不打扰；
+                         只有 900ms 还没回来（网络慢）才弹一次，且弹过就记住不再弹。修「一输入就弹、根本没等」的误扰。 */
+                      const _slowTip=setTimeout(()=>{
+                        if(_done) return;
+                        try{
+                          if(!localStorage.getItem('bqHzRainbowTipSeen') && window.XiaoZhi && typeof window.XiaoZhi.setRemind==='function'){
+                            window.XiaoZhi.setRemind('彩虹笔画字会在联网时自动生成，请稍等一下！');
+                            if(typeof window.XiaoZhi.openPanel==='function') window.XiaoZhi.openPanel();
+                            localStorage.setItem('bqHzRainbowTipSeen','1');
+                          }
+                        }catch(_e){}
+                      }, 900);
+                      let _retry=0;
+                      const _askStroke=()=>{
+                        window._hzStrokeSvg(ch,(url)=>{
+                          clearTimeout(_showLd); clearTimeout(_to); clearTimeout(_slowTip); _clearLd();
+                          if(_mySeq!==_hzRenderSeq) return;                 /* §V19.400 本次渲染已被更新的一次取代 → 弃写（取代脆弱的 slot.isConnected：缓存命中同步回调时 slot 可能尚未挂载）。 */
+                          const _curChars=[...String(it.chars||'').replace(/\s/g,'')].filter(c=>/[\u4e00-\u9fff]/.test(c));
+                          if(_curChars[ci2]!==ch) return;                  /* 该索引位置的字已变 → 弃写 */
+                          if((it.imgs&&it.imgs[ci2]) || (it.imgOffIdx&&it.imgOffIdx[ci2])) return;   /* 期间已手动上传或已删除（按索引） */
+                          if(!url){
+                            /* §V19.398 没出（网络抖动/数据异常/竞态）→ 自动重试最多 2 次（1s、2s），不依赖用户手动。彻底不缓存 null 保证每次都是真重发。 */
+                            if(_retry<2){ _retry++; setTimeout(_askStroke, _retry*1000); }
+                            return;
+                          }
+                          it.imgs=it.imgs||{}; it.imgs[ci2]=url; it.imgAuto[ci2]=ch; paint();   /* 系统生成不置 _userEdited */
+                        });
+                      };
+                      _askStroke();
+                    }
+                  }
                 };
                 pick.addEventListener('change',()=>{ const f=pick.files&&pick.files[0]; if(!f) return;
                   const r=new FileReader();
@@ -40477,12 +40992,27 @@ window.MatchGen = (function(){
                 slot.addEventListener('click',()=>pick.click());
                 slot.title='点击添加/更换样板图（GIF / PNG / JPG，可选）';
                 slot.appendChild(pick); paint();
-                const grid=document.createElement('div'); grid.className='hz-grid';
+                const gridWrap=document.createElement('div'); gridWrap.className='hz-cell-wrap';
+                /* §V19.402 单字卡田字格上方也加拼音格（与词句模式同款：同 --hz-c 绿、田字格一半高、四线三格、自动注音可手改）*/
+                it.pySingle=it.pySingle||{};
+                const py=document.createElement('div'); py.className='hz-py-grid'; py.style.setProperty('--hz-c', formData._hzColor);
+                const pin=document.createElement('input'); pin.type='text'; pin.className='hz-py-inp';
+                const _autoPy1=()=>{ try{ return (typeof getPinyin==='function')?getPinyin(ch):''; }catch(_e){ return ''; } };
+                pin.value = (it.pySingle[ci2]!=null) ? it.pySingle[ci2] : _autoPy1();
+                pin._edited=false;
+                pin.addEventListener('input',()=>{ pin._edited=true; it.pySingle[ci2]=pin.value; formData._userEdited=true; });
+                if(it.pySingle[ci2]==null && !pin.value){
+                  let _t=0; const _tick=()=>{ if(pin._edited) return; const p=_autoPy1(); if(p){ pin.value=p; } else if(_t++<5){ setTimeout(_tick, 400); } };
+                  setTimeout(_tick, 400);
+                }
+                py.appendChild(pin);
+                const grid=document.createElement('div'); grid.className='hz-grid hz-phrase-grid';
                 grid.style.setProperty('--hz-c', formData._hzColor);
                 const tr=document.createElement('span'); tr.className='hz-trace'; tr.textContent=ch;
                 grid.appendChild(tr);
+                gridWrap.appendChild(py); gridWrap.appendChild(grid);
                 const topRow=document.createElement('div'); topRow.className='hz-card-top';
-                topRow.appendChild(slot); topRow.appendChild(grid);
+                topRow.appendChild(slot); topRow.appendChild(gridWrap);
                 cardEl.appendChild(topRow);
                 /* §V19.333 笔画统计框（per-char，可选可删）：默认带占位框+右上角紫圆叉；删后变＋小入口可加回；
                    不增加卡片宽度（框撑满卡内宽）。 */
@@ -40514,8 +41044,70 @@ window.MatchGen = (function(){
                 cards.appendChild(cardEl);
               });
             };
-            ci.addEventListener('input',()=>{ it.chars=ci.value; formData._userEdited=true; formData._manualEdit=true; renderCards(); });
-            renderCards();
+            /* §V19.396 汉字输入防抖：数据即时跟手更新（不丢字），但 renderCards 延迟到「停手 500ms」才执行——
+               这样打字途中（含中文输入法拼音合成 _imeOn / isComposing）完全不触发彩虹字请求、不起小智提醒定时器，
+               只有输入停下来后才渲染、才可能加载彩虹字。修「一边打字一边弹小智提醒」。 */
+            let _hzRenderTimer=null;
+            const _scheduleRender=()=>{ if(_hzRenderTimer) clearTimeout(_hzRenderTimer); _hzRenderTimer=setTimeout(()=>{ _hzRenderTimer=null; if(it.mode==='phrase'){ renderPhraseCard(); } else { renderCards(); } }, 500); };
+            ci.addEventListener('input',(ev)=>{ it.chars=ci.value; formData._userEdited=true; formData._manualEdit=true;
+              if(ci._imeOn||(ev&&ev.isComposing)) return;   /* 拼音合成中：只存值、先不渲染 */
+              _scheduleRender(); });
+            ci.addEventListener('compositionstart',()=>{ ci._imeOn=true; });
+            ci.addEventListener('compositionend',()=>{ ci._imeOn=false; it.chars=ci.value; _scheduleRender(); });
+            const renderPhraseCard=()=>{
+              cards.textContent='';
+              /* §V19.402 词句大卡默认配图=小积木 logo 范例：仅首次进入词句模式且从未设过图时填入；用户删除或替换后不再回填（_phraseImgInit 标记） */
+              if(!it._phraseImgInit){ it._phraseImgInit=true; if(it.phraseImg==null && window.BQ_LOGO_IMG){ it.phraseImg=window.BQ_LOGO_IMG; } }
+              const chars=[...String(it.chars||'').replace(/\s/g,'')].filter(c=>/[\u4e00-\u9fff]/.test(c));
+              const big=document.createElement('div'); big.className='hz-phrase-card';
+              /* 左侧配图槽（普通图片，辅助理解词句意思；非彩虹字。数据存 it.phraseImg，随入选/导出走）*/
+              const imgWrap=document.createElement('div'); imgWrap.className='hz-phrase-imgslot';
+              const pk=document.createElement('input'); pk.type='file'; pk.accept='image/*'; pk.style.display='none';
+              const paintImg=()=>{
+                imgWrap.querySelectorAll('img,.hz-phrase-imghint,.hz-phrase-imgx').forEach(x=>x.remove());
+                if(it.phraseImg){
+                  const im=document.createElement('img'); im.src=it.phraseImg; imgWrap.appendChild(im);
+                  const x=document.createElement('button'); x.type='button'; x.className='hz-phrase-imgx'; x.title='去掉配图';
+                  x.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>';
+                  x.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); delete it.phraseImg; paintImg(); formData._userEdited=true; });
+                  imgWrap.appendChild(x);
+                }else{
+                  const h=document.createElement('span'); h.className='hz-phrase-imghint'; h.textContent='＋配图\n（可选·辅助理解词句）'; h.style.whiteSpace='pre';
+                  imgWrap.appendChild(h);
+                }
+              };
+              pk.addEventListener('change',()=>{ const f=pk.files&&pk.files[0]; if(!f) return;
+                const rd=new FileReader(); rd.onload=()=>{ it.phraseImg=String(rd.result); paintImg(); formData._userEdited=true; };
+                rd.readAsDataURL(f); pk.value=''; });
+              imgWrap.addEventListener('click',()=>pk.click()); imgWrap.title='点击添加/更换配图（可选）';
+              imgWrap.appendChild(pk); paintImg(); big.appendChild(imgWrap);
+              /* 右侧：整串字的「带拼音田字格」无缝连排 */
+              const row=document.createElement('div'); row.className='hz-phrase-row';
+              it.phrasePy=it.phrasePy||{};
+              chars.forEach((ch,ci2)=>{
+                const cell=document.createElement('div'); cell.className='hz-phrase-cell';
+                /* 拼音格（同 --hz-c 绿、田字格一半高、四线三格、连体）*/
+                const py=document.createElement('div'); py.className='hz-py-grid'; py.style.setProperty('--hz-c', formData._hzColor);
+                const pin=document.createElement('input'); pin.type='text'; pin.className='hz-py-inp';
+                const _autoPy=()=>{ try{ return (typeof getPinyin==='function')?getPinyin(ch):''; }catch(_e){ return ''; } };
+                pin.value = (it.phrasePy[ci2]!=null) ? it.phrasePy[ci2] : _autoPy();   /* 自动注音，可手动改 */
+                pin._edited=false;
+                pin.addEventListener('input',()=>{ pin._edited=true; it.phrasePy[ci2]=pin.value; formData._userEdited=true; });
+                /* §V19.401 拼音异步补全：若首次注音为空（pinyinPro 库尚未加载完），延迟重试补上，不依赖库加载时序；用户已手改则不覆盖 */
+                if(it.phrasePy[ci2]==null && !pin.value){
+                  let _t=0; const _tick=()=>{ if(pin._edited) return; const p=_autoPy(); if(p){ pin.value=p; } else if(_t++<5){ setTimeout(_tick, 400); } };
+                  setTimeout(_tick, 400);
+                }
+                py.appendChild(pin);
+                /* 田字格（描摹字，霞鹜楷体）*/
+                const grid=document.createElement('div'); grid.className='hz-grid hz-phrase-grid'; grid.style.setProperty('--hz-c', formData._hzColor);
+                const tr=document.createElement('span'); tr.className='hz-trace'; tr.textContent=ch; grid.appendChild(tr);
+                cell.appendChild(py); cell.appendChild(grid); row.appendChild(cell);
+              });
+              big.appendChild(row);
+              cards.appendChild(big);
+            };
+            if(it.mode==='phrase'){ renderPhraseCard(); } else { renderCards(); }
             item.appendChild(head); item.appendChild(cards);
             return item;
           };
@@ -40577,6 +41169,75 @@ window.MatchGen = (function(){
               while((it.optImgs=it.optImgs||['','']).length<it.options.length) it.optImgs.push('');
               const row=document.createElement('div'); row.className='dc-abchoice-row';
               const num=document.createElement('span'); num.className='dc-imgjudge-num'; num.textContent=String(di+1); row.appendChild(num);
+              /* §V19.366/367 每题项行首独立声音槽（用户定：总材料区保留，两者共存）。
+                 §V19.367 补齐两种：🗣文字朗读 / 🎙上传录音（对齐填空/判断列），之前漏了文字朗读。 */
+              (()=>{
+                const apick=document.createElement('input'); apick.type='file'; apick.accept='audio/*'; apick.hidden=true;
+                const aw=document.createElement('span'); aw.className='dc-mat-wrap';
+                /* 文字朗读编辑浮层 */
+                const _ttsEd=(cur,g0)=>{
+                  aw.querySelectorAll('.py-tts-editpop').forEach(x=>x.remove());
+                  let g=(g0==='m')?'m':(g0==='f'?'f':(it.audioTtsG==='m'?'m':'f'));
+                  const ep=document.createElement('span'); ep.className='py-tts-editpop';
+                  const gb=document.createElement('span'); gb.className='py-mtts-gava';
+                  const _gp=()=>{ gb.innerHTML='<span class="ga'+(g==='f'?' on':'')+'" data-g="f">'+window.bqAvatarSVG('f','#6D4FC1',24)+'</span><span class="ga'+(g==='m'?' on':'')+'" data-g="m">'+window.bqAvatarSVG('m','#6D4FC1',24)+'</span>'; };
+                  _gp(); gb.addEventListener('mousedown',ev=>{ const t=ev.target.closest('.ga'); if(!t)return; ev.preventDefault(); ev.stopPropagation(); g=t.dataset.g; _gp(); });
+                  const ip=document.createElement('input'); ip.type='text'; ip.className='py-mtts-inp'; ip.placeholder='输入汉字'; ip.value=cur||'';
+                  let _did=false; const _done=()=>{ if(_did)return; _did=true; const v=ip.value.trim();
+                    it.audioTts=v||''; it.audioTtsG=v?g:''; if(v){ it.audio=''; } formData._userEdited=true; formData._manualEdit=true; ep.remove(); document.removeEventListener('mousedown',_out); paint(); };
+                  ip.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); _done(); } }); ip.addEventListener('click',ev=>ev.stopPropagation());
+                  const _out=(ev)=>{ if(!ev.target.closest('.py-tts-editpop')){ _done(); } };
+                  ep.appendChild(gb); ep.appendChild(ip); aw.appendChild(ep);
+                  setTimeout(()=>{ try{ip.focus();}catch(_e){} document.addEventListener('mousedown',_out); },0);
+                };
+                const _sndMenu=(host)=>{
+                  aw.querySelectorAll('.py-mentry-pop').forEach(x=>x.remove());
+                  const pop=document.createElement('span'); pop.className='py-mentry-pop';
+                  const o1=document.createElement('span'); o1.className='pmp-item'; o1.innerHTML='🗣 文字朗读';
+                  o1.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); _ttsEd(''); });
+                  const o2=document.createElement('span'); o2.className='pmp-item'; o2.innerHTML='🎙 上传录音';
+                  o2.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); apick.click(); });
+                  pop.appendChild(o1); pop.appendChild(o2); host.appendChild(pop);
+                  const _cl=(ev)=>{ if(!ev.target.closest('.py-mentry-pop')&&!ev.target.closest('.py-mentry')){ pop.remove(); document.removeEventListener('click',_cl); } };
+                  setTimeout(()=>document.addEventListener('click',_cl),0);
+                };
+                const paint=()=>{
+                  aw.querySelectorAll('.dc-ab-aud,.py-mentry,.py-mtts-badges,.py-mtts-ava').forEach(x=>x.remove());
+                  if(it.audioTts){   /* 文字朗读→头像 */
+                    let _g=(it.audioTtsG==='m')?'m':'f';
+                    const tt=document.createElement('span'); tt.className='py-mtts-ava';
+                    const _rd=()=>{ tt.innerHTML=window.bqAvatarSVG(_g,'#6D4FC1',26); tt.title='「'+it.audioTts+'」'+(_g==='m'?'男声':'女声')+' · 点击换声音、朗读 · 双击改字'; };
+                    _rd(); let _c=null;
+                    tt.addEventListener('click',()=>{ if(_c){clearTimeout(_c);_c=null;return;} _c=setTimeout(()=>{ _c=null; _g=(_g==='m')?'f':'m'; it.audioTtsG=_g; formData._userEdited=true; formData._manualEdit=true; _rd(); window.bqSpeak&&window.bqSpeak(it.audioTts,_g); },230); });
+                    tt.addEventListener('dblclick',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEd(it.audioTts,_g); });
+                    const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                    const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='改字';
+                    ed.addEventListener('click',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEd(it.audioTts,_g); });
+                    const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除本题声音';
+                    cl.addEventListener('click',()=>{ it.audioTts=''; it.audioTtsG=''; formData._userEdited=true; formData._manualEdit=true; paint(); });
+                    stk.appendChild(ed); stk.appendChild(cl); aw.appendChild(tt); aw.appendChild(stk);
+                  }else if(it.audio){   /* 上传录音→🔊 */
+                    const au=document.createElement('span'); au.className='dc-ab-aud'; au.textContent='🔊'; au.title='本题音频·点击试听·双击换';
+                    au.addEventListener('click',()=>{ try{ (aw._pl=aw._pl||new Audio(it.audio)).play(); }catch(_e){} });
+                    au.addEventListener('dblclick',()=>apick.click());
+                    const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                    const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换音频';
+                    ed.addEventListener('click',()=>apick.click());
+                    const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除本题声音';
+                    cl.addEventListener('click',()=>{ it.audio=''; aw._pl=null; formData._userEdited=true; formData._manualEdit=true; paint(); });
+                    stk.appendChild(ed); stk.appendChild(cl); aw.appendChild(au); aw.appendChild(stk);
+                  }else{   /* 空态→🎤声音入口 */
+                    const en=document.createElement('span'); en.className='py-mentry'; en.innerHTML='<span class="pme-ic">🎤</span>声音';
+                    en.title='本题独立声音（可选）：文字朗读 或 上传录音';
+                    en.addEventListener('click',ev=>{ ev.stopPropagation(); _sndMenu(en); });
+                    aw.appendChild(en);
+                  }
+                };
+                apick.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const rd=new FileReader();
+                  rd.onload=ev=>{ it.audio=String(ev.target.result||''); it.audioTts=''; aw._pl=null; apick.value=''; formData._userEdited=true; formData._manualEdit=true; paint(); };
+                  rd.readAsDataURL(f); });
+                aw.appendChild(apick); paint(); row.appendChild(aw);
+              })();
               it.options.map((_,i)=>String.fromCharCode(65+i)).forEach((L,oi)=>{
                 const slot=document.createElement('div'); slot.className='dc-ab-slot'+(it.correctIdx===oi?' is-correct':'');
                 const lab=document.createElement('span'); lab.className='dc-ab-lab'; lab.textContent=L; lab.title='点击设为正确项';
@@ -40639,17 +41300,37 @@ window.MatchGen = (function(){
                 ip.addEventListener('blur',_done);
                 bar.appendChild(gb); bar.appendChild(ip); setTimeout(()=>{ try{ ip.focus(); }catch(_e){} },0);
               };
+              /* §V19.365 判断题材料条声音入口菜单（对齐填空列）：文字朗读 / 上传录音 */
+              const _sndMenuJudge=(host)=>{
+                bar.querySelectorAll('.py-mentry-pop').forEach(x=>x.remove());
+                const pop=document.createElement('span'); pop.className='py-mentry-pop';
+                const o1=document.createElement('span'); o1.className='pmp-item'; o1.innerHTML='🗣 文字朗读'; o1.title='输入汉字，中文语音现场朗读';
+                o1.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); _ttsEdit(''); });
+                const o2=document.createElement('span'); o2.className='pmp-item'; o2.innerHTML='🎙 上传录音'; o2.title='老师自己的音频文件';
+                o2.addEventListener('click',ev=>{ ev.stopPropagation(); pop.remove(); pick.accept='audio/*'; pick.click(); });
+                pop.appendChild(o1); pop.appendChild(o2); host.appendChild(pop);
+                const _cl=(ev)=>{ if(!ev.target.closest('.py-mentry-pop')&&!ev.target.closest('.py-mentry')){ pop.remove(); document.removeEventListener('click',_cl); } };
+                setTimeout(()=>document.addEventListener('click',_cl),0);
+              };
               const _build=()=>{
                 bar.textContent=''; bar.appendChild(pick);
                 if(_audioOk && ji.audio){
+                  const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';   /* §V19.362 relative容器,✎贴块右上角 */
                   const au=document.createElement('span'); au.className='dc-sj-mataudio'; au.textContent='🔊';
                   au.title='点击试听 · 双击更换';
                   au.addEventListener('click',()=>{ try{ (bar._player=bar._player||new Audio(ji.audio)).play(); }catch(_e){} });
                   au.addEventListener('dblclick',()=>pick.click());
-                  bar.appendChild(au);
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换音频文件';
+                  ed.addEventListener('click',()=>pick.click());
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除材料';
+                  cl.addEventListener('click',()=>{ ji.audio=''; bar._player=null; formData._userEdited=true; formData._manualEdit=true; _build(); });
+                  stk.appendChild(ed); stk.appendChild(cl);
+                  wrap.appendChild(au); wrap.appendChild(stk); bar.appendChild(wrap);
                 }
                 if(_audioOk && !ji.audio && ji.tts){   /* §V19.343/344/354 TTS 头像钮：单击换性别+朗读、双击改字 */
                   let _g=(ji.ttsG==='m')?'m':'f';
+                  const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';   /* §V19.362 */
                   const tt=document.createElement('span'); tt.className='py-mtts-ava';
                   const _rd=()=>{ tt.innerHTML=window.bqAvatarSVG(_g,'#6D4FC1',26);
                     tt.title='「'+ji.tts+'」'+(_g==='m'?'男声':'女声')+' · 点击换声音、朗读 · 双击改字'; };
@@ -40660,7 +41341,13 @@ window.MatchGen = (function(){
                       formData._userEdited=true; formData._manualEdit=true; _rd();
                       window.bqSpeak&&window.bqSpeak(ji.tts,_g); },230); });
                   tt.addEventListener('dblclick',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEdit(ji.tts, _g); });
-                  bar.appendChild(tt);
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='改字（编辑朗读文本）';
+                  ed.addEventListener('click',()=>{ if(_c){clearTimeout(_c);_c=null;} _ttsEdit(ji.tts, _g); });
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除材料';
+                  cl.addEventListener('click',()=>{ ji.tts=''; ji.ttsG=''; formData._userEdited=true; formData._manualEdit=true; _build(); });
+                  stk.appendChild(ed); stk.appendChild(cl);
+                  wrap.appendChild(tt); wrap.appendChild(stk); bar.appendChild(wrap);
                 }
                 const hasImg=!!ji.img;
                 const txtVal=String(ji.matText||'').trim();
@@ -40671,18 +41358,29 @@ window.MatchGen = (function(){
                 }
                 if(hasImg){
                   const im=document.createElement('img'); im.className='dc-sj-matimg'; im.src=ji.img; im.alt='材料图';
-                  im.title='点击更换材料图'; im.addEventListener('click',()=>pick.click());
-                  bar.appendChild(im);
-                }else{
-                  const bi=document.createElement('span'); bi.className='dc-sj-matbtn'; bi.textContent=_audioOk?'🔊🖼️＋':'🖼️＋';
-                  bi.title=_audioOk?'添加音频或图片材料':'添加材料图（建议，可不加）'; bi.addEventListener('click',()=>pick.click());
-                  if(_audioOk && !ji.audio && !ji.tts){
-                    const tb=document.createElement('span'); tb.className='dc-sj-matbtn'; tb.textContent='🗣＋';
-                    tb.title='文字朗读：输入汉字，播放时用系统中文语音现场朗读（在线题同款）';
-                    tb.addEventListener('click',()=>_ttsEdit(''));
-                    bar.appendChild(tb);
+                  im.title='点击更换材料图';
+                  const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';
+                  im.addEventListener('click',()=>pick.click());
+                  const stk=document.createElement('span'); stk.className='py-mtts-badges';
+                  const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换图片';
+                  ed.addEventListener('click',()=>pick.click());
+                  const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除图片';
+                  cl.addEventListener('click',()=>{ ji.img=''; formData._userEdited=true; formData._manualEdit=true; _build(); });
+                  stk.appendChild(ed); stk.appendChild(cl);
+                  wrap.appendChild(im); wrap.appendChild(stk); bar.appendChild(wrap);
+                }else if(!ji.audio && !ji.tts){
+                  /* §V19.365 空态对齐填空列方案B：🎤声音(弹菜单)/🖼️图片 两入口，替代旧🔊🖼️＋/🗣＋堆叠 */
+                  if(_audioOk){
+                    const snd=document.createElement('span'); snd.className='py-mentry';
+                    snd.innerHTML='<span class="pme-ic">🎤</span>声音';
+                    snd.title='添加声音：文字朗读 或 上传录音';
+                    snd.addEventListener('click',ev=>{ ev.stopPropagation(); _sndMenuJudge(snd); });
+                    bar.appendChild(snd);
                   }
-                  bar.appendChild(bi);
+                  const eimg=document.createElement('span'); eimg.className='py-mentry';
+                  eimg.innerHTML='<span class="pme-ic">🖼️</span>图片';
+                  eimg.title='上传图片材料'; eimg.addEventListener('click',ev=>{ ev.stopPropagation(); pick.accept='image/*'; pick.click(); });
+                  bar.appendChild(eimg);
                 }
                 if(showTxt){
                   const ti=document.createElement('input'); ti.type='text'; ti.className='dc-fi dc-sj-mattxt';   /* §V19.325 中文材料注音、英文对照自动走 plain（体系自带 isEnglish 判定） */
@@ -40723,6 +41421,7 @@ window.MatchGen = (function(){
                 row.appendChild(_mkSjMatBar(ji));
               }else if(formData._noItemSlot){
                 /* §V19.314 阅读判断：材料是卡级共用语段，题项无图槽 */
+                if(formData._hzMediaJudge){ row.appendChild(_mkPyMedia(_pyMediaAdapter(ji))); }   /* §V19.378 汉字判断：文本框左侧三合一媒体条(音频+图片) */
               }else{
               const imgWrap=document.createElement('div'); imgWrap.className='dc-imgjudge-img';
               const im=document.createElement('img'); im.src=ji.img||''; im.alt='小题'+(i+1)+'图片';
@@ -41524,13 +42223,20 @@ window.MatchGen = (function(){
       //   返回 true=已就地重排（焕新到此结束）；false=非自动化卡，交回 doRegen 走旧逻辑。
       function _reshuffleCurrent(){
         try{
-          const _isAutoLink = formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link';   /* §V19.256；§V19.340 手动连线也可打乱 */
+          const _isAutoLink = formData._subtype==='auto_img_link' || formData._subtype==='auto_en_link' || formData._subtype==='auto_py_link' || formData._subtype==='auto_qa_link' || formData._subtype==='auto_split_link' || formData._subtype==='manual_read_link' || formData._subtype==='manual_py_link' || formData._subtype==='manual_audio_link';   /* §V19.256；§V19.340 手动连线也可打乱 */
           // —— §V19.340 拼音基础：填空题项重排 / 选择每题选项重排（correctIdx 跟随） ——
           if(formData.kind==='pyfill' && Array.isArray(formData._pyFillItems) && formData._pyFillItems.length>1){
             const arr=formData._pyFillItems; let t=0; let order=[...Array(arr.length).keys()];
             do{ for(let k=arr.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[order[k],order[r]]=[order[r],order[k]];} t++; }while(t<20&&order.every((v,i)=>v===i));
             formData._pyFillItems=order.map(i=>arr[i]);
             formData.answerKey={type:'py_fill',marks:formData._pyFillItems.map(x=>String(x.text||''))};
+            buildForm(); return true;
+          }
+          if(formData.kind==='hzfill' && Array.isArray(formData._hzFillItems) && formData._hzFillItems.length>1){   /* §V19.378 汉字填空题项重排 */
+            const arr=formData._hzFillItems; let t=0; let order=[...Array(arr.length).keys()];
+            do{ for(let k=arr.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[order[k],order[r]]=[order[r],order[k]];} t++; }while(t<20&&order.every((v,i)=>v===i));
+            formData._hzFillItems=order.map(i=>arr[i]);
+            formData.answerKey={type:'hz_fill',marks:formData._hzFillItems.map(x=>String(x.text||''))};
             buildForm(); return true;
           }
           if(formData.kind==='pychoice' && Array.isArray(formData._pyChoiceItems) && formData._pyChoiceItems.length){
@@ -41572,8 +42278,10 @@ window.MatchGen = (function(){
             return true;
           }
           // —— 选择：每道 4 选项位置重排（内容不变）——
-          //   §V19.293 DIY 文本选择（填空/拆搭/问答手编卡）也走此重排；语料文本选择卡仍走原全量路径（行为不变）。
-          if((formData._autoImgChoice || (formData._diy===true && formData._isTextChoice===true)) && Array.isArray(formData._choiceItems) && formData._choiceItems.length){
+          //   §V19.293 DIY 文本选择（填空/拆搭/问答手编卡）走此重排。
+          //   §V19.386 语料文本选择卡(auto_split_choice 词语拆搭·选择 / auto_cloze_choice 句子填空·选择)也改走此打乱重排
+          //   （用户定：焕新统一＝打乱顺序，这俩无特殊理由重生成；去掉原"必须 _diy"限制，凡 _isTextChoice 皆打乱选项）。
+          if((formData._autoImgChoice || formData._isTextChoice===true) && Array.isArray(formData._choiceItems) && formData._choiceItems.length){
             formData._choiceItems.forEach(it=>{
               if(!Array.isArray(it.options) || it.options.length<2) return;
               const correctText = it.options[it.correctIdx];
@@ -41808,6 +42516,56 @@ window.MatchGen = (function(){
           }
           return;
         }
+          /* §V19.392 连线类（图文/中英/汉拼/听音/拼音连线）入选校验：
+             需求1·口径X＝任何一侧空必填位都拦（含删空、DIY空、系统空，一视同仁，空卡也拦）；
+             需求2·甲＝两侧都非空、但「一侧被碰过·另一侧没碰过」→半改，飘红没碰的那侧（可绿灯放行）。
+             判定优先级：先判空（空→红→拦），非空才判半改。飘红精确挂 .dc-need-fix 到具体侧的可见元素。
+             注意：本块前移到 _needManual 块之前，那里的 const _txt 作用域不覆盖此处，故本块自带 _txt。 */
+          if(formData.kind==='match' && Array.isArray(formData.pairs) && formData.pairs.length){
+            const _txt=v=>String(v==null?'':v).trim();
+            const _sub=formData._subtype||'';
+            const _cont=(card&&card.querySelector&&(card.querySelector('.level-panel.active')||card))||document;
+            const _isAudioLeft=(_sub==='manual_audio_link');           // 听音辨音：左=音频
+            const _rightIsImg=(_sub==='auto_img_link'||_sub==='manual_py_link'||_sub==='manual_audio_link'); // 右=图槽
+            const _leftHas=(p)=> _isAudioLeft ? !!(_txt(p.audio)||_txt(p.audioTts)) : !!_txt(p.cn);
+            const _rightHas=(p)=> _rightIsImg ? !!(p.imgSrc||p._imgSrc||p._hasImg) : !!_txt(p.en);
+            const _leftEl=(i)=>{ const ci=(fields.pairCn||[])[i];
+              return ci ? (ci.closest('.dc-pair-input-wrap')||ci.closest('.dc-pair-item-cell')||ci.parentElement) : null; };
+            const _rightEl=(i)=>{
+              if(_rightIsImg){ const slot=_cont.querySelectorAll('.dc-pair-imgslot')[i]; if(slot) return slot; }
+              const ei=(fields.pairEn||[])[i];
+              return ei ? (ei.closest('.dc-pair-item-cell')||ei.parentElement) : null; };
+            try{ _cont.querySelectorAll('.dc-need-fix').forEach(n=>n.classList.remove('dc-need-fix','dc-need-fix-img')); }catch(_e){}
+            let _emptyHit=0, _halfHit=0;
+            formData.pairs.forEach((p,i)=>{
+              if(!p) return;
+              const lHas=_leftHas(p), rHas=_rightHas(p);
+              /* ① 空位（口径X）：任何一侧空就红该侧、计一次拦 */
+              if(!lHas){ const el=_leftEl(i); if(el){ el.classList.add('dc-need-fix'); _emptyHit++; } }
+              if(!rHas){ const el=_rightEl(i); if(el){ el.classList.add('dc-need-fix'); if(_rightIsImg) el.classList.add('dc-need-fix-img'); _emptyHit++; } }
+              /* ② 半改（甲）：仅两侧都非空时判；一侧碰过·另一侧没碰→红没碰那侧 */
+              if(lHas && rHas){
+                const lT=(p._leftTouched===true), rT=(p._rightTouched===true);
+                if(lT && !rT){ const el=_rightEl(i); if(el){ el.classList.add('dc-need-fix'); if(_rightIsImg) el.classList.add('dc-need-fix-img'); _halfHit++; } }
+                else if(rT && !lT){ const el=_leftEl(i); if(el){ el.classList.add('dc-need-fix'); _halfHit++; } }
+              }
+            });
+            /* 空位＝硬拦（口径X，含空卡不能入选）：inline 提醒 + 展开小智，不放行 */
+            if(_emptyHit>0){
+              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('有题项还空着，请补齐飘红处再入选！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              return;
+            }
+            /* 半改＝可放行硬拦（甲）：绿灯确认后通行；确认即清红、置放行标记重走 save */
+            if(_halfHit>0 && formData._xzHalfConfirmed!==true && window.XiaoZhi && typeof XiaoZhi.confirmMode==='function'){
+              XiaoZhi.confirmMode('飘红处只改了一侧，另一侧请核对或一并修改；确认无误请点绿灯通行！', function(){
+                try{ _cont.querySelectorAll('.dc-need-fix').forEach(n=>n.classList.remove('dc-need-fix','dc-need-fix-img')); }catch(_e){}
+                formData._xzHalfConfirmed=true;
+                save.onclick();
+                formData._xzHalfConfirmed=false;
+              });
+              return;
+            }
+          }
         // §V19.226 手动新增题项(_needManual)三态校验：① 有空内容 → 拦截「请手动编辑好新增题项！」
         //   ② 内容齐但有没选答案 → 拦截「请为手动编辑的题项选定正确答案！」 ③ 全齐 → 核对确认（绿灯入选）。
         {
@@ -42009,10 +42767,12 @@ window.MatchGen = (function(){
           paraOpts: (formData && Array.isArray(formData._paraOptList)) ? formData._paraOptList.map(x=>String(x||'').trim()).filter(Boolean).join('、') : ((formData && formData._paraOpts) ? String(formData._paraOpts) : ''),
           paraChoice: !!(formData && formData._paraChoiceOn),   /* §V19.324 */
           hzItems: (formData && Array.isArray(formData._hzItems)) ? formData._hzItems.map(it=>({chars:String(it.chars||''),strokeQs:Object.assign({},it.strokeQs||{}),imgs:Object.assign({},it.imgs||{})})) : undefined,   /* §V19.331；§V19.333 strokeQs per-char */
-          pyFillItems: (formData && Array.isArray(formData._pyFillItems)) ? formData._pyFillItems.map(it=>({text:String(it.text!=null?it.text:(String(it.ans||'')+String(it.tail||''))),media:String(it.media||'')})) : undefined,   /* §V19.332；§V19.336 单框 ____ 挖空 */
+          pyFillItems: (formData && Array.isArray(formData._pyFillItems)) ? formData._pyFillItems.map(it=>({text:String(it.text!=null?it.text:(String(it.ans||'')+String(it.tail||''))),media:String(it.media||'')})) : undefined,
+          hzFillItems: (formData && Array.isArray(formData._hzFillItems)) ? formData._hzFillItems.map(it=>({text:String(it.text||''),media:String(it.media||'')})) : undefined,   /* §V19.378 汉字填空 */   /* §V19.332；§V19.336 单框 ____ 挖空 */
           pyChoiceItems: (formData && Array.isArray(formData._pyChoiceItems)) ? formData._pyChoiceItems.map(it=>({media:String(it.media||''),options:(it.options||[]).map(o=>String(o||'')),correctIdx:(it.correctIdx!=null?it.correctIdx:-1)})) : undefined,   /* §V19.332 */
           hzColor: (formData && formData._hzColor) || undefined,
           hzTrace: (formData && formData._hzTrace!=null) ? !!formData._hzTrace : undefined,
+          hzTraceA: (formData && formData._hzTraceA!=null) ? formData._hzTraceA : undefined,   /* §V19.377 描摹浓淡 */
           _openItems: (formData && Array.isArray(formData._openItems)) ? formData._openItems.map(x=>({q:(x&&x.q)||''})) : null,
           _abChoice: !!(formData && formData._abChoice),
           _abOptImgs: (formData && formData._abChoice && Array.isArray(formData._choiceItems)) ? formData._choiceItems.map(it=>(it.optImgs||['','']).slice(0,2)) : null
@@ -42693,6 +43453,9 @@ window.addEventListener('resize',()=>{ if(typeof syncAppScrollbarWidth==='functi
 function closeLibraryViewer(){
   document.getElementById('lib-overlay').classList.remove('show');
   document.body.style.overflow='';
+  /* §V19.386 题卷区的缩放提示气泡(#myqZoomHint)是 position:fixed 挂在 body 上、独立于 lib-overlay，
+     返回工作台时若不隐藏会"透"到工作台页面。此处随视图关闭一并隐藏(下次进题卷区 _myqEnsureZoomHint 再决定是否重显)。 */
+  try{ var _zh=document.getElementById('myqZoomHint'); if(_zh) _zh.style.display='none'; }catch(_e){}
 }
 function shuffleLibrary(){
   for(let i=_libQs.length-1;i>0;i--){
@@ -51286,7 +52049,7 @@ function zoneMarkWave(){
   //   ② 一次性迁移：把早期版本可能写坏的 bqXzDragDX 清一次(以后正常拖拽仍会记住位置)。
   // §V19.120 方案2：「已看过引导」标志绑定版本号 —— 真实用户只看一次；每发一个新版本就把下面的版本号 +1，
   //   该版本第一次打开会自动播一次(不受浏览器里旧标志/file:// 跨文件共享影响)，之后同版本不再自动播(可 ?xzintro 重看)。
-  var XZ_INTRO_KEY='bqXzIntroSeen_v357';
+  var XZ_INTRO_KEY='bqXzIntroSeen_v394';
   try{
     if(location.search.indexOf('xzintro')>=0) localStorage.removeItem('bqXzDragDX');
     if(!localStorage.getItem('bqXzDragReset1')){ localStorage.removeItem('bqXzDragDX'); localStorage.setItem('bqXzDragReset1','1'); }
@@ -51316,7 +52079,11 @@ function zoneMarkWave(){
     var card=canvas.querySelector('.drop-card:not(.card-burn)');
     var panel=card && card.querySelector('.level-panel.active');
     var ctrl=panel && panel.querySelector('.level-ctrlbar');
-    var matPane=panel && panel.querySelector('.card-material-pane');
+    /* §V19.386 阅读理解卡：_mountReadHead 把控制栏(.level-ctrlbar)从 active panel 搬进了独立的
+       dc-read-head(在 cardStage 下、panel 外)，导致 panel.querySelector 取不到 ctrl→小智被 xz-hide 永久隐藏。
+       兜底：panel 内没有就到整卡范围找(dc-read-head 也在 card 内)，让小智锚点重新可达。matPane 同理。 */
+    if(!ctrl && card) ctrl=card.querySelector('.level-ctrlbar');
+    var matPane=(panel && panel.querySelector('.card-material-pane')) || (card && card.querySelector('.card-material-pane'));
     return {card:card,panel:panel,ctrl:ctrl,matPane:matPane};
   }
 
