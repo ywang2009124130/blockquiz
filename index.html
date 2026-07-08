@@ -9307,7 +9307,7 @@ html[lang="en"] .myq-settings-panel, html[lang="ar"] .myq-settings-panel{ width:
 .myq-paper-header .myq-hd-divider:hover{ box-shadow:none !important; }
 /* §V18.69 乙方案：图文要点、目标列表卡片宽度跟内容走（fit-content），不再固定半行宽；max-width 不超纸面 */
 .myq-paper-header .myq-hd-knowledge,
-.myq-paper-header .myq-hd-moe{flex:0 0 auto;width:fit-content;max-width:100%;position:relative;}
+.myq-paper-header .myq-hd-moe{flex:0 0 auto;width:fit-content;max-width:100%;position:relative;}   /* §V500 恢复 fit-content：此规则与 .myq-hd-knowledge 共用(小卡片不能变全宽)；MOE 默认全宽改由渲染模板内联 width:100% 实现 */
 .myq-paper-header .myq-hd-sec[draggable="true"]{cursor:default;}
 /* §V18.42 卡片右边缘可拖区（仅图文要点/目标列表）：拖动改卡片宽度，实现并排↔独立 */
 .myq-card-edge{position:absolute;top:8px;bottom:8px;right:-3px;width:10px;cursor:ew-resize !important;z-index:14;display:flex;align-items:center;justify-content:center;}
@@ -9808,6 +9808,13 @@ body.myq-grip-drag-move, body.myq-grip-drag-move *{cursor:grabbing !important;}
   /* 题目分页友好：尽量不在题中断开 */
   .myq-a4-paper .lib-q,
   .paper-q{break-inside:avoid;page-break-inside:avoid;}
+  /* §V494 打印分页与屏幕一致(用户报「PDF不拆题→第三题整个挪去第二页，与题卷页不同」)：
+     屏幕分页(§V456/457 _bqSplitQuestionAcrossPages)对选择/判断/拼音填空按小题行拆页填满页尾；
+     打印的整题 avoid 与之分叉。此处对含可拆列表的题放开整题保护，改为「行级不拆」——
+     浏览器自然分页同按剩余高度填行，断点与屏幕算法一致(两者页内容高相同)。其余题型(连线等)仍整题不拆。 */
+  .myq-a4-paper .lib-q:has(.pq-ci-list), .myq-a4-paper .lib-q:has(.pq-jd-list), .myq-a4-paper .lib-q:has(.pq-pf-list),
+  .paper-q:has(.pq-ci-list), .paper-q:has(.pq-jd-list), .paper-q:has(.pq-pf-list){break-inside:auto;page-break-inside:auto;}
+  .pq-ci-list>*, .pq-jd-list>*, .pq-pf-list>*{break-inside:avoid;page-break-inside:avoid;}
   .myq-a4-paper .lib-q{border-bottom:1px solid #ddd;}
   /* 打印态再次确保隐藏所有编辑入口 / 手柄 / 加号 / 拼音开关等 */
   .lib-q-handle,
@@ -9826,10 +9833,14 @@ body.myq-grip-drag-move, body.myq-grip-drag-move *{cursor:grabbing !important;}
   .myq-preview-mode .qis-btn{display:none !important;}
   /* §V17.8 梯度徽标（筑基·基础 等）勾选后打印保留，确保积木色不被打印优化掉 */
   .myq-tier-tag, .myq-tier-tag .myq-tier-cube, .myq-tier-tag svg{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  /* §V18.9 打印重影根治：打印走「重新生成的单张 #myqA4Paper」，必须彻底隐藏多页结构，
-     否则 .myq-page-row（旧多页）与 #myqA4Paper（新单张）两套题目并存 = 重影。 */
-  .myq-page-row{ display:none !important; }
-  #myqA4Paper{ display:block !important; }
+  /* §V501 打印同源根治(用户报屏/打分布不一致)：打印不再走"撤销分页的单张长纸+浏览器自然分页"，
+     而是直接打印屏幕分页产物——每个 .myq-page 就是一张 A4，拆题位置/页数标签与屏幕逐像素一致(规律⑥)。
+     反转 §V18.9：隐藏单张 #myqA4Paper，显示多页 .myq-page-row。 */
+  .myq-page-row{ display:block !important; padding:0 !important; width:auto !important; min-width:0 !important; gap:0 !important; }
+  #myqA4Paper{ display:none !important; }
+  .myq-page{ width:210mm !important; height:297mm !important; margin:0 !important; box-shadow:none !important; border-radius:0 !important; border:none !important; page-break-after:always; break-after:page; overflow:hidden !important; }
+  .myq-page:last-child{ page-break-after:auto; break-after:auto; }
+  .myq-page .myq-page-inner-scale{ transform:none !important; }   /* 视口缩放层复原为自然尺寸(794px=210mm) */
   .myq-focus-exit, .myq-zoom-hint{ display:none !important; }
   @page{ size:A4; margin:0; }   /* §V17.9 显式 A4 物理页，与网页 210×297mm 一致；margin:0 压掉浏览器自动页眉页脚 */
 }
@@ -9903,7 +9914,7 @@ body.myq-zooming .myq-page-row.myq-focus .myq-page.myq-focused .myq-page-inner-s
 /* 聚焦态：放大某页可能超视野高度 → 允许纵向滚动看长页 */
 .myq-paper-stage:has(.myq-page-row.myq-focus){ display:block; overflow-x:auto; overflow-y:hidden; padding-bottom:6px; }
 /* 页行：flex 居中，min-width:100% 保证内容少时撑满以居中、内容多时可横向滚 */
-.myq-page-row{ display:flex; gap:18px; align-items:flex-start; justify-content:center; width:max-content; min-width:100%; box-sizing:border-box; padding:0 max(10px, calc(50% - 300px)); }
+.myq-page-row{ display:flex; gap:18px; align-items:flex-start; justify-content:center; width:max-content; min-width:100%; box-sizing:border-box; padding:0 max(10px, calc(50% - 300px)); }   /* §V497b 恢复两侧大留白(V494 曾误砍)：留白是给「表头设计」左浮面板让位用的——第一页必须能拖到面板右侧编辑表头；聚焦模式也靠它把首尾页滚到屏幕中心。「默认居中」改由 openLibraryViewer 初始 scrollLeft 实现(不再动布局) */
 /* 用「缩放后实际尺寸」渲染每页（非 transform），让 flex 居中/横向滚都自然正确。
    §V18.2 默认所有页=基准缩放 --myq-base-zoom（固定，=刚好2张那个大小） */
 .myq-page{
@@ -10039,6 +10050,9 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 .pq-stem-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0;}   /* §V19.63 中文+英文竖排成一列：英文对齐中文左缘。§V19.433 改 flex:1 1 0 占满序号右侧剩余宽 + 默认 align-items:stretch 让中文行按列宽自然折行（原 inline-flex+flex-start 令中文按完整内容宽定宽、永不折行，稍长即被外层 flex-wrap 整列甩到下行→序号孤立） */
 .pq-stem-ar{font-family:"Geeza Pro","Noto Naskh Arabic","Arial",sans-serif;direction:rtl;unicode-bidi:isolate;text-align:left;align-self:flex-start;}   /* §V19.67 阿语行左对齐(B：末字对齐中文首字)，文字仍 RTL */
 .pq-title-inline .pq-stem-en{font-size:16.5px;font-weight:500;color:var(--ink,#2b2540);}   /* §V19.62 同字号同色、第二排(§V19.63 对齐中文) */
+.pq-stem-cn,.pq-stem-en:not(.pq-stem-ar){display:flex;align-items:baseline;}   /* §V492 序号列+文本列：中英题干换行的每一行都对齐起字（原英文第二行顶到序号下）。阿语行(RTL)不套 flex，保持 §V19.67 原行为 */
+.pq-stem-cn>.pq-no,.pq-stem-en>.pq-no{flex:none;}
+.pq-stem-body{flex:1 1 0;min-width:0;}   /* §V492 文本列：flex 父下自动块化、换行都在列内；阿语行(非 flex)下保持 inline 原文本流 */
 .pq-no{font-weight:800;font-size:15.5px;color:var(--ink,#2b2540);margin-right:.22em;}
 .pq-no.pq-no--py{align-self:flex-end;line-height:1.15;}   /* §V490 题号底对齐汉字行(flex-end=行底=汉字行，与拼音/字体无关，headless实测0px)。取代基线对齐(会被顶到汉拼之间) */
 .pq-no.pq-no--py::after{content:none;}   /* §V486 取消拼音占位撑高 */
@@ -10054,19 +10068,20 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
   margin-top:4px;padding-left:6px;
 }
 .pq-match-item{
-  display:flex;align-items:center;gap:8px;padding:6px 0;line-height:1.5;
-  align-self:center;                       /* 同行左右垂直居中对齐 */
+  display:block;padding:6px 0;line-height:1.5;   /* §V498b flex→inline流(用户定原则「序号与汉字对齐一排」)：flex 基线提取对 ruby 项不可靠，inline 流里（1）与汉字 ruby 同行盒共享底字基线 */
+  align-self:center;                       /* 同行左右垂直居中对齐(行间关系保留) */
 }
+.pq-match-item>.pq-idx,.pq-match-item>.pq-letter{margin-right:8px;}   /* §V498b 原 flex gap 等效 */
 /* §V13.3.10 左/右列改 grid 两列：题号(序号/字母)固定宽 + 内容列同起点。
    解决长拼音(如 chàng)撑宽 ruby 把"唱歌"整体推右 —— 汉字主体永远从同一 x 起。
    仅作用于 A4 题卷区，不动题卡区、不动全局 ruby 字号(0.66em 定稿保留)。 */
 .myq-a4-paper .pq-left{
-  display:grid;grid-template-columns:52px auto;column-gap:4px;align-items:end;gap:0;   /* §V19.442 由24px→52px：容纳「（ 1 ）」全角括号序号（约3em≈50px），原24px不够导致序号溢出 */
+  display:block;   /* §V498b grid→inline流(用户定原则「序号与汉字对齐一排」)：grid baseline 从含空注音 py-punct 的项提取基线不可靠(空格 rt 被空白折叠塌陷)实测仍漂 5px；改 inline 流让序号 ruby 与汉字 ruby 同行盒共享底字基线，「汉字同 x 起点」由下条 idx 定宽 inline-block 保住 */   /* §V19.442 由24px→52px：容纳「（ 1 ）」全角括号序号（约3em≈50px），原24px不够导致序号溢出 */
 }
 /* §V13.6 序号与汉字主体（ruby 底字）同底对齐，不与拼音行齐 */
-.myq-a4-paper .pq-left .pq-idx{ align-self:end; padding-bottom:2px; }
+.myq-a4-paper .pq-left .pq-idx{ margin-right:4px; }   /* §V498b 序号壳保持 inline：含 ruby 的行盒里 inline-block 壳与裸文本同样浮升(§V19.334 家族第5例，实测-7px)，inline 让内部 py-punct ruby 直接与汉字 ruby 同行盒共享底字基线；「（ 1 ）」全角等宽，个位数下各行汉字天然同 x 起点 */   /* §V498b 用户定「序号不管有无拼音都与汉字对齐一排」：原 align-self:end+padding-bottom:2px 是按某一种行高调的像素补偿，行高不同的题型里落点漂移(用户报「有的高有的矮」)。改 baseline：grid/flex 里与内容列首行基线(=ruby 底字基线)对齐；行内流场景由 ①(序号包 py-punct)保证同排 */
 .myq-a4-paper .pq-right{
-  display:grid;grid-template-columns:52px auto;column-gap:4px;align-items:center;gap:0;   /* §V19.442 同步调整 */
+  display:grid;grid-template-columns:52px auto;column-gap:4px;align-items:baseline;gap:0;   /* §V498b center→baseline：字母与英文/拼音文字基线对齐 */   /* §V19.442 同步调整 */
 }
 .myq-a4-paper .pq-idx,
 .myq-a4-paper .pq-letter{
@@ -10082,6 +10097,7 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 }
 .pq-img{width:42px;height:42px;object-fit:contain;border-radius:4px;flex-shrink:0;}
 .pq-right .pq-en,.pq-right .pq-img{vertical-align:middle;}
+.myq-a4-paper .pq-right .pq-img{align-self:center;}   /* §V498b 图片项无文字基线，保持格内居中观感 */
 .pq-generic-body{margin-top:2px;}
 /* 题卷里隐藏通用 renderQ 自带的题号/题型框（renderPaperQuestion 已自带标题） */
 .myq-a4-paper .q-header,
@@ -10090,7 +10106,12 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 
 /* ===== §V19.407 题卷断链修复：九形态纸质样式（题干左对齐、选项左右横排、纯打印无控件） ===== */
 .pq-ci-list,.pq-jd-list,.pq-pf-list,.pq-ord-list,.pq-open-list{margin-top:6px;display:flex;flex-direction:column;gap:8px;padding-left:6px;}
-.pq-jd-row,.pq-pf-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;line-height:1.6;}
+.pq-jd-list.pq-jd-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:36px;row-gap:8px;}   /* §V495 短对照判断双列(行优先 1 2 / 3 4)：每格仍是一条 .pq-jd-row，（　　）由既有规则推到本格右缘 */
+.pq-pf-row{display:block;line-height:1.6;}
+.pq-jd-row{display:table;width:100%;line-height:1.6;}   /* §V500b table-cell baseline：flex/grid 从含注音格取基线不可靠(⑨)，table 基线对齐走独立老引擎路径 */
+.pq-jd-main{display:table-cell;vertical-align:bottom;line-height:1.6;}
+.pq-jd-blank-cell{display:table-cell;vertical-align:bottom;width:1%;white-space:nowrap;text-align:right;padding-left:12px;line-height:1.6;}   /* §V501 底边锚定：本项目 ruby 是 inline-flex(rt上/rb下)，其基线=rt 基线致 baseline 对齐失真；rb 底=行底才是稳定锚点。两格 bottom 对齐，括号格拼音态带同构隐形 ruby(底=rb底)、非拼音态两侧同 line-height 半行距抵消 */   /* §V498b flex→inline流(用户定原则「序号不管有无拼音都与汉字对齐一排」)：flex 从含 ruby 的项里提取基线不可靠(实测序号仍漂到注音层)；inline 流里序号(py-punct ruby)与词句 ruby 同一行盒、天然共享底字基线——正文题干五个版本验证过的机制 */
+.pq-jd-row>.pq-idx,.pq-pf-row>.pq-idx{margin-right:10px;}   /* §V498b 原 flex gap 的等效间距 */
 /* §V19.426 选择题小题：序号一列，题干在第2列第1行、选项在第2列第2行 → 选项左缘天然对齐上一行题干「第一个字」 */
 .pq-ci-row{display:grid;grid-template-columns:auto 1fr;column-gap:2px;row-gap:9px;align-items:baseline;line-height:1.6;}   /* §V444 题序与题干间距收窄 8px→2px（用户报「题序和题干起始距离宽了点」；「（ N ）」全角括号本身已带留白） */
 .pq-ci-row>.pq-idx{grid-column:1;grid-row:1;align-self:baseline;}
@@ -10108,13 +10129,16 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 .pq-ci-optimg{width:40px;height:40px;object-fit:contain;border-radius:4px;}
 .pq-jd-word{font-family:var(--font-han);font-size:17px;font-weight:500;}
 .pq-jd-mat{font-family:var(--font-han);font-size:16px;}
-.pq-jd-blank{margin-left:auto;font-weight:600;letter-spacing:1px;}
+.pq-jd-pair{min-width:0;}   /* §V492 汉字—第二语言对照对：flex 项内走 inline 文字流，中英按基线同排 */
+.pq-jd-dash{margin:0 .45em;color:var(--ink,#2b2540);}
+.pq-jd-dashline{display:inline-block;width:1.5em;border-top:1.5px solid currentColor;vertical-align:.28em;}   /* §V498b 一根连续破折号线：宽1.5em随字号；vertical-align 长度值=基线上抬 .28em≈汉字中部，拼音/非拼音一致 */   /* §V492 题卡区 dc-tj-dash 的题卷版：墨色随题文、印刷友好 */
+.pq-jd-blank{font-weight:600;letter-spacing:1px;}   /* §V500b 去 float(浮动盒锁行盒顶=拼音层顶致括号上浮)，改由 .pq-jd-row grid 第二格定位 */
 .pq-audio{font-size:15px;flex-shrink:0;}
 .pq-py-txt{font-family:var(--font-py);font-size:17px;letter-spacing:.5px;}
 .pq-hzf-txt{font-family:var(--font-han);font-size:17px;}
 .pq-ans-line{border-bottom:1.5px solid var(--ink3,#8a83a8);height:26px;margin:8px 2px 0;}
 .pq-ord-item{padding:2px 0;}
-.pq-ord-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.pq-ord-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;}   /* §V498b center→baseline：序号与词块内汉字基线对齐(用户定原则)，不再按行高居中漂移 */
 .pq-ord-chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--ink3,#8a83a8);border-radius:8px;padding:3px 10px;background:#fff;}
 .pq-ord-ch{font-weight:700;color:var(--ink2,#5b3fa8);font-size:13px;}
 .pq-ord-w{font-family:var(--font-han);font-size:16px;}
@@ -10139,24 +10163,26 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 .pq-passage{font-family:var(--font-han);font-size:17px;line-height:2.1;margin-top:2px;text-align:justify;}
 .pq-open-q{display:flex;align-items:baseline;gap:8px;font-family:var(--font-han);font-size:17px;line-height:1.7;}
 /* §V19.407 计分栏：题干行右推；括号内可编辑数字（编辑态淡紫提示底，打印纯白） */
-.pq-score{display:inline;margin-left:.55em;font-size:14px;font-weight:400;color:var(--ink,#2b2540);white-space:nowrap;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;}   /* §V19.442 移除 var(--font-han)：LxgwHan 只有400一个字重，浏览器 synthesis 让700和400都显粗；改系统字体 400=真细体，与题干粗体明显区分 */   /* §V19.426 挪进题干后内联(不再浮右)；字号/字重比题干轻 */
-.pq-score--in-en{vertical-align:text-bottom;}   /* §V490 计分说明被挪到英文后：text-bottom 让它的汉字落到英文文本行，不再下沉(headless实测≈0.9px) */
-.pq-score-num{display:inline-block;min-width:20px;text-align:center;outline:none;border-radius:4px;border-bottom:1px solid var(--line,#9a90b8);margin:0 3px;line-height:inherit;font-weight:400;}   /* §V19.442 显式 400：不继承 .pq-stem 的 700，打印计分数字与题干字重区分 */   /* §V19.426 数字位下划线(可填可写)，取代原内括号；§V19.433 line-height 由 1.15 改 inherit：原本比标签矮→下划线上浮「悬空」，改后与标签同高、下划线落到文字行底 */
-.pq-score-num.pq-score-num--py{display:inline-flex;flex-direction:column-reverse;align-items:center;justify-content:flex-end;vertical-align:bottom;line-height:1.2;}   /* §V491 精确复刻原生ruby几何(lh1.2)，与拼音标签「每小题」同底，不沉不浮 */
+.pq-score{display:inline-block;line-height:1.2;margin-left:.55em;font-size:14px;font-weight:400;color:var(--ink,#2b2540);white-space:nowrap;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;}   /* §V19.442 移除 var(--font-han)：LxgwHan 只有400一个字重，浏览器 synthesis 让700和400都显粗；改系统字体 400=真细体，与题干粗体明显区分 */   /* §V19.426 挪进题干后内联(不再浮右)；字号/字重比题干轻 */   /* §V494b inline→inline-block(用户报：挪到英文行后数字+线下沉、括号偏上)：inline 时计分组与英文同一行盒，数字的 vertical-align:bottom 对齐「被英文行高撑深的行盒底」→下沉。inline-block 把计分组隔离成独立行上下文——内部行盒只有它自己(纯 ruby 环境，V491 数字几何恢复成立)，对外以内部行基线对齐宿主行基线，中文行/英文行两种宿主下几何一致。line-height:1.2 必配：继承 1.55 时内部 strut 把对外基线压低 ~5.4px(inline 旧版同病，V490 曾用 text-bottom 硬补)，1.2 实测底字与英文底仅差 0.49px */
+.pq-score--in-en{vertical-align:baseline;}   /* §V490 text-bottom 补偿(inline 时代)；§V494b 改 inline-block 后基线天然对齐，撤补偿回默认 baseline(保留类名供选择器/回溯) */
+.pq-score-num{display:inline-block;min-width:20px;text-align:center;outline:none;border-radius:4px;border-bottom:0;text-decoration:underline;text-decoration-color:var(--line,#9a90b8);text-decoration-thickness:1px;text-underline-offset:0.18em;margin:0 3px;line-height:inherit;font-weight:400;}   /* §V19.442 显式 400：不继承 .pq-stem 的 700，打印计分数字与题干字重区分 */   /* §V19.426 数字位下划线(可填可写)，取代原内括号；§V19.433 line-height 1.15→inherit 与标签同高 */   /* §V494 线改 text-decoration(基线锚定)：V491~V493 三轮盒底定位(border/背景线+bottom像素)在不同盒模型与字体下反复偏上/偏下——根因是「盒底≠文字基线」。underline 直接从基线偏 0.18em(≈2.5px@14px)，普通/拼音/in-en 三态与任何真机字体下线距文字恒定，免调参 */
+.pq-score-num:empty{background-image:linear-gradient(var(--line,#9a90b8),var(--line,#9a90b8));background-repeat:no-repeat;background-size:100% 1px;background-position:left bottom 3px;}   /* §V494 空数字位无字形可画 underline → 背景线兜底(全宽·提示可填)，有内容时 underline 接管 */
+.pq-score-num.pq-score-num--py{display:inline-flex;flex-direction:column-reverse;align-items:center;justify-content:flex-end;vertical-align:bottom;line-height:1.2;}   /* §V491 精确复刻原生ruby几何(lh1.2)，与拼音标签「每小题」同底，不沉不浮 */   /* §V494 有字时线走 underline(随基线·免定位)；下条仅管空位背景线 */
+.pq-score-num.pq-score-num--py:empty{background-position:left bottom 0px;}   /* §V494 拼音态空位背景线：数字行贴盒底，线位相应下移 */
 .pq-score-num.pq-score-num--py::after{content:'\00a0';font-size:.68em;line-height:1.15;padding:0 1.5px;visibility:hidden;}   /* §V491 复刻rt空注音占位 */
 .pq-score-lbl{display:inline-block;outline:none;border-radius:4px;cursor:text;font-weight:400;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;}   /* §V19.442 显式 400+系统字体：不继承 pq-stem-cn 的 700+LxgwHan，与题干粗体明显区分 */   /* §V19.419 标签「每小题」「共」可点改 */
 body:not(.myq-printing) .myq-a4-paper:not(.printing) .pq-score-num:hover,
 body:not(.myq-printing) .myq-a4-paper:not(.printing) .pq-score-num:focus,
 body:not(.myq-printing) .myq-a4-paper:not(.printing) .pq-score-lbl:hover,
-body:not(.myq-printing) .myq-a4-paper:not(.printing) .pq-score-lbl:focus{background:rgba(139,92,246,.10);}   /* §V19.435 加 body:not(.myq-printing) 门：打印走的是 myq-printing 类(非 .printing)，原规则漏抑制→打印时 focus/hover 露紫底「按钮样」 */
+body:not(.myq-printing) .myq-a4-paper:not(.printing) .pq-score-lbl:focus{background-color:rgba(139,92,246,.10);}   /* §V19.435 加 body:not(.myq-printing) 门：打印走的是 myq-printing 类(非 .printing)，原规则漏抑制→打印时 focus/hover 露紫底「按钮样」 */   /* §V492 background 简写改 background-color：简写会把数字位的下划线背景图冲掉(hover 线消失) */
 /* §V19.411 表头区末尾居中一行小字「本题卷共 N 页，满分 M 分。」（取代 V19.407 标题右下角「总计」） */
 .myq-hd-title{position:relative;}
 .myq-paper-meta{width:100%;text-align:center;font-family:var(--font-han);font-size:13px;color:var(--ink,#2b2540);margin:1px 0 0;line-height:1.4;}   /* §V19.412 紧贴标题下方，极小上边距，不撑行距 */
 .myq-hd-title .myq-paper-meta{margin-top:2px;}
 .myq-paper-meta .myq-meta-pages,.myq-paper-meta .myq-meta-full{display:inline-block;min-width:1.2em;text-align:center;}
-@media print{ .pq-score-num,.pq-score-lbl,.pq-score-num:hover,.pq-score-num:focus,.pq-score-lbl:hover,.pq-score-lbl:focus{background:transparent !important;border-radius:0 !important;outline:none !important;box-shadow:none !important;border-bottom:0 !important;} }   /* §V19.440 打印去数字下划线(用户定) */
+@media print{ .pq-score-num,.pq-score-lbl,.pq-score-num:hover,.pq-score-num:focus,.pq-score-lbl:hover,.pq-score-lbl:focus{background:transparent !important;border-radius:0 !important;outline:none !important;box-shadow:none !important;border-bottom:0 !important;text-decoration:none !important;} }   /* §V19.440 打印去数字下划线(用户定)；§V494 线改 underline 后同步在打印清除 */
 /* §V19.435 屏幕态打印(myq-printing，window.print 前)也把计分位清成「与文字一体」：无紫底/无圆角/无 outline，只留数字位下划线 */
-body.myq-printing .pq-score-num,body.myq-printing .pq-score-lbl,body.myq-printing .pq-score-num:focus,body.myq-printing .pq-score-lbl:focus{background:transparent !important;border-radius:0 !important;outline:none !important;box-shadow:none !important;border-bottom:0 !important;}   /* §V19.440 打印(屏幕态打印类)去数字下划线(用户定) */
+body.myq-printing .pq-score-num,body.myq-printing .pq-score-lbl,body.myq-printing .pq-score-num:focus,body.myq-printing .pq-score-lbl:focus{background:transparent !important;border-radius:0 !important;outline:none !important;box-shadow:none !important;border-bottom:0 !important;text-decoration:none !important;}   /* §V19.440 打印(屏幕态打印类)去数字下划线(用户定)；§V494 同步清 underline */
 /* §V19.407 题卷区维度胶囊（复用 bq-cap，按顶栏缩小） */
 .myq-dim-cap{width:148px;height:32px;border-radius:16px;flex-shrink:0;margin-left:6px;}
 .myq-dim-cap .bq-cap-lab{font-size:12.5px;}
@@ -10680,6 +10706,373 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 /* 浮窗：绝对定位随小智，从小智位置向下滑出、覆于材料区之上；关闭不占布局 */
 .xz-panel{position:absolute;right:auto;top:auto;left:0;width:322px;max-width:calc(100% - 16px);z-index:31;}
 @media (max-width:900px){ .xz-panel{width:300px;} .xz-host{transform:scale(.92);transform-origin:bottom center;} }
+</style>
+<style id="mzx-intro-css">
+
+*{box-sizing:border-box;margin:0;padding:0;}
+/* ===== 魔法区标题（沿用现有设计：魔法棒撒星星 + 三字） ===== */
+.mz-title{text-align:center;margin-bottom:10px;position:relative;}
+/* ===== 外卡片 ===== */
+.mz-panes{display:flex;gap:20px;align-items:stretch;}
+.mz-pane-left{flex:0 0 340px;display:flex;flex-direction:column;}
+.zhi-body-3cards{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:0;}
+.zhi-line{display:flex;gap:10px;align-items:center;}
+.zhi-line .zhi-item{flex:0 0 56px;cursor:pointer;}
+.zhi-line .zwrap{width:56px;height:52px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;}
+.zhi-line .xz{transform:scale(1.05);transform-origin:center bottom;}
+.zhi-card{flex:1;border-radius:12px;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.16);padding:8px 12px 9px;}
+.zhi-card-title{font-size:12.5px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.zhi-card-title .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;box-shadow:0 0 4px rgba(139,92,246,.45);}
+.zhi-card-text{font-size:12px;color:#3D3450;line-height:1.58;}
+.zhi-line .zwrap{position:relative;}
+.zhi-line .zwrap::before{content:'';position:absolute;left:50%;bottom:6px;width:38px;height:36px;transform:translateX(-50%);
+  border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;
+  box-shadow:0 0 9px 4px rgba(139,92,246,.85), 0 0 20px 10px rgba(139,92,246,.4);}
+.zhi-line.speaking .zwrap::before{opacity:1;}
+/* ===== 移植正式 work 工作态（打字敲键盘） ===== */
+.xz.work .xz-body{animation:xz-floatsoft 3s ease-in-out infinite;}
+@keyframes xz-floatsoft{0%,100%{transform:translateY(0);}50%{transform:translateY(-1.4px);}}
+.xz.work .xz-face{animation:xz-floatsoft 3s ease-in-out infinite;}
+.xz.work .arm-l{transform:rotate(-18deg);}
+.xz.work .arm-l .arm-sway{animation:none;}
+.xz.work .arm-l .fore-g{animation:typeL .56s ease-in-out infinite;}
+.xz.work .arm-r{transform:rotate(18deg);}
+.xz.work .arm-r .arm-sway{animation:none;}
+.xz.work .arm-r .fore-g{animation:typeR .56s ease-in-out infinite -.28s;}
+@keyframes typeL{0%,100%{transform:rotate(-66deg);}50%{transform:rotate(-58deg);}}
+@keyframes typeR{0%,100%{transform:rotate(66deg);}50%{transform:rotate(58deg);}}
+.xz.work .xz-bulb{opacity:1;}
+.xz.work .bulb-lamp{animation:bulbGlow 2.8s ease-in-out infinite;}
+@keyframes bulbGlow{0%,100%{filter:drop-shadow(0 0 1.5px rgba(255,212,110,.6));}50%{filter:drop-shadow(0 0 3px rgba(255,212,110,.85));}}
+.xz.work .rstar{animation:rtwinkle 2.6s ease-in-out infinite;}
+@keyframes rtwinkle{0%,68%,100%{opacity:.5;transform:scale(.8);}84%{opacity:1;transform:scale(1.15);}}
+.xz.work .rstar:nth-child(2){animation-delay:.55s;}
+.xz.work .rstar:nth-child(3){animation-delay:1.1s;}
+.xz.work .rstar:nth-child(4){animation-delay:1.6s;}
+.xz.work .rstar:nth-child(5){animation-delay:.85s;}
+
+.zhi-line .zwrap>*{position:relative;}
+.zhi-line.speaking .zhi-card{box-shadow:0 0 0 1.5px rgba(139,92,246,.35),0 0 10px rgba(139,92,246,.18);}
+@keyframes zhiSpeakJump{0%,100%{transform:scale(1.05) translateY(0);}50%{transform:scale(1.05) translateY(-2.5px);}}
+.zhi-card-text{min-height:3.1em;}
+.zhi-card-text.typing::after{content:'▍';color:var(--p-mid);animation:caretBlink .7s mzx-step-end infinite;margin-left:1px;}
+@keyframes caretBlink{50%{opacity:0;}}
+.mz-pane-div{flex:0 0 0;border-left:1.5px dashed rgba(139,92,246,.25);}
+.mz-pane-right{flex:1;min-width:0;display:flex;flex-direction:column;}
+.mz-pane-right .outro{margin-top:auto;padding-top:8px;}
+
+.mz-pane-left .zhi-row{gap:30px;margin-bottom:12px;}
+.mz-card{border:2px dashed #CBBBEC;border-radius:22px;background:linear-gradient(180deg,#f9f6fe,#f0eafa);padding:16px 16px 14px 26px;box-shadow:0 10px 28px rgba(139,92,246,.14), inset 0 1px 0 rgba(255,255,255,.85);}   /* §V505b 底色回淡半档(粉紫过头)；边框加深一档+阴影抬升+顶部1px白内沿=外圈卡片感 */
+/* ===== 认识小积木：三色小智 ===== */
+.zhi-sec-title{font-size:15px;font-weight:800;margin-bottom:3px;letter-spacing:1px;}
+.zhi-sec-sub{font-size:12px;color:var(--ink4);margin-bottom:14px;}
+.zhi-row{display:flex;gap:56px;justify-content:center;margin-bottom:6px;}
+.zhi-item{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;user-select:none;transition:transform .18s ease;}
+
+.zhi-item .zwrap{position:relative;width:58px;height:58px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;}
+/* hover：小智跳一下；active：持续柔光（不画圈） */
+.zhi-line:not(.speaking) .zhi-item:hover .xz{animation:zhiJump .5s cubic-bezier(.3,1.4,.4,1);}
+@keyframes zhiJump{0%{transform:scale(1.15) translateY(0);}35%{transform:scale(1.15) translateY(-7px);}65%{transform:scale(1.15) translateY(0);}82%{transform:scale(1.15) translateY(-3px);}100%{transform:scale(1.15) translateY(0);}}
+
+
+.zhi-name{font-size:12.5px;font-weight:700;letter-spacing:.5px;}
+.zhi-item[data-k="auto"]{color:var(--p-deep);}
+.zhi-item[data-k="manual"]{color:var(--p-mid);}
+.zhi-item[data-k="special"]{color:#a78bfa;}
+/* ---- 小智本体 CSS（正式代码原样搬运） ---- */
+/* ============ 小智本体 ============ */
+  /* 脸=身=题型积木 .qblock 同款深紫立体块（保留不动） */
+  .xz{
+    position:relative;width:38px;height:38px;flex-shrink:0;cursor:pointer;user-select:none;
+    --g-bg-l:rgba(206,191,255,.85);
+    --g-bg-d:rgba(150,110,225,.95);
+    --g-bevel-lt:rgba(255,255,255,.65);
+    --g-bevel-lf:rgba(255,255,255,.45);
+    --g-bevel-rt:rgba(95,55,160,.55);
+    --g-bevel-dk:rgba(70,40,130,.85);
+    --g-inner-hi:rgba(255,255,255,.5);
+    --g-inner-dk:rgba(70,40,130,.34);
+    --g-shadow:rgba(60,30,110,.4);
+    --g-ground:rgba(48,22,95,.5);
+    /* 手臂配色（柔和紫灰，比积木深色亮、不死黑） */
+    --arm-edge:#8a76b8;     /* 圆管暗边 */
+    --arm-hi:#dccff7;       /* 圆管中线高光 */
+    --arm-hand:#c9bbef;     /* 小圆手 */
+    --arm-joint:#a18ccc;    /* 肩部连接节点 */
+  }
+  /* §V19.110 小智随梯度变色：立方体(--g-*)+胳膊(--arm-*)+手+键盘换梯度色；卫星/灯泡/星/脸保持原色。
+     色类由 placeXiaozhi 按当前 active 梯度面板 lp-low/mid/high 套上；色值取自 .qblock.diff-* + 梯度底色同系。 */
+  .xz.xz-tier-low{   /* 基础·黄 */
+    --g-bg-l:rgba(255,238,160,.92);--g-bg-d:rgba(245,206,74,.95);
+    --g-bevel-lt:rgba(255,250,210,.7);--g-bevel-lf:rgba(255,248,200,.5);
+    --g-bevel-rt:rgba(180,130,20,.6);--g-bevel-dk:rgba(140,95,5,.85);
+    --g-inner-hi:rgba(255,252,220,.5);--g-inner-dk:rgba(140,95,5,.3);
+    --g-shadow:rgba(150,110,5,.4);--g-ground:rgba(120,85,5,.55);
+    --arm-edge:#bfa030;--arm-hi:#fff0c0;--arm-hand:#ead498;--arm-joint:#d0b858;
+  }
+  /* §V19.246 键盘(pad)与卫星/灯泡/星/脸一样保留原色，不随档位变色 */
+  .xz.xz-tier-mid{   /* 进阶·橙 */
+    --g-bg-l:rgba(255,206,140,.92);--g-bg-d:rgba(238,144,64,.95);
+    --g-bevel-lt:rgba(255,228,200,.7);--g-bevel-lf:rgba(255,222,190,.5);
+    --g-bevel-rt:rgba(180,90,20,.6);--g-bevel-dk:rgba(140,60,5,.85);
+    --g-inner-hi:rgba(255,232,205,.5);--g-inner-dk:rgba(140,60,5,.3);
+    --g-shadow:rgba(150,75,8,.4);--g-ground:rgba(120,55,8,.55);
+    --arm-edge:#bf7838;--arm-hi:#ffe0b8;--arm-hand:#eec698;--arm-joint:#d8a060;
+  }
+  .xz.xz-tier-high{  /* 高阶·绿 */
+    --g-bg-l:rgba(200,234,158,.92);--g-bg-d:rgba(138,196,82,.95);
+    --g-bevel-lt:rgba(224,246,190,.7);--g-bevel-lf:rgba(218,242,182,.5);
+    --g-bevel-rt:rgba(90,140,40,.6);--g-bevel-dk:rgba(55,95,18,.85);
+    --g-inner-hi:rgba(228,248,195,.5);--g-inner-dk:rgba(55,95,18,.3);
+    --g-shadow:rgba(74,125,37,.4);--g-ground:rgba(45,80,15,.55);
+    --arm-edge:#76a236;--arm-hi:#e4f2c4;--arm-hand:#c8e498;--arm-joint:#a0c058;
+  }
+  .xz-body{
+    position:absolute;inset:0;border-radius:10px;
+    background:radial-gradient(130% 120% at 32% 25%,var(--g-bg-l) 0%,var(--g-bg-d) 100%);
+    border-top:3px solid var(--g-bevel-lt);
+    border-left:3px solid var(--g-bevel-lf);
+    border-right:3px solid var(--g-bevel-rt);
+    border-bottom:4px solid var(--g-bevel-dk);
+    box-shadow:
+      inset 0 3px 4px var(--g-inner-hi),
+      inset -2px -3px 5px var(--g-inner-dk),
+      0 7px 10px -2px var(--g-shadow),
+      0 16px 20px -6px var(--g-ground);
+    animation:xz-breathe 3.2s ease-in-out infinite;
+    transition:transform .26s cubic-bezier(.22,.8,.3,1);
+    z-index:1;
+  }
+  @keyframes xz-breathe{
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-2px) scale(1.012);}
+  }
+  /* 地面影 */
+  .xz::after{content:'';position:absolute;left:8%;right:8%;bottom:-7px;height:7px;border-radius:50%;
+    background:var(--g-ground);filter:blur(5px);z-index:0;
+    animation:xz-shadow 3.2s ease-in-out infinite;}
+  @keyframes xz-shadow{
+    0%,100%{transform:scaleX(1);opacity:.5;}
+    50%{transform:scaleX(.9);opacity:.38;}
+  }
+
+  /* ============ 手臂层（细圆管·两段·可摆姿） ============ */
+  /* viewBox 0 0 70 66：主体方块映射到 x16..54, y8..46；肩在 y≈31(主体高60%) */
+  .xz-arms{
+    position:absolute;left:-16px;top:-8px;width:70px;height:66px;
+    z-index:2;pointer-events:none;overflow:visible;
+  }
+  .seg{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .seg.base{stroke:var(--arm-edge);stroke-width:3.2;}
+  .seg.hi  {stroke:var(--arm-hi);stroke-width:1.2;opacity:.9;}
+  .joint{fill:var(--arm-joint);stroke:var(--arm-edge);stroke-width:.5;}
+  /* 手型部件（握拳/手心/食指共用） */
+  .h-base{fill:var(--arm-hand);stroke:var(--arm-edge);stroke-width:.3;stroke-linejoin:round;}   /* §V19.110 改用胳膊变量→随梯度变色(原 url(#xzhg) 紫渐变) */
+  .h-crease{fill:none;stroke:var(--arm-edge);stroke-width:.22;stroke-linecap:round;opacity:.42;}
+  .h-sh{fill:var(--arm-edge);opacity:.15;}
+  .h-cncv{fill:var(--arm-edge);opacity:.26;}   /* 掌心内凹阴影 */
+  .h-hi{fill:rgba(255,255,255,.42);}
+  .h-hicore{fill:rgba(255,255,255,.78);}
+  /* 右手随状态切换手型：默认握拳；悬浮→手心；提醒→食指 */
+  .rh-tall{display:none;}
+  .fore-raise,.upper-raise{display:none;}
+  .xz.remind .arm-r .upper-normal,.xz.remind .arm-r .fore-normal{display:none;}
+  .xz.remind .arm-r .upper-raise,.xz.remind .arm-r .fore-raise{display:block;}
+  .xz:hover .arm-r .upper-raise,.xz:hover .arm-r .fore-raise{display:block;animation:armRaiseFade 3s ease-in-out infinite;}
+  .xz:hover .arm-r .upper-normal,.xz:hover .arm-r .fore-normal{animation:armNormalFade 3s ease-in-out infinite;}
+  .xz:hover .rh-fist,.hoverdemo .rh-fist{display:none;}
+  .xz:hover .rh-tall,.hoverdemo .rh-tall{display:block;}
+  .xz.remind .rh-fist{display:none;}
+  .xz.remind .rh-tall{display:block;}
+/* 照搬正式 hover 招呼：举臂角与 galWave 摆动均为官方原值 */
+.xz.wave .arm-r{transform:rotate(-130deg);}
+.xz.wave .arm-r .upper-normal,.xz.wave .arm-r .fore-normal{display:none;}
+.xz.wave .arm-r .upper-raise,.xz.wave .arm-r .fore-raise{display:block;}
+.xz.wave .rh-fist{display:none;}
+.xz.wave .rh-tall{display:block;}
+.xz.wave .arm-r .arm-sway{animation:none;}
+.xz.wave .arm-r .fore-g{animation:galWave 1.2s ease-in-out infinite;}
+@keyframes galWave{0%,100%{transform:rotate(-40deg);}25%{transform:rotate(-50deg);}50%{transform:rotate(-38deg);}75%{transform:rotate(-48deg);}}
+
+  /* 迷你输入板（工作态：身前下侧·浅紫半透明·静止·4小键） */
+  .xz-pad{position:absolute;left:7px;top:31px;width:24px;height:12px;z-index:1;
+          opacity:0;transition:opacity .25s;pointer-events:none;overflow:visible;
+          transform:perspective(60px) rotateX(48deg);transform-origin:center 50%;
+          filter:drop-shadow(0 1px 1.2px rgba(70,40,130,.2));}
+  .xz.work .xz-pad{opacity:1;}
+  .pad-base{fill:rgba(178,178,188,.5);}                 /* §V19.247 键盘改白：板侧厚(灰白) */
+  .pad-board{fill:rgba(255,255,255,.92);stroke:rgba(160,160,175,.35);stroke-width:.4;}  /* 白色板面 */
+  .pad-key{fill:rgba(238,238,244,.95);stroke:rgba(170,170,185,.35);stroke-width:.25;}  /* 浅灰白小键(静止不动) */
+
+  /* 双层分工：.arm 放“姿势”(transition)，.arm-sway 放“呼吸轻摆”(animation)，互不打架 */
+  .arm,.arm-sway,.fore-g{transform-box:view-box;}
+  .arm   {transition:transform .34s cubic-bezier(.22,.8,.3,1);}
+  .fore-g{transition:transform .34s cubic-bezier(.22,.8,.3,1);}
+  .arm-l{transform-origin:15.5px 31px;}
+  .arm-r{transform-origin:54.5px 31px;}
+  .arm-l .arm-sway{transform-origin:15.5px 31px;}
+  .arm-r .arm-sway{transform-origin:54.5px 31px;}
+  .arm-l .fore-g{transform-origin:12px 41px;}
+  .arm-r .fore-g{transform-origin:58px 41px;}
+
+  /* —— 常驻待机：双手自然下垂、略外张、轻呼吸摆 —— */
+  .arm-l .arm-sway{animation:swayL 3.2s ease-in-out infinite;}
+  .arm-r .arm-sway{animation:swayR 3.2s ease-in-out infinite;}
+  @keyframes swayL{0%,100%{transform:rotate(-3deg);}50%{transform:rotate(0deg);}}
+  @keyframes swayR{0%,100%{transform:rotate(3deg);}50%{transform:rotate(0deg);}}
+
+  /* ============ 表情层（SVG） ============ */
+  .xz-face{position:absolute;inset:0;z-index:3;pointer-events:none;
+           animation:xz-breathe 3.2s ease-in-out infinite;}
+  .xz-eye{fill:#3a1d6e;transform-box:fill-box;transform-origin:center;
+          animation:xz-blink 5.4s ease-in-out infinite;}
+  @keyframes xz-blink{0%,93%,100%{transform:scaleY(1);}96.5%{transform:scaleY(.14);}}
+  .xz-mouth{fill:none;stroke:#3a1d6e;stroke-width:1.6;stroke-linecap:round;transition:opacity .15s;}
+  .xz-mouth-open{opacity:0;transition:opacity .15s;transform-box:fill-box;transform-origin:center;}
+  .xz-mouth-open .mo-shape{fill:#3a1d6e;}
+  .xz-mouth-open .tongue{fill:#e07286;}
+  .xz-cheek{fill:rgba(255,150,120,.32);}
+  .xz-hi{fill:rgba(255,255,255,.9);}
+
+  /* 指尖立体提示星 + 一圈轻巧圆环（提醒态：指尖上方悬停一眨一眨） */
+  .tip-star{opacity:0;transition:opacity .16s;filter:drop-shadow(0 0 1.3px rgba(228,150,40,.9));}
+  .orbit-star{transform-box:view-box;transform-origin:57.2px 55.3px;}
+  .orbit{fill:none;stroke:#e09a2e;stroke-linecap:round;}
+  .orbit-back{stroke-width:.42;opacity:.4;}
+  .orbit-front{stroke-width:.6;opacity:.92;}
+  .ts-base{fill:#ffb43a;stroke:#b3741f;stroke-width:.32;stroke-linejoin:round;}
+  .ts-lit{fill:#fff0c2;}
+  .ts-spark{fill:#fffaf0;}
+
+  /* 头右上灵感灯泡（往右上外侧浮）+ 一圈更清楚的细金小星 */
+  .xz-bulb{position:absolute;top:-10.5px;right:-11.5px;width:21px;height:21px;z-index:6;
+           pointer-events:none;opacity:0;transition:opacity .28s;overflow:visible;}
+  .bulb-glass{fill:#ffe89a;stroke:#cf9a3c;stroke-width:.8;}
+  .bulb-base{fill:none;stroke:#b07f34;stroke-width:.85;stroke-linecap:round;}
+  .bulb-fila{fill:none;stroke:#d99a36;stroke-width:.7;stroke-linecap:round;}
+  .rstar{transform-box:fill-box;transform-origin:center;opacity:.5;}
+  .rstar path{fill:#ffc83a;stroke:#a9761f;stroke-width:.28;stroke-linejoin:round;}
+
+  
+/* ---- 小样内缩放与三色变量（覆盖 --g-*，V19.110 同机制） ---- */
+.zhi-item .xz{transform:scale(1.15);transform-origin:center bottom;cursor:pointer;}
+.xzc-deep{
+  --g-bg-l:rgba(139,102,220,.92);--g-bg-d:rgba(91,33,182,.97);
+  --g-bevel-lt:rgba(255,255,255,.55);--g-bevel-lf:rgba(255,255,255,.38);
+  --g-bevel-rt:rgba(60,20,120,.6);--g-bevel-dk:rgba(45,12,95,.9);
+  --g-inner-hi:rgba(255,255,255,.42);--g-inner-dk:rgba(45,12,95,.4);
+  --g-shadow:rgba(40,10,90,.45);--g-ground:rgba(30,8,70,.5);
+  --arm-edge:#6d51a8;--arm-hi:#cdb8f2;--arm-hand:#b49ae8;--arm-joint:#8a6cc4;}
+.xzc-mid{
+  --g-bg-l:rgba(196,168,255,.9);--g-bg-d:rgba(139,92,246,.95);
+  --g-bevel-lt:rgba(255,255,255,.62);--g-bevel-lf:rgba(255,255,255,.44);
+  --g-bevel-rt:rgba(95,55,170,.55);--g-bevel-dk:rgba(75,40,140,.85);
+  --g-inner-hi:rgba(255,255,255,.48);--g-inner-dk:rgba(75,40,140,.34);
+  --g-shadow:rgba(60,30,115,.4);--g-ground:rgba(50,22,95,.48);
+  --arm-edge:#8a76b8;--arm-hi:#dccff7;--arm-hand:#c9bbef;--arm-joint:#a18ccc;}
+.xzc-light{
+  --g-bg-l:rgba(232,222,255,.95);--g-bg-d:rgba(196,181,253,.97);
+  --g-bevel-lt:rgba(255,255,255,.75);--g-bevel-lf:rgba(255,255,255,.55);
+  --g-bevel-rt:rgba(140,110,210,.45);--g-bevel-dk:rgba(120,90,190,.7);
+  --g-inner-hi:rgba(255,255,255,.6);--g-inner-dk:rgba(130,100,200,.28);
+  --g-shadow:rgba(110,80,180,.32);--g-ground:rgba(95,65,165,.4);
+  --arm-edge:#a894d6;--arm-hi:#efe6ff;--arm-hand:#ded0f8;--arm-joint:#bda8e6;}
+.zhi-hint{text-align:center;font-size:11px;color:var(--ink4);margin:8px 0 10px;}
+/* ===== 常驻说明框 ===== */
+.zhi-desc{height:86px;border-radius:14px;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.16);padding:13px 18px;display:flex;align-items:center;margin-bottom:20px;overflow:hidden;}
+.zhi-desc-title-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.zhi-desc .dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px;box-shadow:0 0 5px rgba(139,92,246,.45);}
+.zhi-desc-body{flex:1;}
+.zhi-desc-title{font-size:13.5px;font-weight:800;letter-spacing:.5px;}
+.zhi-desc-text{font-size:12.5px;color:var(--ink3);line-height:1.65;white-space:pre-line;}
+.zhi-desc.fading .zhi-desc-body{animation:descIn .25s ease;}
+@keyframes descIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+/* ===== 三步出卷 ===== */
+.mzx-steps{display:flex;flex-direction:column;gap:9px;}
+.mzx-shead{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.mzx-sname{font-size:14.5px;font-weight:800;letter-spacing:1px;}
+.mzx-slines{display:flex;flex-direction:column;gap:3px;padding-left:26px;}
+.sline{font-size:13px;line-height:1.62;display:flex;gap:8px;align-items:flex-start;border-radius:8px;padding:2px 8px;margin-left:-8px;transition:background .3s,box-shadow .3s;}
+.sline .bul{color:var(--p-mid);flex:0 0 auto;font-size:12px;line-height:1.9;}
+.sline b{font-weight:700;}
+.sline .kw{color:var(--p-deep);font-weight:700;}
+.sline.glow{background:rgba(139,92,246,.14);box-shadow:0 0 0 1px rgba(139,92,246,.35);}
+.sline.optional{color:#b8860b;}   /* 金色（与魔法棒金星同族 #CA8A04 系）：区分"可选进阶操作" */
+.sline.optional .bul{color:#d4a017;}
+.mzx-arrow{text-align:center;color:var(--p-light);font-size:13px;margin:-4px 0;line-height:1;}
+/* 步骤图示：正品搬运（紫文件夹 SVG / cube3d lv-pur 紫积木 / 紫杆金星魔法棒 SVG） */
+.mzx-icon{flex:0 0 28px;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-top:1px;}
+.mzx-icon svg{width:22px;height:18px;display:block;}
+.mzx-icon-wand svg{width:22px;height:22px;}
+.mzx-icon-logo{width:24px;height:27px;--zcg:167,139,250;}
+.mzx-icon-logo svg{width:24px !important;height:27px !important;
+  animation:zcBreath 2.8s ease-in-out infinite;}   /* §原装 zcBreath：贴形外发光呼吸（logo 群同款） */
+.mzx-icon-logo .zc-lit{display:block;opacity:0;animation:zcLitBreath 2.8s ease-in-out infinite;}   /* 灯芯一亮一暗 */
+.mzx-icon-logo .zc-dim{display:block;}
+@keyframes zcBreath{0%,100%{filter:drop-shadow(0 0 1px rgba(var(--zcg),.2));}50%{filter:drop-shadow(0 0 7px rgba(var(--zcg),.9));}}
+@keyframes zcLitBreath{0%,100%{opacity:0;}50%{opacity:.98;}}
+.mzx-icon-q3 .q3-wrap{position:relative;width:26px;height:26px;display:inline-block;}
+.mzx-icon-q3 svg{width:26px;height:26px;display:block;}
+.q3-lamps{position:absolute;left:16%;bottom:16%;display:flex;gap:2.5px;z-index:2;}
+.q3-lamps i{width:4px;height:4px;border-radius:50%;display:block;}
+.q3-lamps .l1{background:radial-gradient(circle at 35% 30%,#fff6c9,#f5ce4a 70%);box-shadow:0 0 3px rgba(245,206,74,.9);}
+.q3-lamps .l2{background:radial-gradient(circle at 35% 30%,#ffe0c2,#ee9040 70%);box-shadow:0 0 3px rgba(238,144,64,.8);}
+.q3-lamps .l3{background:radial-gradient(circle at 35% 30%,#e2f6c8,#8ac452 70%);box-shadow:0 0 3px rgba(138,196,82,.8);}
+.bz-cube{
+  display:inline-block;width:18px;height:16px;vertical-align:-3px;border-radius:3.5px;
+  background:
+    radial-gradient(ellipse 75% 60% at 35% 25%,rgba(255,255,255,.65) 0%,transparent 60%),
+    linear-gradient(135deg,rgba(217,200,255,.50) 0%,rgba(168,85,247,.55) 50%,rgba(107,33,168,.60) 100%);
+  border:1.5px solid rgba(107,33,168,.75);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255,255,255,.55),
+    inset -2px -2px 0 0 rgba(40,5,80,.25),
+    inset 0 0 6px rgba(255,255,255,.30),
+    0 2px 0 rgba(60,20,110,.55),
+    0 4px 6px rgba(60,20,110,.18),
+    0 0 5px rgba(168,85,247,.35);
+}
+.cube3d{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:28px;flex:none;vertical-align:middle;border-radius:7px;
+  background:radial-gradient(130% 120% at 32% 25%,var(--c3-bg-l),var(--c3-bg-d));
+  border-top:2px solid var(--c3-bvt);border-left:2px solid var(--c3-bvf);
+  border-right:2px solid var(--c3-bvr);border-bottom:3px solid var(--c3-bvd);
+  box-shadow:inset 0 2px 3px var(--c3-ihi),inset -2px -2px 3px var(--c3-idk),0 4px 7px -1px var(--c3-gr);
+}
+.cube3d::after{content:'';position:absolute;left:8%;right:8%;bottom:-5px;height:6px;border-radius:50%;
+  background:var(--c3-gr);filter:blur(4px);z-index:0;}   /* 底部落地影 */
+.cube3d .mb-ico,.cube3d .ico{position:relative;z-index:3;line-height:1;font-size:14px;}
+.cube3d.lv-pur{
+  --c3-bg-l:rgba(214,196,250,.96);--c3-bg-d:rgba(166,130,228,.97);
+  --c3-bvt:rgba(238,228,255,.8);--c3-bvf:rgba(232,220,252,.55);--c3-bvr:rgba(110,70,180,.6);--c3-bvd:rgba(85,50,150,.85);
+  --c3-ihi:rgba(240,232,255,.55);--c3-idk:rgba(85,50,150,.32);--c3-gr:rgba(80,45,140,.5);}
+.me-mzx-step-cube{width:19px;height:17.5px;border-radius:4.5px;transform:translateY(-1.5px);}
+.me-mzx-step-cube::after{left:10%;right:10%;bottom:-3.5px;height:4px;filter:blur(3px);}
+/* ===== 收束语 ===== */
+.outro{margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;}
+.outro-txt{
+  /* 深紫底色 + 渐变光带周期扫过（浅紫高光从左到右掠过字面） */
+  font-family:'STKaiti','KaiTi','楷体','Noto Serif SC',serif;
+  font-size:19px;font-weight:900;letter-spacing:4px;
+  background:linear-gradient(110deg,#5b21b6 0%,#5b21b6 38%,#c9b8ff 50%,#5b21b6 62%,#5b21b6 100%);
+  background-size:230% 100%;background-position:120% 0;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.85)) drop-shadow(0 1px 2px rgba(76,29,149,.25));
+  animation:outroShine 3.4s ease-in-out infinite;
+}
+@keyframes outroShine{0%{background-position:120% 0;}55%{background-position:-30% 0;}100%{background-position:-30% 0;}}
+.spark{position:relative;width:20px;height:20px;flex:0 0 20px;}
+.spark svg{width:100%;height:100%;display:block;animation:spkTwinkle 1.8s ease-in-out infinite;transform-origin:center;}
+.spark .mini{position:absolute;width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle,#FEF9C3 0%,#FACC15 60%,transparent 75%);
+  animation:spkMini 1.8s ease-in-out infinite;}
+.spark.s-l .mini{right:-4px;top:-2px;}
+.spark.s-r .mini{left:-4px;bottom:-2px;animation-delay:.5s;}
+.spark.s-r svg{animation-delay:.9s;}
+@keyframes spkTwinkle{0%,100%{transform:scale(.82) rotate(-6deg);opacity:.75;}50%{transform:scale(1.08) rotate(8deg);opacity:1;}}
+@keyframes spkMini{0%,100%{transform:scale(.5);opacity:.3;}50%{transform:scale(1.15);opacity:1;}}
+.magic-empty-v2 .mz-card{width:909px;max-width:calc(100% - 16px);margin:0 auto;pointer-events:auto;}
 </style>
 </head>
 <body>
@@ -11705,22 +12098,487 @@ requestAnimationFrame(tick);
               <span class="mt-spark" style="--ms-d:2.12s;--ms-x:34px;--ms-y:24px"></span>
               <span class="mt-text" data-i18n="magicZone">魔法区</span>
             </div>
-            <div class="steps">
-              <div class="step">
-                <span class="step-icon step-icon-folder" aria-hidden="true"><svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.6 5.4 a2 2 0 0 1 2-2 h4.6 a1.5 1.5 0 0 1 1.06 .44 l1.5 1.5 h9.64 a2 2 0 0 1 2 2 v8.66 a2 2 0 0 1 -2 2 h-16.8 a2 2 0 0 1 -2 -2 z" fill="#7C3AED" stroke="#3B0764" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
-                <span class="step-text" data-i18n="magicStep1">第一步：拉开右侧「语料区」，输入语料，点击「语料确认」即可。</span>
-              </div>
-              <div class="step-arrow" aria-hidden="true">↓</div>
-              <div class="step">
-                <span class="step-icon step-icon-card2d" aria-hidden="true"><span class="cube3d lv-pur me-step-cube"></span></span>
-                <span class="step-text" data-i18n="magicStep2">第二步：拖拽题型积木到「魔法区」，生成基础 / 进阶 / 高阶 · 梯度分层题卡。</span>
-              </div>
-              <div class="step-arrow" aria-hidden="true">↓</div>
-              <div class="step">
-                <span class="step-icon step-icon-wand" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s3-stick" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3B0764"/><stop offset="0.6" stop-color="#5B21B6"/><stop offset="1" stop-color="#7C3AED"/></linearGradient><radialGradient id="s3-star" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FEF9C3"/><stop offset="0.5" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><line x1="4" y1="20" x2="15" y2="9" stroke="url(#s3-stick)" stroke-width="2.2" stroke-linecap="round"/><path d="M17,4 L18,6.8 L21,6.8 L18.6,8.5 L19.5,11.5 L17,9.8 L14.5,11.5 L15.4,8.5 L13,6.8 L16,6.8 Z" fill="url(#s3-star)" stroke="#CA8A04" stroke-width="0.5" stroke-linejoin="round"/></svg></span>
-                <span class="step-text" data-i18n="magicStep3">第三步：预览题卡，可单题「焕新」或「√ 入选」，也可重新拖拽积木生成新题卡。</span>
-              </div>
-            </div>
+            <div class="mz-card">
+    <div class="mz-panes">
+<div class="mz-pane-left">
+<div class="zhi-sec-title">认识「小积木」</div>
+<div class="zhi-sec-sub">积木区的积木分三类——点击小智为您介绍！</div>
+<div class="zhi-body zhi-body-3cards">
+<div class="zhi-line" data-k="auto">
+<div class="zhi-item" data-k="auto"><div class="zwrap"><div class="xz xzc-deep">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZX" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZX">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZX">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZX">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZX">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZX" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZX" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZX" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZX"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZX)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:var(--p-deep)"><span class="dot" style="background:var(--p-deep)"></span>自动生成积木</div><div class="zhi-card-text">在【语料区】输入语料后，双击或者拖拽积木往下，魔法区即可生成题卡；未输入语料，也可进入自由编辑模式，直接在题卡区题型内输入内容出题。</div></div>
+</div>
+<div class="zhi-line" data-k="manual">
+<div class="zhi-item" data-k="manual"><div class="zwrap"><div class="xz xzc-mid">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZX" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZX">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZX">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZX">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZX">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZX" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZX" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZX" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZX"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZX)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:var(--p-mid)"><span class="dot" style="background:var(--p-mid)"></span>手动输入积木</div><div class="zhi-card-text">每道题完全由您自行输入，"小积木"网站为您提供汉字加拼音、题型版式、排卷生成——适合个性化出题。</div></div>
+</div>
+<div class="zhi-line" data-k="special">
+<div class="zhi-item" data-k="special"><div class="zwrap"><div class="xz xzc-light">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZX" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZX">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZX">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZX">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZX">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZX" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZX" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZX" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZX"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZX)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:#a78bfa"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
+</div>
+</div>
+</div>
+<div class="mz-pane-div"></div>
+<div class="mz-pane-right">
+<div class="mzx-steps">
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon" aria-hidden="true"><svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.6 5.4 a2 2 0 0 1 2-2 h4.6 a1.5 1.5 0 0 1 1.06 .44 l1.5 1.5 h9.64 a2 2 0 0 1 2 2 v8.66 a2 2 0 0 1 -2 2 h-16.8 a2 2 0 0 1 -2 -2 z" fill="#7C3AED" stroke="#3B0764" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span class="mzx-sname">第一步 · 备料</span></div>
+        <div class="mzx-slines">
+          <div class="sline" data-line="auto"><span class="bul">✦</span><span><b>自动生成积木</b>——拉开右侧「语料区」，输入语料并确认；</span></div>
+          <div class="sline" data-line="manual"><span class="bul">✦</span><span><b>手动输入积木</b>——无需备料，进入自由编辑模式直接输入；</span></div>
+          <div class="sline" data-line="special"><span class="bul">✦</span><span><b>专项特色积木</b>——自带默认范例作为参考，可修改后使用。</span></div>
+        </div>
+      </div>
+      <div class="mzx-arrow">↓</div>
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon mzx-icon-logo" aria-hidden="true"><svg viewBox="0 0 64 72" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:100%;overflow:visible"><defs><linearGradient id="mtlc11MZX" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="mllc11MZX" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#5C1EBC"/><stop offset="1" stop-color="#3E1C7B"/></linearGradient><linearGradient id="mrlc11MZX" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#936FCA"/><stop offset="1" stop-color="#6A43AC"/></linearGradient><linearGradient id="gt0lc11MZX" gradientUnits="userSpaceOnUse" x1="46" y1="12" x2="41.8" y2="14.4"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="gt1lc11MZX" gradientUnits="userSpaceOnUse" x1="46" y1="28" x2="41.8" y2="25.6"><stop offset="0" stop-color="#E9E2FA"/><stop offset="1" stop-color="#D1C4ED"/></linearGradient><linearGradient id="gt2lc11MZX" gradientUnits="userSpaceOnUse" x1="18" y1="28" x2="22.2" y2="25.6"><stop offset="0" stop-color="#C9BBE6"/><stop offset="1" stop-color="#B5A7D3"/></linearGradient><linearGradient id="gt3lc11MZX" gradientUnits="userSpaceOnUse" x1="18" y1="12" x2="22.2" y2="14.4"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="gl0lc11MZX" gradientUnits="userSpaceOnUse" x1="18" y1="28" x2="18" y2="32.5"><stop offset="0" stop-color="#6622D1"/><stop offset="1" stop-color="#5C1EBC"/></linearGradient><linearGradient id="gl1lc11MZX" gradientUnits="userSpaceOnUse" x1="32" y1="51" x2="27.8" y2="48.6"><stop offset="0" stop-color="#47208E"/><stop offset="1" stop-color="#331D5E"/></linearGradient><linearGradient id="gl2lc11MZX" gradientUnits="userSpaceOnUse" x1="18" y1="58" x2="18" y2="53.5"><stop offset="0" stop-color="#2D1951"/><stop offset="1" stop-color="#1E1137"/></linearGradient><linearGradient id="gl3lc11MZX" gradientUnits="userSpaceOnUse" x1="4" y1="35" x2="8.2" y2="37.4"><stop offset="0" stop-color="#601FC7"/><stop offset="1" stop-color="#532697"/></linearGradient><linearGradient id="gr0lc11MZX" gradientUnits="userSpaceOnUse" x1="46" y1="28" x2="46" y2="32.5"><stop offset="0" stop-color="#A080D0"/><stop offset="1" stop-color="#936FCA"/></linearGradient><linearGradient id="gr1lc11MZX" gradientUnits="userSpaceOnUse" x1="60" y1="35" x2="55.8" y2="37.4"><stop offset="0" stop-color="#8B69BF"/><stop offset="1" stop-color="#613D9D"/></linearGradient><linearGradient id="gr2lc11MZX" gradientUnits="userSpaceOnUse" x1="46" y1="58" x2="46" y2="53.5"><stop offset="0" stop-color="#583991"/><stop offset="1" stop-color="#4D327F"/></linearGradient><linearGradient id="gr3lc11MZX" gradientUnits="userSpaceOnUse" x1="32" y1="51" x2="36.2" y2="48.6"><stop offset="0" stop-color="#906DC7"/><stop offset="1" stop-color="#6340A3"/></linearGradient><clipPath id="hxlc11MZX"><path d="M27.7,6.5 Q32,4 36.3,6.5 L55.7,17.5 Q60,20 60.0,25.0 L60.0,45.0 Q60,50 55.7,52.5 L36.3,63.5 Q32,66 27.7,63.5 L8.3,52.5 Q4,50 4.0,45.0 L4.0,25.0 Q4,20 8.3,17.5 Z"/></clipPath></defs><ellipse cx="32" cy="68" rx="22" ry="3" fill="rgba(40,18,80,.35)"/><g clip-path="url(#hxlc11MZX)"><polygon points="32.00,4.00 60.00,20.00 51.60,20.00 32.00,8.80" fill="url(#gt0lc11MZX)"/><polygon points="60.00,20.00 32.00,36.00 32.00,31.20 51.60,20.00" fill="url(#gt1lc11MZX)"/><polygon points="32.00,36.00 4.00,20.00 12.40,20.00 32.00,31.20" fill="url(#gt2lc11MZX)"/><polygon points="4.00,20.00 32.00,4.00 32.00,8.80 12.40,20.00" fill="url(#gt3lc11MZX)"/><polygon points="32.00,8.80 51.60,20.00 32.00,31.20 12.40,20.00" fill="url(#mtlc11MZX)"/><polygon points="4.00,20.00 32.00,36.00 27.80,38.10 8.20,26.90" fill="url(#gl0lc11MZX)"/><polygon points="32.00,36.00 32.00,66.00 27.80,59.10 27.80,38.10" fill="url(#gl1lc11MZX)"/><polygon points="32.00,66.00 4.00,50.00 8.20,47.90 27.80,59.10" fill="url(#gl2lc11MZX)"/><polygon points="4.00,50.00 4.00,20.00 8.20,26.90 8.20,47.90" fill="url(#gl3lc11MZX)"/><polygon points="8.20,26.90 27.80,38.10 27.80,59.10 8.20,47.90" fill="url(#mllc11MZX)"/><polygon points="32.00,36.00 60.00,20.00 55.80,26.90 36.20,38.10" fill="url(#gr0lc11MZX)"/><polygon points="60.00,20.00 60.00,50.00 55.80,47.90 55.80,26.90" fill="url(#gr1lc11MZX)"/><polygon points="60.00,50.00 32.00,66.00 36.20,59.10 55.80,47.90" fill="url(#gr2lc11MZX)"/><polygon points="32.00,66.00 32.00,36.00 36.20,38.10 36.20,59.10" fill="url(#gr3lc11MZX)"/><polygon points="36.20,38.10 55.80,26.90 55.80,47.90 36.20,59.10" fill="url(#mrlc11MZX)"/><ellipse cx="32" cy="20.4" rx="5.2" ry="2.6" fill="#7E58C4"/><g class="zc-dim"><ellipse cx="32" cy="20.1" rx="3.4" ry="1.7" fill="#54368E"/><ellipse cx="31" cy="19.6" rx="1.1" ry="0.5" fill="#ffffff" opacity="0.22"/></g><g class="zc-lit"><ellipse cx="32" cy="20.1" rx="5.6" ry="2.9" fill="#E6DAFF" opacity="0.85"/><ellipse cx="32" cy="20.1" rx="3.4" ry="1.7" fill="#F4EDFF"/><ellipse cx="31.4" cy="19.8" rx="1.4" ry="0.7" fill="#ffffff" opacity="0.92"/></g></g></svg></span></span><span class="mzx-sname">第二步 · 出题</span></div>
+        <div class="mzx-slines">
+          <div class="sline"><span class="bul">✦</span><span>双击或拖拽积木到「魔法区」，即刻生成一组题；<br><span style="margin-left:-0.5em;">（默认档位为： "筑基 · 基础"）</span></span></div>
+          <div class="sline optional"><span class="bul">✦</span><span>生成分层题：点击积木区右侧的维度引擎（筑基／提升），<br><span style="display:inline-block;padding-left:6em;">切换题卡区 3D 积木上的梯度灯（基础／进阶／高阶）；</span></span></div>
+          <div class="sline"><span class="bul">✦</span><span>两个维度&三个梯度均由您掌控，一份语料可同时配置 <b>6 套</b>不同的题；<br><span style="display:inline-block;padding-left:12px;">——可拉开难度层次作为分层卷，也可仅作为同难度的 AB 差异卷。</span></span></div>
+        </div>
+      </div>
+      <div class="mzx-arrow">↓</div>
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon mzx-icon-wand" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s3-stickMZX" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3B0764"/><stop offset="0.6" stop-color="#5B21B6"/><stop offset="1" stop-color="#7C3AED"/></linearGradient><radialGradient id="s3-starMZX" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FEF9C3"/><stop offset="0.5" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><line x1="4" y1="20" x2="15" y2="9" stroke="url(#s3-stickMZX)" stroke-width="2.2" stroke-linecap="round"/><path d="M17,4 L18,6.8 L21,6.8 L18.6,8.5 L19.5,11.5 L17,9.8 L14.5,11.5 L15.4,8.5 L13,6.8 L16,6.8 Z" fill="url(#s3-starMZX)" stroke="#CA8A04" stroke-width="0.5" stroke-linejoin="round"/></svg></span><span class="mzx-sname">第三步 · 打磨</span></div>
+        <div class="mzx-slines">
+          <div class="sline"><span class="bul">✦</span><span>预览题卡：单题可「焕新」、可增删，设定【分数】- 确定「√ 入选」；</span></div>
+          <div class="sline"><span class="bul">✦</span><span>题干与选项，分数设定，均可自由编辑；</span></div>
+          <div class="sline"><span class="bul">✦</span><span>可一键开启全题拼音，也可局部格式化。</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <span class="spark s-l" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><defs><radialGradient id="spk1MZX" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#FEF9C3"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><path d="M12 1.5 L14.2 9.8 L22.5 12 L14.2 14.2 L12 22.5 L9.8 14.2 L1.5 12 L9.8 9.8 Z" fill="url(#spk1MZX)" stroke="#B8860B" stroke-width=".6" stroke-linejoin="round"/></svg>
+        <i class="mini"></i>
+      </span>
+      <span class="outro-txt">不同题型积木，等您来探索！</span>
+      <span class="spark s-r" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><defs><radialGradient id="spk2MZX" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#FEF9C3"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><path d="M12 1.5 L14.2 9.8 L22.5 12 L14.2 14.2 L12 22.5 L9.8 14.2 L1.5 12 L9.8 9.8 Z" fill="url(#spk2MZX)" stroke="#B8860B" stroke-width=".6" stroke-linejoin="round"/></svg>
+        <i class="mini"></i>
+      </span>
+    </div>
+</div>
+</div>
+  </div>
           </div>
         </div>
       </div>
@@ -37715,22 +38573,487 @@ window.MatchGen = (function(){
               <span class="mt-spark" style="--ms-d:2.12s;--ms-x:34px;--ms-y:24px"></span>
               <span class="mt-text" data-i18n="magicZone">魔法区</span>
             </div>
-            <div class="steps">
-              <div class="step">
-                <span class="step-icon step-icon-folder" aria-hidden="true"><svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.6 5.4 a2 2 0 0 1 2-2 h4.6 a1.5 1.5 0 0 1 1.06 .44 l1.5 1.5 h9.64 a2 2 0 0 1 2 2 v8.66 a2 2 0 0 1 -2 2 h-16.8 a2 2 0 0 1 -2 -2 z" fill="#7C3AED" stroke="#3B0764" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
-                <span class="step-text" data-i18n="magicStep1">第一步：拉开右侧「语料区」，输入语料，点击「语料确认」即可。</span>
-              </div>
-              <div class="step-arrow" aria-hidden="true">↓</div>
-              <div class="step">
-                <span class="step-icon step-icon-card2d" aria-hidden="true"><span class="cube3d lv-pur me-step-cube"></span></span>
-                <span class="step-text" data-i18n="magicStep2">第二步：拖拽题型积木到「魔法区」，生成基础 / 进阶 / 高阶 · 梯度分层题卡。</span>
-              </div>
-              <div class="step-arrow" aria-hidden="true">↓</div>
-              <div class="step">
-                <span class="step-icon step-icon-wand" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s3-stick-d" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3B0764"/><stop offset="0.6" stop-color="#5B21B6"/><stop offset="1" stop-color="#7C3AED"/></linearGradient><radialGradient id="s3-star-d" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FEF9C3"/><stop offset="0.5" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><line x1="4" y1="20" x2="15" y2="9" stroke="url(#s3-stick-d)" stroke-width="2.2" stroke-linecap="round"/><path d="M17,4 L18,6.8 L21,6.8 L18.6,8.5 L19.5,11.5 L17,9.8 L14.5,11.5 L15.4,8.5 L13,6.8 L16,6.8 Z" fill="url(#s3-star-d)" stroke="#CA8A04" stroke-width="0.5" stroke-linejoin="round"/></svg></span>
-                <span class="step-text" data-i18n="magicStep3">第三步：预览题卡，可单题「焕新」或「√ 入选」，也可重新拖拽积木生成新题卡。</span>
-              </div>
-            </div>`;
+            <div class="mz-card">
+    <div class="mz-panes">
+<div class="mz-pane-left">
+<div class="zhi-sec-title">认识「小积木」</div>
+<div class="zhi-sec-sub">积木区的积木分三类——点击小智为您介绍！</div>
+<div class="zhi-body zhi-body-3cards">
+<div class="zhi-line" data-k="auto">
+<div class="zhi-item" data-k="auto"><div class="zwrap"><div class="xz xzc-deep">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZXD" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZXD">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZXD">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZXD">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZXD">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZXD" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZXD" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZXD" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZXD"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZXD)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:var(--p-deep)"><span class="dot" style="background:var(--p-deep)"></span>自动生成积木</div><div class="zhi-card-text">在【语料区】输入语料后，双击或者拖拽积木往下，魔法区即可生成题卡；未输入语料，也可进入自由编辑模式，直接在题卡区题型内输入内容出题。</div></div>
+</div>
+<div class="zhi-line" data-k="manual">
+<div class="zhi-item" data-k="manual"><div class="zwrap"><div class="xz xzc-mid">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZXD" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZXD">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZXD">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZXD">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZXD">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZXD" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZXD" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZXD" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZXD"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZXD)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:var(--p-mid)"><span class="dot" style="background:var(--p-mid)"></span>手动输入积木</div><div class="zhi-card-text">每道题完全由您自行输入，"小积木"网站为您提供汉字加拼音、题型版式、排卷生成——适合个性化出题。</div></div>
+</div>
+<div class="zhi-line" data-k="special">
+<div class="zhi-item" data-k="special"><div class="zwrap"><div class="xz xzc-light">
+      <div class="xz-body"></div>
+      <svg class="xz-pad" viewBox="0 0 22 11" aria-hidden="true">
+        <rect class="pad-base" x="1" y="2.3" width="20" height="7.4" rx="2"/>
+        <rect class="pad-board" x="1" y="1.7" width="20" height="7.4" rx="2"/>
+        <g class="pad-keys">
+          <rect class="pad-key" x="1.8" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="2.5" width="9.6" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="15.0" y="2.5" width="1.7" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="2.5" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="4.55" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="1.8" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="4.9" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="8.0" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="11.1" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="14.2" y="6.6" width="2.5" height="1.7" rx=".35"/>
+          <rect class="pad-key" x="17.3" y="6.6" width="2.5" height="1.7" rx=".35"/>
+        </g>
+      </svg>
+      <svg class="xz-arms" viewBox="0 0 70 66" aria-hidden="true">
+        <defs>
+          <radialGradient id="xzhgMZXD" cx="36%" cy="28%" r="82%">
+            <stop offset="0%" stop-color="#ddd0f7"/><stop offset="46%" stop-color="#b69fe4"/><stop offset="100%" stop-color="#8a6fc2"/>
+          </radialGradient>
+          <g id="hFistMZXD">
+            <path class="h-base" d="M-2.36 0.25 C-2.46 -1.05 -1.26 -1.4 0 -1.4 C1.26 -1.4 2.46 -1.05 2.36 0.25 C2.46 0.98 2.4 1.5 1.82 1.85 C1.38 2.16 0.68 2.28 0 2.24 C-0.68 2.28 -1.38 2.16 -1.82 1.85 C-2.4 1.5 -2.46 0.98 -2.36 0.25 Z"/>
+            <ellipse class="h-sh" cx="0" cy="1.62" rx="1.65" ry="0.58"/>
+            <path class="h-crease" d="M-1.92 -0.35 C-1.99 0.25 -1.97 0.8 -1.87 1.32"/>
+            <path class="h-crease" d="M-1.16 -0.58 C-1.24 0.05 -1.22 0.62 -1.12 1.22"/>
+            <path class="h-crease" d="M1.92 -0.35 C1.99 0.25 1.97 0.8 1.87 1.32"/>
+            <path class="h-crease" d="M1.16 -0.58 C1.24 0.05 1.22 0.62 1.12 1.22"/>
+            <ellipse class="h-hi" cx="-0.5" cy="-0.4" rx="1.55" ry="1.05" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.76" cy="-0.66" rx=".54" ry=".42"/>
+          </g>
+          <g id="hFistTallMZXD">
+            <path class="h-base" d="M-1.92 -0.52 C-2.02 -2.42 -1.02 -2.95 0 -2.95 C1.02 -2.95 2.02 -2.42 1.92 -0.52 C2.01 0.78 1.94 1.8 1.47 2.4 C1.11 2.78 0.55 2.92 0 2.88 C-0.55 2.92 -1.11 2.78 -1.47 2.4 C-1.94 1.8 -2.01 0.78 -1.92 -0.52 Z"/>
+            <ellipse class="h-sh" cx="0" cy="2.05" rx="1.32" ry="0.6"/>
+            <path class="h-crease" d="M-1.58 -0.9 C-1.65 0.0 -1.63 0.9 -1.53 1.72"/>
+            <path class="h-crease" d="M-1.0 -1.2 C-1.07 -0.25 -1.05 0.72 -0.95 1.62"/>
+            <path class="h-crease" d="M1.58 -0.9 C1.65 0.0 1.63 0.9 1.53 1.72"/>
+            <path class="h-crease" d="M1.0 -1.2 C1.07 -0.25 1.05 0.72 0.95 1.62"/>
+            <ellipse class="h-hi" cx="-0.42" cy="-0.9" rx="1.28" ry="1.45" opacity=".4"/>
+            <ellipse class="h-hicore" cx="-0.66" cy="-1.32" rx=".5" ry=".48"/>
+          </g>
+          <g id="hOpenMZXD">
+            <path class="h-base" d="M-2.3 -2.0 C-3.0 -1.4 -3.15 -0.4 -2.78 0.25 C-2.95 0.95 -2.6 1.7 -1.95 1.62 C-1.6 1.58 -1.55 1.2 -1.55 0.85 C-1.7 1.55 -1.55 2.5 -1.0 2.55 C-0.58 2.58 -0.55 1.75 -0.5 1.05 C-0.55 1.85 -0.35 2.85 0.12 2.85 C0.58 2.85 0.72 1.95 0.7 1.1 C0.78 1.9 1.05 2.7 1.55 2.55 C1.95 2.42 1.78 1.5 1.6 0.85 C1.78 1.5 2.25 2.0 2.62 1.6 C2.92 1.25 2.7 0.4 2.5 -0.05 C2.7 -0.8 2.7 -1.45 2.3 -2.0 C1.45 -2.62 -1.45 -2.62 -2.3 -2.0 Z"/>
+            <ellipse class="h-hi" cx="0" cy="-0.6" rx="1.7" ry="1.5" opacity=".3"/>
+            <ellipse class="h-hicore" cx="-0.3" cy="-0.85" rx=".62" ry=".5" opacity=".42"/>
+          </g>
+          <g id="hPointMZXD">
+            <path class="h-base" d="M-0.9 4.05 C-0.46 4.17 -0.36 3.5 -0.44 2.8 C-0.5 2.2 -0.1 2.05 0.6 1.96 C1.32 1.86 1.92 1.42 2.1 0.6 C2.24 -0.15 2.12 -0.95 1.6 -1.42 C1.18 -1.8 0.55 -1.92 0 -1.88 C-0.6 -1.92 -1.3 -1.76 -1.72 -1.28 C-2.36 -1.05 -2.66 -0.32 -2.36 0.35 C-2.16 0.82 -1.74 0.96 -1.4 0.82 C-1.34 1.44 -1.46 2.18 -1.42 2.82 C-1.38 3.5 -1.32 3.92 -0.9 4.05 Z"/>
+            <path class="h-cncv" d="M-0.85 0.15 C-0.3 0.6 0.5 0.7 1.0 0.5 C0.72 1.18 -0.12 1.28 -0.7 0.95 C-1.05 0.6 -1.1 0.4 -0.85 0.15 Z"/>
+            <path class="h-crease" d="M-1.5 0.0 C-0.9 0.35 -0.3 0.55 0.12 0.6"/>
+            <path class="h-crease" d="M0.5 -0.85 C0.32 -0.18 0.2 0.3 0.12 0.6"/>
+            <path class="h-crease" d="M1.5 -0.35 C1.0 0.12 0.45 0.45 0.15 0.62"/>
+            <path class="h-base" d="M1.78 -0.15 C0.95 0.2 -0.35 0.78 -1.0 1.35 C-1.28 1.62 -1.0 2.16 -0.58 1.96 C0.32 1.55 1.45 0.98 2.0 0.62 C2.3 0.36 2.12 -0.32 1.78 -0.15 Z"/>
+          </g>
+        </defs>
+        <g class="arm arm-l">
+          <g class="arm-sway">
+            <circle class="joint" cx="15.5" cy="31" r="1.7"/>
+            <path class="seg base" d="M15.5 31 Q13 36 12 41"/>
+            <path class="seg hi"   d="M15.5 31 Q13 36 12 41"/>
+            <g class="fore-g">
+              <path class="seg base" d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <path class="seg hi"   d="M12 41 Q11.4 46.5 12.8 50.5"/>
+              <use href="#hFistMZXD" x="12.8" y="51.8"/>
+            </g>
+          </g>
+        </g>
+        <g class="arm arm-r">
+          <g class="arm-sway">
+            <circle class="joint" cx="54.5" cy="31" r="1.7"/>
+            <g class="upper-normal">
+              <path class="seg base" d="M54.5 31 Q57 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q57 36 58 41"/>
+            </g>
+            <g class="upper-raise">
+              <path class="seg base" d="M54.5 31 Q55.5 36 58 41"/>
+              <path class="seg hi"   d="M54.5 31 Q55.5 36 58 41"/>
+            </g>
+            <g class="fore-g">
+              <g class="fore-normal">
+                <path class="seg base" d="M58 41 Q58.6 46.5 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q58.6 46.5 57.2 50.5"/>
+              </g>
+              <g class="fore-raise">
+                <path class="seg base" d="M58 41 Q56.6 45 57.2 50.5"/>
+                <path class="seg hi"   d="M58 41 Q56.6 45 57.2 50.5"/>
+              </g>
+              <use href="#hFistMZXD" x="57.2" y="51.8" class="rh-fist"/>
+              <use href="#hFistTallMZXD" x="57.2" y="51.8" class="rh-tall"/>
+              <g class="tip-star" transform="translate(113.4 1.5) scale(-1 1)">
+                <path class="orbit orbit-back" d="M52.29 57.29 A5.3 2.1 -22 0 1 62.11 53.31"/>
+                <path class="orbit orbit-front" d="M52.29 57.29 A5.3 2.1 -22 0 0 62.11 53.31"/>
+                <g class="orbit-star">
+                  <path class="ts-base" d="M57.20 53.30 L57.64 54.86 L59.20 55.30 L57.64 55.74 L57.20 57.30 L56.76 55.74 L55.20 55.30 L56.76 54.86 Z"/>
+                  <path class="ts-lit" d="M56.88 53.71 L57.18 54.66 L58.13 54.96 L57.18 55.26 L56.88 56.21 L56.58 55.26 L55.63 54.96 L56.58 54.66 Z"/>
+                  <circle class="ts-spark" cx="56.65" cy="54.68" r=".4"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <svg class="xz-face" viewBox="0 0 38 38" aria-hidden="true">
+        <circle class="xz-eye eye-l" cx="14" cy="18" r="2.1"/>
+        <circle class="xz-eye eye-r" cx="24" cy="18" r="2.1"/>
+        <circle class="xz-hi" cx="14.8" cy="17.2" r=".6"/>
+        <circle class="xz-hi" cx="24.8" cy="17.2" r=".6"/>
+        <ellipse class="xz-cheek" cx="11" cy="22.5" rx="2.4" ry="1.4"/>
+        <ellipse class="xz-cheek" cx="27" cy="22.5" rx="2.4" ry="1.4"/>
+        <path class="xz-mouth" d="M15.5 24 Q19 27 22.5 24"/>
+        <g class="xz-mouth-open">
+          <clipPath id="moClipMZXD"><path d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/></clipPath>
+          <path class="mo-shape" d="M15.2 23.8 Q19 24.8 22.8 23.8 Q19.2 28.2 15.2 23.8 Z"/>
+          <ellipse class="tongue" clip-path="url(#moClipMZXD)" cx="19" cy="26.5" rx="2.5" ry="1.6"/>
+        </g>
+      </svg>
+      <svg class="xz-bulb" viewBox="0 0 28 28" aria-hidden="true">
+        <g class="bulb-rays">
+          <g class="rstar"><path d="M14 0.5 L14.45 1.55 L15.5 2 L14.45 2.45 L14 3.5 L13.55 2.45 L12.5 2 L13.55 1.55 Z"/></g>
+          <g class="rstar"><path d="M21 2.5 L21.45 3.55 L22.5 4 L21.45 4.45 L21 5.5 L20.55 4.45 L19.5 4 L20.55 3.55 Z"/></g>
+          <g class="rstar"><path d="M23.5 8 L23.95 9.05 L25 9.5 L23.95 9.95 L23.5 11 L23.05 9.95 L22 9.5 L23.05 9.05 Z"/></g>
+          <g class="rstar"><path d="M5 7.5 L5.45 8.55 L6.5 9 L5.45 9.45 L5 10.5 L4.55 9.45 L3.5 9 L4.55 8.55 Z"/></g>
+          <g class="rstar"><path d="M7.5 2 L7.95 3.05 L9 3.5 L7.95 3.95 L7.5 5 L7.05 3.95 L6 3.5 L7.05 3.05 Z"/></g>
+        </g>
+        <g class="bulb-lamp">
+          <circle class="bulb-glass" cx="14" cy="10" r="5.2"/>
+          <path class="bulb-fila" d="M12.3 9.6 q1.7 2.1 3.4 0"/>
+          <path class="bulb-base" d="M11.3 15.4 h5.4 M11.8 17 h4.4 M12.7 18.5 h2.6"/>
+        </g>
+      </svg>
+      
+    </div></div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:#a78bfa"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
+</div>
+</div>
+</div>
+<div class="mz-pane-div"></div>
+<div class="mz-pane-right">
+<div class="mzx-steps">
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon" aria-hidden="true"><svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.6 5.4 a2 2 0 0 1 2-2 h4.6 a1.5 1.5 0 0 1 1.06 .44 l1.5 1.5 h9.64 a2 2 0 0 1 2 2 v8.66 a2 2 0 0 1 -2 2 h-16.8 a2 2 0 0 1 -2 -2 z" fill="#7C3AED" stroke="#3B0764" stroke-width="1.4" stroke-linejoin="round"/></svg></span><span class="mzx-sname">第一步 · 备料</span></div>
+        <div class="mzx-slines">
+          <div class="sline" data-line="auto"><span class="bul">✦</span><span><b>自动生成积木</b>——拉开右侧「语料区」，输入语料并确认；</span></div>
+          <div class="sline" data-line="manual"><span class="bul">✦</span><span><b>手动输入积木</b>——无需备料，进入自由编辑模式直接输入；</span></div>
+          <div class="sline" data-line="special"><span class="bul">✦</span><span><b>专项特色积木</b>——自带默认范例作为参考，可修改后使用。</span></div>
+        </div>
+      </div>
+      <div class="mzx-arrow">↓</div>
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon mzx-icon-logo" aria-hidden="true"><svg viewBox="0 0 64 72" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:100%;overflow:visible"><defs><linearGradient id="mtlc11MZXD" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="mllc11MZXD" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#5C1EBC"/><stop offset="1" stop-color="#3E1C7B"/></linearGradient><linearGradient id="mrlc11MZXD" x1="0.4" y1="0.25" x2="0.55" y2="1"><stop offset="0" stop-color="#936FCA"/><stop offset="1" stop-color="#6A43AC"/></linearGradient><linearGradient id="gt0lc11MZXD" gradientUnits="userSpaceOnUse" x1="46" y1="12" x2="41.8" y2="14.4"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="gt1lc11MZXD" gradientUnits="userSpaceOnUse" x1="46" y1="28" x2="41.8" y2="25.6"><stop offset="0" stop-color="#E9E2FA"/><stop offset="1" stop-color="#D1C4ED"/></linearGradient><linearGradient id="gt2lc11MZXD" gradientUnits="userSpaceOnUse" x1="18" y1="28" x2="22.2" y2="25.6"><stop offset="0" stop-color="#C9BBE6"/><stop offset="1" stop-color="#B5A7D3"/></linearGradient><linearGradient id="gt3lc11MZXD" gradientUnits="userSpaceOnUse" x1="18" y1="12" x2="22.2" y2="14.4"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDD2F6"/></linearGradient><linearGradient id="gl0lc11MZXD" gradientUnits="userSpaceOnUse" x1="18" y1="28" x2="18" y2="32.5"><stop offset="0" stop-color="#6622D1"/><stop offset="1" stop-color="#5C1EBC"/></linearGradient><linearGradient id="gl1lc11MZXD" gradientUnits="userSpaceOnUse" x1="32" y1="51" x2="27.8" y2="48.6"><stop offset="0" stop-color="#47208E"/><stop offset="1" stop-color="#331D5E"/></linearGradient><linearGradient id="gl2lc11MZXD" gradientUnits="userSpaceOnUse" x1="18" y1="58" x2="18" y2="53.5"><stop offset="0" stop-color="#2D1951"/><stop offset="1" stop-color="#1E1137"/></linearGradient><linearGradient id="gl3lc11MZXD" gradientUnits="userSpaceOnUse" x1="4" y1="35" x2="8.2" y2="37.4"><stop offset="0" stop-color="#601FC7"/><stop offset="1" stop-color="#532697"/></linearGradient><linearGradient id="gr0lc11MZXD" gradientUnits="userSpaceOnUse" x1="46" y1="28" x2="46" y2="32.5"><stop offset="0" stop-color="#A080D0"/><stop offset="1" stop-color="#936FCA"/></linearGradient><linearGradient id="gr1lc11MZXD" gradientUnits="userSpaceOnUse" x1="60" y1="35" x2="55.8" y2="37.4"><stop offset="0" stop-color="#8B69BF"/><stop offset="1" stop-color="#613D9D"/></linearGradient><linearGradient id="gr2lc11MZXD" gradientUnits="userSpaceOnUse" x1="46" y1="58" x2="46" y2="53.5"><stop offset="0" stop-color="#583991"/><stop offset="1" stop-color="#4D327F"/></linearGradient><linearGradient id="gr3lc11MZXD" gradientUnits="userSpaceOnUse" x1="32" y1="51" x2="36.2" y2="48.6"><stop offset="0" stop-color="#906DC7"/><stop offset="1" stop-color="#6340A3"/></linearGradient><clipPath id="hxlc11MZXD"><path d="M27.7,6.5 Q32,4 36.3,6.5 L55.7,17.5 Q60,20 60.0,25.0 L60.0,45.0 Q60,50 55.7,52.5 L36.3,63.5 Q32,66 27.7,63.5 L8.3,52.5 Q4,50 4.0,45.0 L4.0,25.0 Q4,20 8.3,17.5 Z"/></clipPath></defs><ellipse cx="32" cy="68" rx="22" ry="3" fill="rgba(40,18,80,.35)"/><g clip-path="url(#hxlc11MZXD)"><polygon points="32.00,4.00 60.00,20.00 51.60,20.00 32.00,8.80" fill="url(#gt0lc11MZXD)"/><polygon points="60.00,20.00 32.00,36.00 32.00,31.20 51.60,20.00" fill="url(#gt1lc11MZXD)"/><polygon points="32.00,36.00 4.00,20.00 12.40,20.00 32.00,31.20" fill="url(#gt2lc11MZXD)"/><polygon points="4.00,20.00 32.00,4.00 32.00,8.80 12.40,20.00" fill="url(#gt3lc11MZXD)"/><polygon points="32.00,8.80 51.60,20.00 32.00,31.20 12.40,20.00" fill="url(#mtlc11MZXD)"/><polygon points="4.00,20.00 32.00,36.00 27.80,38.10 8.20,26.90" fill="url(#gl0lc11MZXD)"/><polygon points="32.00,36.00 32.00,66.00 27.80,59.10 27.80,38.10" fill="url(#gl1lc11MZXD)"/><polygon points="32.00,66.00 4.00,50.00 8.20,47.90 27.80,59.10" fill="url(#gl2lc11MZXD)"/><polygon points="4.00,50.00 4.00,20.00 8.20,26.90 8.20,47.90" fill="url(#gl3lc11MZXD)"/><polygon points="8.20,26.90 27.80,38.10 27.80,59.10 8.20,47.90" fill="url(#mllc11MZXD)"/><polygon points="32.00,36.00 60.00,20.00 55.80,26.90 36.20,38.10" fill="url(#gr0lc11MZXD)"/><polygon points="60.00,20.00 60.00,50.00 55.80,47.90 55.80,26.90" fill="url(#gr1lc11MZXD)"/><polygon points="60.00,50.00 32.00,66.00 36.20,59.10 55.80,47.90" fill="url(#gr2lc11MZXD)"/><polygon points="32.00,66.00 32.00,36.00 36.20,38.10 36.20,59.10" fill="url(#gr3lc11MZXD)"/><polygon points="36.20,38.10 55.80,26.90 55.80,47.90 36.20,59.10" fill="url(#mrlc11MZXD)"/><ellipse cx="32" cy="20.4" rx="5.2" ry="2.6" fill="#7E58C4"/><g class="zc-dim"><ellipse cx="32" cy="20.1" rx="3.4" ry="1.7" fill="#54368E"/><ellipse cx="31" cy="19.6" rx="1.1" ry="0.5" fill="#ffffff" opacity="0.22"/></g><g class="zc-lit"><ellipse cx="32" cy="20.1" rx="5.6" ry="2.9" fill="#E6DAFF" opacity="0.85"/><ellipse cx="32" cy="20.1" rx="3.4" ry="1.7" fill="#F4EDFF"/><ellipse cx="31.4" cy="19.8" rx="1.4" ry="0.7" fill="#ffffff" opacity="0.92"/></g></g></svg></span></span><span class="mzx-sname">第二步 · 出题</span></div>
+        <div class="mzx-slines">
+          <div class="sline"><span class="bul">✦</span><span>双击或拖拽积木到「魔法区」，即刻生成一组题；<br><span style="margin-left:-0.5em;">（默认档位为： "筑基 · 基础"）</span></span></div>
+          <div class="sline optional"><span class="bul">✦</span><span>生成分层题：点击积木区右侧的维度引擎（筑基／提升），<br><span style="display:inline-block;padding-left:6em;">切换题卡区 3D 积木上的梯度灯（基础／进阶／高阶）；</span></span></div>
+          <div class="sline"><span class="bul">✦</span><span>两个维度&三个梯度均由您掌控，一份语料可同时配置 <b>6 套</b>不同的题；<br><span style="display:inline-block;padding-left:12px;">——可拉开难度层次作为分层卷，也可仅作为同难度的 AB 差异卷。</span></span></div>
+        </div>
+      </div>
+      <div class="mzx-arrow">↓</div>
+      <div class="mzx-step">
+        <div class="mzx-shead"><span class="mzx-icon mzx-icon-wand" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="s3-stickMZXD" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3B0764"/><stop offset="0.6" stop-color="#5B21B6"/><stop offset="1" stop-color="#7C3AED"/></linearGradient><radialGradient id="s3-starMZXD" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FEF9C3"/><stop offset="0.5" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><line x1="4" y1="20" x2="15" y2="9" stroke="url(#s3-stickMZXD)" stroke-width="2.2" stroke-linecap="round"/><path d="M17,4 L18,6.8 L21,6.8 L18.6,8.5 L19.5,11.5 L17,9.8 L14.5,11.5 L15.4,8.5 L13,6.8 L16,6.8 Z" fill="url(#s3-starMZXD)" stroke="#CA8A04" stroke-width="0.5" stroke-linejoin="round"/></svg></span><span class="mzx-sname">第三步 · 打磨</span></div>
+        <div class="mzx-slines">
+          <div class="sline"><span class="bul">✦</span><span>预览题卡：单题可「焕新」、可增删，设定【分数】- 确定「√ 入选」；</span></div>
+          <div class="sline"><span class="bul">✦</span><span>题干与选项，分数设定，均可自由编辑；</span></div>
+          <div class="sline"><span class="bul">✦</span><span>可一键开启全题拼音，也可局部格式化。</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="outro">
+      <span class="spark s-l" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><defs><radialGradient id="spk1MZXD" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#FEF9C3"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><path d="M12 1.5 L14.2 9.8 L22.5 12 L14.2 14.2 L12 22.5 L9.8 14.2 L1.5 12 L9.8 9.8 Z" fill="url(#spk1MZXD)" stroke="#B8860B" stroke-width=".6" stroke-linejoin="round"/></svg>
+        <i class="mini"></i>
+      </span>
+      <span class="outro-txt">不同题型积木，等您来探索！</span>
+      <span class="spark s-r" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><defs><radialGradient id="spk2MZXD" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#FEF9C3"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#CA8A04"/></radialGradient></defs><path d="M12 1.5 L14.2 9.8 L22.5 12 L14.2 14.2 L12 22.5 L9.8 14.2 L1.5 12 L9.8 9.8 Z" fill="url(#spk2MZXD)" stroke="#B8860B" stroke-width=".6" stroke-linejoin="round"/></svg>
+        <i class="mini"></i>
+      </span>
+    </div>
+</div>
+</div>
+  </div>`;
   function buildMagicEmptyGuide(){
     const el=document.createElement('div');
     el.id='empty-hint';
@@ -37756,7 +39079,7 @@ window.MatchGen = (function(){
     }
     if(!hint){
       // 删卡回退、清空、初次没有 hint 等任何空状态场景 —— 一律恢复完整三步引导框，绝不退化为单行
-      canvas.appendChild(buildMagicEmptyGuide());
+      canvas.appendChild(buildMagicEmptyGuide()); if(window.__mzxIntroInit) setTimeout(window.__mzxIntroInit,0);
     }
   }
 
@@ -39110,6 +40433,19 @@ window.MatchGen = (function(){
         });
         if(window.XiaoZhi && typeof XiaoZhi.refresh==='function') XiaoZhi.refresh();
       }catch(_){}
+      /* §V504 同卡已入选(committed/modified)切灯＝改这道题的梯度(B方案原地迁移的前半程)：
+         灯≠库里这道题的梯度 → 按钮转「● 已修改」，提示需再点入选确认迁移；切回原灯 → 恢复「✓ 已入选」。
+         fresh/回访态不进此分支：那时调灯只决定「即将入选的新题」落哪个梯度(总有一盏灯亮，默认黄)，不碰历史记录。 */
+      try{
+        if(card._selState==='committed' || card._selState==='modified'){
+          const _uid=card._lastRecUid; let _pr=null;
+          if(_uid){ const _fb=window.finalQuizBank||[]; for(let i=_fb.length-1;i>=0;i--){ if(_fb[i]&&_fb[i].uid===_uid){ _pr=_fb[i]; break; } } }
+          if(_pr){
+            card._selState = (String(_pr.difficultyKey)===String(key)) ? 'committed' : 'modified';
+            if(typeof card._applySaveState==='function') card._applySaveState();
+          }
+        }
+      }catch(_e){}
     }
     card._applyCardLevel = applyCardLevel;
 
@@ -42862,7 +44198,11 @@ window.MatchGen = (function(){
         else if(st==='modified'){ save.removeAttribute('data-i18n'); save.textContent='● 已修改'; save.classList.add('sel-modified'); }
         else { save.dataset.i18n='selectIn'; save.textContent=T('selectIn'); }
       };
-      card._applySaveState=_applySaveState;
+      /* §V504b 每列面板各有一只入选按钮：原 card._applySaveState 被最后一列覆盖 →
+         编辑置「已修改」/切灯/重置时只有最后一列按钮变字（老暗伤）。改为登记数组、广播刷新全部列。 */
+      card._saveStateFns=card._saveStateFns||[];
+      card._saveStateFns.push(_applySaveState);
+      card._applySaveState=function(){ (card._saveStateFns||[]).forEach(function(f){ try{ f(); }catch(_e){} }); };
       /* inline 提示(A条：不用 toast)：在控制条下方显示一行浅色小字，2.4s 后淡出 */
       const _saveInlineTip=(msg)=>{
         try{
@@ -42914,7 +44254,7 @@ window.MatchGen = (function(){
             if(_memoK!=null && String(_memoK).trim()!==''){
               _each9.value=String(_memoK);   /* 填进可见输入框 */
               const _evK=parseFloat(_memoK); let _subK=1; try{ _subK=(typeof _liveSubCount==='function')?_liveSubCount():1; }catch(_e){}
-              if(_total9 && !_hasZ(_total9.value) && !card._scoreTotalManual){ _total9.value=(isFinite(_evK)?String(Math.round(_evK*_subK*100)/100):''); }
+              if(_total9 && !card._scoreTotalManual){ _total9.value=(isFinite(_evK)?String(Math.round(_evK*_subK*100)/100):''); }   /* §V493 非手填时无条件按当前题数重算(原「框有值就跳过」→题项增删后共停在旧题数的乘积) */
             }
           }
         }catch(_e){}
@@ -43271,6 +44611,18 @@ window.MatchGen = (function(){
                        || JSON.stringify(_prevRec.structured||null)!==JSON.stringify(rec.structured||null) );
         const _dupNoAdd = !!_prevRec && !_changed;   // 连点两下、内容没改 → 去重(不新增)
         if(_dupNoAdd){
+          /* §V504 B方案(用户定)·原地迁移：同卡已入选、题面没变但梯度灯(或维度)变了 →
+             不新增、把这道已入选的题原地挪到新梯度/维度(finalQuizBank 与 S._v2lib 同步)，
+             并重渲题卷让新档立即见到它、旧档不再显示。
+             回访「仍然入选」走新增路径(_prevRec=null)不会进这里 → 历史题不动，只管新题按灯落卷。 */
+          const _MIG_KEYS=['difficulty','difficultyKey','difficultyLabel','level','levelLabel','dimension','dimensionLabel'];
+          const _moved = String(_prevRec.difficultyKey)!==String(rec.difficultyKey)
+                      || String(_prevRec.dimension||'')!==String(rec.dimension||'');
+          if(_moved){
+            _MIG_KEYS.forEach(k=>{ _prevRec[k]=rec[k]; });
+            try{ const _m=(S._v2lib||[]).find(r=>r&&r.uid===_prevRec.uid); if(_m){ _MIG_KEYS.forEach(k=>{ _m[k]=rec[k]; }); _m.diff=dObj.diff; } }catch(_e){}
+            try{ if(typeof renderLibPaper==='function') renderLibPaper(); }catch(_e){}
+          }
           // 去重：保留旧记录、库不变；rec 指回旧 uid 并回填旧分/标签，让分数栏刷新显示正确值。
           rec.uid = _prevRec.uid;
           if(_prevRec.scoreEach!=null) rec.scoreEach=_prevRec.scoreEach; if(_prevRec.score!=null) rec.score=_prevRec.score;
@@ -43300,8 +44652,11 @@ window.MatchGen = (function(){
             const ev=_hasV(_eachV)?parseFloat(_eachV):'';
             let tv=_hasV(_totalV)?parseFloat(_totalV):'';
             /* §V19.431 老师手填过「共」→ 以其为准，落库时不按小题数乘；标记随记录持久 */
-            rec._scoreManual = !!(card._scoreTotalManual || _hasV(_totalV));
-            if(ev!=='' && isFinite(ev) && (tv===''||!isFinite(tv)) && !rec._scoreManual){ try{ tv=Math.round(ev*(typeof _bqCardSubCount==='function'?_bqCardSubCount(rec):1)*100)/100; }catch(_e2){ tv=ev; } }
+            /* §V493 只信「用户真的在共框打过字」的标记(card._scoreTotalManual 由 dsp-total input 事件置)：
+               原 `|| _hasV(_totalV)` 把「系统自动算出并填进框的共」也当成手填 → _scoreManual 误置 true →
+               此后改「每小题」共永不联动(用户报：改每小题3分，共停在沿用的8)。 */
+            rec._scoreManual = !!card._scoreTotalManual;
+            if(ev!=='' && isFinite(ev) && !rec._scoreManual){ try{ tv=Math.round(ev*(typeof _bqCardSubCount==='function'?_bqCardSubCount(rec):1)*100)/100; }catch(_e2){ tv=(tv===''||!isFinite(tv))?ev:tv; } }   /* §V493 非手填时无条件按本卡实际题数重算(原仅 tv 为空才算→框里残留的自动旧值被照抄，题数变了共不跟) */
             const _evStr=(ev===''||!isFinite(ev))?'':String(ev);
             const _tvStr=(tv===''||!isFinite(tv))?'':String(tv);
             /* §V474b 防空覆盖：本次算出的每小题分为空、但 rec 已有非空分 → 跳过，不用空抹掉已存的分。 */
@@ -43329,14 +44684,17 @@ window.MatchGen = (function(){
         save.classList.remove('score-blink');   /* §V19.442 入选成功→清掉「填完分请点入选」闪烁 */
         /* §V466 三态持久(用户定)：入选成功→committed 态保持「✓ 已入选」，不再 1.1s 复位回「入选」。
            去重(committed 且没改又点)→inline 提示「已入选，请勿重复添加」(A条不弹窗)，按钮维持已入选。 */
+        const _wasModified=(card._selState==='modified');   /* §V494 抓「已修改」态(须在下行重置 committed 之前)：改分/改标签已实时同步进记录，此点击=确认修改，不该被当成重复添加骂 */
         const _wasRevisitAgain=card._revisitAgain; card._selState='committed'; card._revisitAgain=false; if(_wasRevisitAgain){ try{ if(window.XiaoZhi&&window.XiaoZhi.closePanel) window.XiaoZhi.closePanel(); }catch(_e){} }   /* §V489 仍然入选→关小智 */
         try{ if(window.XiaoZhi && XiaoZhi.clearRemindIf) XiaoZhi.clearRemindIf('之前入过'); }catch(_e){}   /* §V466 入选后撤回访提醒 */
         if(typeof _applySaveState==='function') _applySaveState();
         if(typeof showToast==='function'){   /* §V467 恢复底部居中提示(用户原有)：去重=警告色，新增=绿色ok */
           const dName = T(dObj.key==='low'?'basic':dObj.key==='mid'?'advanced':'high');
-          const _msg = _dupNoAdd ? (name+'（已入选，请勿重复添加！）')
+          /* §V494 三分文案：题面没变但卡处于「已修改」(改过分数/标签，已实时同步)→「已按修改更新」ok 绿；
+             真·连点两下什么都没改→维持「请勿重复添加」警告；题面变了→新增「已加入题库」。 */
+          const _msg = _dupNoAdd ? (_wasModified ? (name+'（✓ 已按修改更新）') : (name+'（已入选，请勿重复添加！）'))
                                  : T('addedToLibraryToast',{name:name,diff:dName,n:window.finalQuizBank.length});
-          showToast(_msg, _dupNoAdd ? 'warn' : 'ok');
+          showToast(_msg, (_dupNoAdd && !_wasModified) ? 'warn' : 'ok');
         }
         if(typeof refreshMyQuizCount==='function') refreshMyQuizCount();   /* §V13.1.1 更新已入选数量 */
         /* §V453 快照实时联动(用户定)：入选成功后，若快照浮卡正开着 → 用本次入选记录刷新快照，
@@ -43506,6 +44864,7 @@ window.MatchGen = (function(){
         const ev=_numOrNull(_dspEach.value);
         /* §V19.431 「共」以用户编辑为准：老师一旦手填过「共」(_scoreTotalManual)，改「每小题」不再自动改写「共」。 */
         const _manual = !!(card._scoreTotalManual || (_scoreRec && _scoreRec._scoreManual));
+        try{ _scoreSub = _scoreRec ? _bqCardSubCount(_scoreRec) : _liveSubCount(); }catch(_e){}   /* §V493 题数实时现算：面板开着期间增删题项后，改每小题按当前实际题数联动(原用打开面板那一刻的缓存) */
         let tv='';
         if(!_manual){
           if(ev!==''){ tv=Math.round(ev*_scoreSub*100)/100; _dspTotal.value=String(tv); }
@@ -44195,6 +45554,12 @@ function openLibraryViewer(){
   renderLibPaper();
   document.getElementById('lib-overlay').classList.add('show');
   document.body.style.overflow='hidden';
+  /* §V497b 默认居中(用户定)：两侧留白保留(表头设计面板让位)，打开题卷时把滚动初始化到页组居中位置。
+     只在打开时做一次，不干预用户随后的拖动；overlay 刚加 .show，rAF 等一帧可测量后再算。 */
+  requestAnimationFrame(()=>{ try{
+    const _stg=document.querySelector('.myq-paper-stage');
+    if(_stg && _stg.scrollWidth>_stg.clientWidth){ _stg.scrollLeft=Math.max(0,(_stg.scrollWidth-_stg.clientWidth)/2); }
+  }catch(_e){} });
   if(typeof wireMyqZoom==='function') wireMyqZoom();
   if(typeof syncAppScrollbarWidth==='function') syncAppScrollbarWidth();
 }
@@ -44239,12 +45604,19 @@ function shuffleLibrary(){
   // 重新编号
   _libQs.forEach((q,i)=>q.num=i+1);
   renderLibPaper();
-  requestAnimationFrame(()=>{ const s=document.querySelector('.myq-paper-stage'); if(s){ s.scrollLeft=_sl; s.scrollTop=_stp; } });   /* §V491 打乱后还原拖拉位置 */
+  /* §V492 滚动位置改「同步恢复」（§V18.56 同款经验）：重建后新 stage 的 scrollLeft=0，若等 rAF 恢复，
+     浏览器会先 paint 一帧「跳到第一页」再跳回（实测归零帧确被绘制）→ 用户看到整卷横跳闪烁。
+     renderLibPaper 内已同步完成分页与布局（scrollWidth 就位），此刻直接赋值即 paint 前生效、不露归零帧。 */
+  const _s2=document.querySelector('.myq-paper-stage'); if(_s2){ _s2.scrollLeft=_sl; _s2.scrollTop=_stp; }
+  requestAnimationFrame(()=>{ const s=document.querySelector('.myq-paper-stage'); if(s){ s.scrollLeft=_sl; s.scrollTop=_stp; } });   /* §V491 rAF 兜底（幂等）：防后续异步布局微调再动滚动 */
   showToast('🎲 已随机打乱顺序','ok');
 }
 function resetLibraryOrder(){
+  const _stg=document.querySelector('.myq-paper-stage'); const _sl=_stg?_stg.scrollLeft:0, _stp=_stg?_stg.scrollTop:0;   /* §V494 与骰子(§V491/492)同款：抓滚动位置，只还原题序不跳页面(用户定) */
   _libQs=collectLibrary();
   renderLibPaper();
+  const _s2=document.querySelector('.myq-paper-stage'); if(_s2){ _s2.scrollLeft=_sl; _s2.scrollTop=_stp; }   /* §V494 同步恢复(paint 前生效，不露归零帧) */
+  requestAnimationFrame(()=>{ const s=document.querySelector('.myq-paper-stage'); if(s){ s.scrollLeft=_sl; s.scrollTop=_stp; } });   /* rAF 兜底(幂等) */
   showToast('↺ 已还原默认顺序','ok');
 }
 // TODO V13.4：同 subtype 大题合并。需先标准化 subtype（当前 kebab-case 如 word-image），
@@ -44342,13 +45714,13 @@ function renderPaperQuestion(q, displayNum){
   const _lblT = withPinyin(_rawLblT);
   const _fen  = withPinyin('分');
   const _pyCls = _showPy ? ' pq-score-num--py' : '';   /* §V445 方案B：按本题拼音态(而非全局)决定数字ruby沉底几何 */
-  const scoreHtml = `<span class="pq-score" contenteditable="false">（<span class="pq-score-lbl" data-score-lbl="each" contenteditable="true">${_lblE}</span><span class="pq-score-num${_pyCls}" data-score-k="each" contenteditable="true">${_scE}</span>${_fen}，<span class="pq-score-lbl" data-score-lbl="total" contenteditable="true">${_lblT}</span><span class="pq-score-num${_pyCls}" data-score-k="score" contenteditable="true">${_sc}</span>${_fen}）</span>`;   /* §V19.426 计分挪进题干后、一个外括号包裹「（每小题5分，共20分）」；数字不再各套括号（下划线由 CSS 提供）；标签与数字仍均可编辑 */
+  const scoreHtml = `<span class="pq-score" contenteditable="false">${withPinyin('（')}<span class="pq-score-lbl" data-score-lbl="each" contenteditable="true">${_lblE}</span><span class="pq-score-num${_pyCls}" data-score-k="each" contenteditable="true">${_scE}</span>${_fen}${withPinyin('，')}<span class="pq-score-lbl" data-score-lbl="total" contenteditable="true">${_lblT}</span><span class="pq-score-num${_pyCls}" data-score-k="score" contenteditable="true">${_sc}</span>${_fen}${withPinyin('）')}</span>`;   /* §V19.426 计分挪进题干后、一个外括号包裹「（每小题5分，共20分）」；数字不再各套括号（下划线由 CSS 提供）；标签与数字仍均可编辑 */   /* §V494b 括号/逗号走 withPinyin(py-punct 通道)：原裸文本在含 ruby 的行盒里浮到注音层高度(§V19.334 同款坑，用户报「括号偏上」)，包空注音 ruby 后与「每小题/分」底字同排；非拼音态输出 punct span 行为不变 */
   const titleHtml = `
     <div class="pq-title pq-title-inline">
       ${iconHtml}
       ${cnHtml?'':`<span class="pq-no">${displayNum}.</span>`}
       ${showTypeName&&typeName?`<span class="pq-type">${escapeHtmlMyq(typeName)}</span>`:''}
-      <span class="pq-stem-col">${cnHtml?`<span class="pq-stem-cn"><span class="pq-no">${displayNum}.</span>${cnHtml}${scoreHtml}</span>`:''}${enHtml?`<span class="pq-stem-en${_stemAr?' pq-stem-ar':''}"${_stemAr?' dir="rtl"':''}>${cnHtml?`<span class="pq-no" aria-hidden="true" style="visibility:hidden">${displayNum}.</span>`:''}${enHtml}${cnHtml?'':scoreHtml}</span>`:''}${(!cnHtml&&!enHtml)?scoreHtml:''}</span>
+      <span class="pq-stem-col">${cnHtml?`<span class="pq-stem-cn"><span class="pq-no">${displayNum}.</span><span class="pq-stem-body">${cnHtml}${scoreHtml}</span></span>`:''}${enHtml?`<span class="pq-stem-en${_stemAr?' pq-stem-ar':''}"${_stemAr?' dir="rtl"':''}>${cnHtml?`<span class="pq-no" aria-hidden="true" style="visibility:hidden">${displayNum}.</span>`:''}<span class="pq-stem-body">${enHtml}${cnHtml?'':scoreHtml}</span></span>`:''}${(!cnHtml&&!enHtml)?scoreHtml:''}</span>
     </div>`;
 
   if(isMatch){
@@ -44365,7 +45737,7 @@ function renderPaperQuestion(q, displayNum){
       // §V13.3.8 汉字↔拼音题：左侧汉字去除任何 ruby/拼音（含历史已生成数据），只留汉字
       const cnPlain = hideCnPy ? escapeHtmlMyq(stripRubyToText(p.cn)) : withPinyin(p.cn);
       return `<div class="pq-match-item pq-left">
-          <span class="pq-idx">（ ${i+1} ）</span>
+          <span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>
           <span class="pq-cn">${ cnPlain }</span>
         </div>
         <div class="pq-match-item pq-right"><span class="pq-letter">${letter}.</span>${right}</div>`;
@@ -44395,20 +45767,45 @@ function renderPaperQuestion(q, displayNum){
         return `<span class="pq-ci-opt"><span class="pq-ol">${'ABCDEFGH'[oi]||String(oi+1)}.</span>${oImg}${_optHtml}</span>`;
       }).join('');
       const _nCols = Math.min(4, Math.max(1, ((it&&it.options)||[]).length||4));   /* §V19.426 选项均匀分散：按项数等分列(≤4列)，A/B/C/D 起点对齐 */
-      return `<div class="pq-ci-row"><span class="pq-idx">（ ${i+1} ）</span><span class="pq-ci-q">${img}${stem}<span class="pq-ci-blank">（　　）</span></span><span class="pq-ci-opts" style="grid-template-columns:repeat(${_nCols},minmax(min-content,1fr))">${opts}</span></div>`;
+      return `<div class="pq-ci-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span><span class="pq-ci-q">${img}${stem}<span class="pq-ci-blank">${withPinyin('（　　）')}</span></span><span class="pq-ci-opts" style="grid-template-columns:repeat(${_nCols},minmax(min-content,1fr))">${opts}</span></div>`;   /* §V500 括号走 withPinyin：裸标点在含注音行盒浮到注音层(§V19.334 家族) */
     }).join('');
     return `<div class="paper-q paper-q-choice">${titleHtml}<div class="pq-ci-list">${rows}</div></div>`;
   }
 
   /* 2) 正误判断形态（_imgJudgeItems：图文正误/句子判断/拼音判断）：序号+图+词句+（　　） */
   if(st && Array.isArray(st._imgJudgeItems) && st._imgJudgeItems.length){
-    const rows = st._imgJudgeItems.map((it,i)=>{
+    /* §V495 短内容自动双列(用户定：像「跳舞——eat」这种短对照，两小题并一排省纸)：
+       全部小题满足「无图 + 词短」才双列，任何一项长/带图→维持单列。
+       "短"的估宽口径：拼音态 ruby 宽由注音决定(每汉字约5~6拼音字母)，故拼音态汉字≤3字、非拼音≤6字；对照文本≤12字符。
+       句子判断(整句)天然超限→单列不受影响。 */
+    const _jdItems = st._imgJudgeItems;
+    const _jdShort = _jdItems.length>=2 && _jdItems.every(it=>{
+      if(!it || it.img) return false;
+      const _wLen=[...String(it.word||'')].length, _mLen=String(it.matText||'').length;
+      return _wLen <= (_showPy?3:6) && _mLen <= 12;
+    });
+    const rows = _jdItems.map((it,i)=>{
       const img = (it && it.img) ? `<img class="pq-ci-img" src="${it.img}" alt=""/>` : '';
       const w   = (it && it.word) ? `<span class="pq-jd-word">${_ppPy(it.word)}</span>` : '';
       const mat = (it && it.matText) ? `<span class="pq-jd-mat">${_ppPy(it.matText)}</span>` : '';
-      return `<div class="pq-jd-row"><span class="pq-idx">（ ${i+1} ）</span>${img}${w}${mat}<span class="pq-jd-blank">（　　）</span></div>`;
+      /* §V492 中英/汉拼对照判断：补回题卡区同款短横线（此前题卷漏渲）；两者包成一个 inline 对，
+         使汉字与第二语言按文字基线对齐（原先各为 flex 项被 align-items:center 居中→字号不同致英文微沉） */
+      /* §V493 dash 走 _ppPy(py-punct 通道)：拼音态下裸文本在 ruby 行盒会浮到注音层高度(§V19.334 已知坑，用户报「短横线靠上」)，
+         经 renderPinyinSafe 包成空注音 ruby 后与底字同排；非拼音态输出 punct span 行为不变 */
+      const _dashInner = _showPy ? '<ruby class="py-punct"><rb><span class="pq-jd-dashline"></span></rb><rt> </rt></ruby>' : '<span class="pq-jd-dashline"></span>';   /* §V498b 拼音态线包进 py-punct 的 rb：inline-block 在含 ruby 的行盒里与裸文本同样会浮到注音层(§V19.334 家族第4例)，包 ruby 后与底字同层 */
+      const pairHtml = (w && mat) ? `<span class="pq-jd-pair">${w}<span class="pq-jd-dash" aria-hidden="true">${_dashInner}</span>${mat}</span>` : (w || mat);   /* §V498b 破折号改 CSS 画线(用户定：一根连续长线)：字符「——」是两个 em dash、ruby 包裹后中间有缝；改 inline-block 线元素，长度/位置随字号(em)，与基线锚定不受拼音影响，打印走 border 不被背景清扫误伤 */
+      /* §V500 浮动括号下沉：float 盒对齐行盒顶，注音行的行盒顶=拼音层顶→括号浮升(用户报)。
+         行内 withPinyin 救不了 float(脱离行内流)；改为 float 盒内部自带拼音垫层：
+         rt 用 &nbsp;(孤立行盒中空格 rt 塌陷 h=0，§V19.334)，rb 被压到与邻居汉字 rb 同高。非拼音态无垫层。 */
+      /* §V500b 弃 float(浮动盒锁定行盒顶=拼音层顶，垫层法 rt 字号不齐救不动)：
+         行改 grid[1fr,max-content] align-items:baseline —— 与 .pq-ci-row 同款已验证例外通道(§V498b 实测-0.62)。
+         内容包进 .pq-jd-main 单格保持 inline 流，括号纯文本第二格贴基线且天然靠右。 */
+      /* §V500b 两格基线对齐原理：table/grid 取 ruby 格首基线=拼音层基线；两格都放同构 ruby 时偏移抵消(.pq-ci-row 行得通的真正机制)。
+         括号格放隐形拼音 ruby(默认 rt 样式，与真实拼音同字号；不用字号偏小的 py-punct)。非拼音态两格皆纯文本天然对齐。 */
+      const _jdBlank = `<span class="pq-jd-blank-cell"><span class="pq-jd-blank">${_showPy?'<ruby><rb>（　　）</rb><rt style="visibility:hidden">yǔ</rt></ruby>':'（　　）'}</span></span>`;
+      return `<div class="pq-jd-row"><span class="pq-jd-main"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>${img}${pairHtml}</span>${_jdBlank}</div>`;
     }).join('');
-    return `<div class="paper-q paper-q-judge">${titleHtml}<div class="pq-jd-list">${rows}</div></div>`;
+    return `<div class="paper-q paper-q-judge">${titleHtml}<div class="pq-jd-list${_jdShort?' pq-jd-2col':''}">${rows}</div></div>`;
   }
 
   /* 3) 连词成句（_orderItems）：字母词块横排 + 句末标点 + 答题线 */
@@ -44416,7 +45813,7 @@ function renderPaperQuestion(q, displayNum){
     const rows = st._orderItems.map((it,i)=>{
       const chips = ((it&&it.blocks)||[]).map(b=>`<span class="pq-ord-chip"><span class="pq-ord-ch">${_ppEsc(b.ch)}</span><span class="pq-ord-w">${_ppPy(b.word)}</span></span>`).join('');
       const punc  = (it && it.punc) ? `<span class="pq-ord-punc">（${_ppEsc(it.punc)}）</span>` : '';
-      return `<div class="pq-ord-item"><div class="pq-ord-row"><span class="pq-idx">（ ${i+1} ）</span>${chips}${punc}</div><div class="pq-ans-line"></div></div>`;
+      return `<div class="pq-ord-item"><div class="pq-ord-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>${chips}${punc}</div><div class="pq-ans-line"></div></div>`;
     }).join('');
     return `<div class="paper-q paper-q-order">${titleHtml}<div class="pq-ord-list">${rows}</div></div>`;
   }
@@ -44452,7 +45849,7 @@ function renderPaperQuestion(q, displayNum){
   if(st && Array.isArray(st.pyFillItems) && st.pyFillItems.length){
     const rows = st.pyFillItems.map((it,i)=>{
       const au = (it && it.media) ? `<span class="pq-audio" aria-hidden="true">🔊</span>` : '';
-      return `<div class="pq-pf-row"><span class="pq-idx">（ ${i+1} ）</span>${au}<span class="pq-py-txt">${_ppPy((it&&it.text)||'')}</span></div>`;
+      return `<div class="pq-pf-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>${au}<span class="pq-py-txt">${_ppPy((it&&it.text)||'')}</span></div>`;
     }).join('');
     return `<div class="paper-q paper-q-pyfill">${titleHtml}<div class="pq-pf-list">${rows}</div></div>`;
   }
@@ -44461,7 +45858,7 @@ function renderPaperQuestion(q, displayNum){
   if(st && Array.isArray(st.hzFillItems) && st.hzFillItems.length){
     const rows = st.hzFillItems.map((it,i)=>{
       const au = (it && it.media) ? `<span class="pq-audio" aria-hidden="true">🔊</span>` : '';
-      return `<div class="pq-pf-row"><span class="pq-idx">（ ${i+1} ）</span>${au}<span class="pq-hzf-txt">${_ppPy((it&&it.text)||'')}</span></div>`;
+      return `<div class="pq-pf-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>${au}<span class="pq-hzf-txt">${_ppPy((it&&it.text)||'')}</span></div>`;
     }).join('');
     return `<div class="paper-q paper-q-hzfill">${titleHtml}<div class="pq-pf-list">${rows}</div></div>`;
   }
@@ -44472,7 +45869,7 @@ function renderPaperQuestion(q, displayNum){
       const au = (it && it.media) ? `<span class="pq-audio" aria-hidden="true">🔊</span>` : '';
       const opts = ((it&&it.options)||[]).map((o,oi)=>`<span class="pq-ci-opt"><span class="pq-ol">${'ABCDEFGH'[oi]||String(oi+1)}.</span><span class="pq-py-txt">${_ppEsc(o)}</span></span>`).join('');
       const _nCols = Math.min(4, Math.max(1, ((it&&it.options)||[]).length||4));
-      return `<div class="pq-ci-row"><span class="pq-idx">（ ${i+1} ）</span><span class="pq-ci-q">${au}<span class="pq-ci-blank">（　　）</span></span><span class="pq-ci-opts" style="grid-template-columns:repeat(${_nCols},minmax(min-content,1fr))">${opts}</span></div>`;
+      return `<div class="pq-ci-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span><span class="pq-ci-q">${au}<span class="pq-ci-blank">（　　）</span></span><span class="pq-ci-opts" style="grid-template-columns:repeat(${_nCols},minmax(min-content,1fr))">${opts}</span></div>`;
     }).join('');
     return `<div class="paper-q paper-q-pychoice">${titleHtml}<div class="pq-ci-list">${rows}</div></div>`;
   }
@@ -44487,7 +45884,7 @@ function renderPaperQuestion(q, displayNum){
 
   /* 9) 开放回答 / 阅读问答（_openItems）：问句 + 两条答题线 */
   if(st && Array.isArray(st._openItems) && st._openItems.length){
-    const rows = st._openItems.map((it,i)=>`<div class="pq-open-item"><div class="pq-open-q"><span class="pq-idx">（ ${i+1} ）</span><span>${_ppPy((it&&it.q)||'')}</span></div><div class="pq-ans-line"></div><div class="pq-ans-line"></div></div>`).join('');
+    const rows = st._openItems.map((it,i)=>`<div class="pq-open-item"><div class="pq-open-q"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span><span>${_ppPy((it&&it.q)||'')}</span></div><div class="pq-ans-line"></div><div class="pq-ans-line"></div></div>`).join('');
     return `<div class="paper-q paper-q-open">${titleHtml}<div class="pq-open-list">${rows}</div></div>`;
   }
 
@@ -44590,8 +45987,23 @@ function _bqCardSubCount(rec){
   return 1;
 }
 /* 分数写回：写 rec，并按 uid 同步到 S._v2lib / finalQuizBank / 各积木 library（与题卷同一份数据） */
+/* §V496b 分数/标签改动联动卡按钮(用户定：改了分，入选按钮要变「已修改」)：
+   改分入口有两条——题卡区分数面板(走 _bqPersistCardScore)与题卷纸面直接编辑(走 _myqPersistScore)，
+   后者原本完全不触碰卡状态→按钮停在「已入选」。下沉到数据层：凡写回分数，找到关联卡(committed)
+   dispatch 一个 input——复用 §V466 卡上既有的 capture 监听置 modified 并刷新各梯度面板的按钮，
+   无论从哪个入口改、真机事件路径如何，按钮必变。入选落库时序安全：落库 persist 发生在置 committed 之前，条件不命中。 */
+function _bqMarkCardsModified(uid){
+  if(!uid) return;
+  try{
+    document.querySelectorAll('#magic-canvas .drop-card').forEach(c=>{
+      if(c._lastRecUid===uid && c._selState==='committed'){ try{ c.dispatchEvent(new Event('input')); }catch(_e){} }
+    });
+  }catch(_e){}
+}
+window._bqMarkCardsModified=_bqMarkCardsModified;
 function _bqPersistCardScore(rec, scoreEach, score){
   if(!rec) return;
+  _bqMarkCardsModified(rec.uid);   /* §V496b 先联动(须在写回前后皆可，取前保证时序清晰) */
   const setOn=(r)=>{ if(!r||!r.uid||r.uid!==rec.uid) return;
     if(scoreEach!=null) r.scoreEach=scoreEach;
     if(score!=null) r.score=score;
@@ -44669,6 +46081,7 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
        给那道题的 .lib-q 套 .bq-snap-target 紫框 + 「这道题」标签。这样页数/顺序/打乱/拆页与题卷 1:1 完全一致，永不分叉。
        若题卷尚未分页（#myqPageRow 不存在，如从没进过题卷区），先触发一次 renderLibPaper() 让它按当前维度×梯度渲染并分页。 */
     let pages=[], headerHtml='', tPage=0, cut=false;
+    let _snapSwitched=false, _savDim, _savTier, _savQs;   /* §V493 快照只读化：借用题卷管线切档前先存现场，用完恢复 */
     try{
       /* 快照严格对应「rec 所属的维度×梯度」这一档。若当前题卷区正显示的不是这一档，切到该档再分页，
          保证镜像到的就是这道题真正所在的那份题卷（而非碰巧停留的别档）。 */
@@ -44679,6 +46092,10 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
       let needRender = forceRefresh || (typeof _myqDim==='undefined' || typeof _myqTier==='undefined' || _myqDim!==dim || _myqTier!==tier);
       let row=document.getElementById('myqPageRow');
       if((!row || needRender) && typeof renderLibPaper==='function'){
+        _savDim=(typeof _myqDim!=='undefined')?_myqDim:undefined;
+        _savTier=(typeof _myqTier!=='undefined')?_myqTier:undefined;
+        _savQs=_libQs;
+        _snapSwitched=(_savDim!==dim || _savTier!==tier);   /* §V493 真切了档才需事后恢复；同档 forceRefresh=题卷的正当实时刷新，不恢复 */
         try{ if(typeof _myqDim!=='undefined') _myqDim=dim; if(typeof _myqTier!=='undefined') _myqTier=tier; }catch(_e){}
         try{ window._myqDim=dim; window._myqTier=tier; }catch(_e){}
         /* §V460 方案甲：分页必须在「可测高」容器里跑真 myqPaginate（题卷同一套算法，唯一分页源）。
@@ -44690,7 +46107,19 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
         /* §V461 快照空白根因修复：renderLibPaper 本身不刷新 _libQs（只有 openLibraryViewer 才 collectLibrary），
            题卷区没打开过时 _libQs 为空 → renderLibPaper 走空态 → 不生成 #myqA4Paper → 快照全白。
            故此处先自己 collectLibrary() 拿最新入选题（与 openLibraryViewer 同款），再 renderLibPaper 分页。 */
-        try{ if(typeof collectLibrary==='function'){ const _qs=collectLibrary(); if(_qs && _qs.length) _libQs=_qs; } }catch(_e){}
+        /* §V493 collect 结果改「增量合并」而非整体覆盖：整体覆盖会把用户在题卷区拖动排序过的 _libQs 顺序
+           重置回库序（§V19.414 明确要保住拖动顺序）→ 快照/入选联动后再打印，顺序与用户所见不一致。
+           合并规则：保持现有顺序，剔除已撤下的，新入选的追加到尾部，重新编号。 */
+        try{ if(typeof collectLibrary==='function'){ const _qs=collectLibrary(); if(_qs && _qs.length){
+          if(!_libQs || !_libQs.length){ _libQs=_qs; }
+          else{
+            const _have=new Set(_libQs.map(q=>q&&q.uid).filter(Boolean));
+            const _inLib=new Set(_qs.map(q=>q&&q.uid).filter(Boolean));
+            _libQs=_libQs.filter(q=>q && (!q.uid || _inLib.has(q.uid)));
+            _qs.forEach(q=>{ if(q && q.uid && !_have.has(q.uid)) _libQs.push(q); });
+            _libQs.forEach((q,i)=>{ q.num=i+1; });
+          }
+        } } }catch(_e){}
         try{ renderLibPaper(); }catch(_e){}   // myqPaginate() 同款分页
         if(_ov && !_wasShown) _ov.classList.remove('bq-measure-only');
         row=document.getElementById('myqPageRow');
@@ -44729,6 +46158,22 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
       }
       if(!pages.length) pages=[''];
     }catch(e){ pages=['']; }
+    /* §V493 恢复现场（快照=只读查看）：切档借用题卷管线后，把 _myqDim/_myqTier/_libQs 还原并重渲回原档。
+       不恢复的话，用户在题卡区看一眼别档的快照，题卷全局就被切走 → 随后打印/进题卷显示的是别档内容
+       （用户报「打印版PDF和题卷页面不一致」的根源之一）。同档 forceRefresh 不走此块（正当实时刷新）。 */
+    if(_snapSwitched){ try{
+      if(typeof _myqDim!=='undefined') _myqDim=_savDim;
+      if(typeof _myqTier!=='undefined') _myqTier=_savTier;
+      try{ window._myqDim=_savDim; window._myqTier=_savTier; }catch(_e){}
+      if(_savQs) _libQs=_savQs;
+      if(_savQs && _savQs.length && typeof renderLibPaper==='function'){
+        const _ov2=document.getElementById('lib-overlay');
+        const _ws2=_ov2 && _ov2.classList.contains('show');
+        if(_ov2 && !_ws2) _ov2.classList.add('bq-measure-only');
+        try{ renderLibPaper(); }catch(_e){}
+        if(_ov2 && !_ws2) _ov2.classList.remove('bq-measure-only');
+      }
+    }catch(_e){} }
     /* pages 已是「题卷真实每页的 inner HTML」，含表头/徽标/题目，目标题已内嵌紫框。headerHtml 不再单独拼（已在首页 inner 内）。 */
     pop._snap={pages, headerHtml:'', tPage, cut, cur:tPage, lab:_lab, pageCount:pages.length, _htmlPages:true, _mirror:true};
     pop.innerHTML=`
@@ -44911,9 +46356,17 @@ function renderPaperHeader(){
       }
       let colgInner='';
       let _defTotalW=_rawTotal;
+      /* §V500b 用户定：默认(未手调卡宽)时第一列(编码列)刚好贴文字宽度，最后一列吃满剩余(一句话一行)。
+         做法：默认态前 n-1 列用像素宽、末列不给宽(table-layout:fixed + width:100% 下自动吸收剩余)；
+         用户拖过卡宽(moeTableW 有值)保持 §V18.91 百分比等比缩放不变。 */
+      const _userSetW = (typeof sec.moeTableW==='number' && sec.moeTableW>0);
       for(let ci=0; ci<ncol; ci++){
-        const _pct=(_colWpx[ci]/(_rawTotal||1)*100).toFixed(4);   // §V18.91 列宽改百分比→表格 width:100% 填满卡片，列随卡宽等比缩放
-        colgInner += `<col style="width:${_pct}%">`;
+        if(_userSetW){
+          const _pct=(_colWpx[ci]/(_rawTotal||1)*100).toFixed(4);   // §V18.91 列宽改百分比→表格 width:100% 填满卡片，列随卡宽等比缩放
+          colgInner += `<col style="width:${_pct}%">`;
+        }else{
+          colgInner += (ci < ncol-1) ? `<col style="width:${_colWpx[ci]}px">` : `<col>`;   // §V500b 默认：前列贴内容像素宽，末列吸收剩余
+        }
       }
       const colg = `<colgroup>${colgInner}</colgroup>`;
       const rowsHtml = rows.map((r,ri)=>{
@@ -44945,7 +46398,11 @@ function renderPaperHeader(){
       // §V18.91 卡片化：卡片本身是被拖拽容器(显式宽+高)，表格 width:100%/height:100% 填满它→卡片永远包住表格、高度自由、不瘦高
       const _cardW = (typeof sec.moeTableW==='number'&&sec.moeTableW>0) ? sec.moeTableW : _defTotalW;
       const _cardH = (typeof sec.moeBoxH==='number'&&sec.moeBoxH>0) ? `height:${sec.moeBoxH}px;` : '';
-      const moeCardStyle = `width:${_cardW}px;max-width:100%;${_cardH}`;
+      /* §V500 用户定(截图)：勾选后 MOE 表格默认横跨整页。未手调宽度时用 100%(列宽已是百分比会等比撑开)；
+         用户拖过把手(moeTableW 有值)则尊重其像素宽。 */
+      const moeCardStyle = (typeof sec.moeTableW==='number'&&sec.moeTableW>0)
+        ? `width:${_cardW}px;max-width:100%;${_cardH}`
+        : `width:100%;max-width:100%;${_cardH}`;
       const _moeDragHandle = `<button class="myq-card-row-drag-handle module-drag-handle" type="button" data-cardrow-handle="moe" contenteditable="false" draggable="false" title="拖动调整目标列表位置" aria-label="拖动目标列表模块">⠿</button>`;
       return `<div class="myq-hd-sec myq-hd-moe" data-sec="moe" data-cardrow="moe" draggable="true" style="${moeCardStyle}">
         ${_moeDragHandle}<div class="moe-select-handle" role="button" tabindex="-1" contenteditable="false" title="全选整个表格" aria-label="全选目标列表" onmousedown="event.preventDefault();event.stopPropagation();_moeToggleAll();"></div>
@@ -45528,6 +46985,7 @@ function myqRecalcTotalScore(){
 function _myqPersistScore(q,k,v){
   if(!q) return;
   q[k]=v;
+  if(typeof _bqMarkCardsModified==='function') _bqMarkCardsModified(q.uid);   /* §V496b 题卷纸面改分同样把关联卡置「● 已修改」 */
   /* §V19.431 分数写回同时把 _scoreManual（老师手填「共」标记）按 uid 同步回源记录，跨重渲不丢，防自动乘复活 */
   const _w=(r)=>{ if(r && r.uid && q.uid && r.uid===q.uid){ r[k]=v; if(q._scoreManual!=null) r._scoreManual=q._scoreManual; } };
   try{ (S._v2lib||[]).forEach(_w); }catch(_e){}
@@ -45679,8 +47137,9 @@ function renderLibPaper(){
       if(h1<=0) return;                            // 不可见/未布局：跳过，等下次触发
       score.remove();
       const h0=cn.getBoundingClientRect().height;  // 去掉计分说明后中文块高
-      if(h1 > h0 + 1){ en.appendChild(score); score.classList.add('pq-score--in-en'); }    // 计分说明多撑出一行=放不下→挪到英文行末尾(汉字对齐英文行)
-      else { cn.appendChild(score); score.classList.remove('pq-score--in-en'); }              // 放得下→留在中文后(默认对齐中文汉字)
+      const cnBody=cn.querySelector('.pq-stem-body')||cn, enBody=en.querySelector('.pq-stem-body')||en;   /* §V492 题干改序号列+文本列后，计分要挂进文本列（挂 en/cn 本体会成为独立 flex 列、脱离文字流） */
+      if(h1 > h0 + 1){ enBody.appendChild(score); score.classList.add('pq-score--in-en'); }    // 计分说明多撑出一行=放不下→挪到英文行末尾(汉字对齐英文行)
+      else { cnBody.appendChild(score); score.classList.remove('pq-score--in-en'); }              // 放得下→留在中文后(默认对齐中文汉字)
     });
   }catch(_e){} };
   (function(){
@@ -46262,10 +47721,18 @@ function _bqSplitQuestionAcrossPages(q, list, rows, ctx){
   list.innerHTML='';
   curH += qHeadH;
   let curList=list;   // 当前页正在填的 list
-  const rowH=(r)=>{ const probe=document.createElement('div'); probe.style.cssText='position:absolute;left:-99999px;visibility:hidden;'; const cl=r.cloneNode(true); const wrap=list.cloneNode(false); wrap.appendChild(cl); probe.appendChild(wrap); document.body.appendChild(probe); const h=cl.getBoundingClientRect().height; document.body.removeChild(probe); return h; };
-  allRows.forEach(r=>{
-    const rh=rowH(r);
-    if(curH+rh>CONTENT_H && curList.children.length>0){
+  const _listGap=(()=>{ try{ return parseFloat(getComputedStyle(list).rowGap)||0; }catch(_e){ return 0; } })();   /* §V499 列表行间 gap(flex/grid 容器 gap 不算行盒高)，拆页按行累计时补上，防每行低估 8px 累计溢出 */
+  const rowH=(r)=>{ const probe=document.createElement('div'); probe.style.cssText='position:absolute;left:-99999px;visibility:hidden;'; const cl=r.cloneNode(true); const wrap=list.cloneNode(false); wrap.appendChild(cl); probe.appendChild(wrap); document.body.appendChild(probe); const h=cl.getBoundingClientRect().height; document.body.removeChild(probe); return h+_listGap; };
+  /* §V503 双列判断(pq-jd-2col)拆页粒度=「对」：grid 行优先 1 2 / 3 4，按单题拆到奇数会让
+     续页重排配对（用户报：有的并排有的不并排）。两题一组整体搬运，末组可单；
+     组高取组内最高格（grid 同行两格共占一行）——顺带修正旧逻辑按单题累计高度在双列下
+     把一行记成两行、提前换页的暗伤。 */
+  const _pairN = list.classList.contains('pq-jd-2col') ? 2 : 1;
+  const groups=[];
+  for(let gi=0; gi<allRows.length; gi+=_pairN) groups.push(allRows.slice(gi, gi+_pairN));
+  groups.forEach(g=>{
+    const gh = (_pairN===1) ? rowH(g[0]) : Math.max.apply(null, g.map(rowH));
+    if(curH+gh>CONTENT_H && curList.children.length>0){
       newPage();
       curInner=ctx.curInner(); curH=ctx.curH();
       // 续壳：复制 q 的外层容器(paper-q…)但不含标题、不含原行
@@ -46275,8 +47742,8 @@ function _bqSplitQuestionAcrossPages(q, list, rows, ctx){
       curInner.appendChild(shell);
       curList=contList;
     }
-    curList.appendChild(r);   // 真实节点搬移
-    curH+=rh;
+    g.forEach(r=>curList.appendChild(r));   // 真实节点搬移(整组)
+    curH+=gh;
   });
   ctx.setCurH(curH);
 }
@@ -46309,7 +47776,7 @@ function myqPaginate(){
     meas.style.cssText='position:absolute;left:-99999px;top:0;visibility:hidden;'; document.body.appendChild(meas); }
   meas.style.width=CONTENT_W+'px';
   meas.className=src.className;   // 继承字体等样式
-  const measureH=(node)=>{ meas.innerHTML=''; const c=node.cloneNode(true); meas.appendChild(c); const h=c.getBoundingClientRect().height; meas.innerHTML=''; return h; };
+  const measureH=(node)=>{ meas.innerHTML=''; const c=node.cloneNode(true); meas.appendChild(c); const cs=getComputedStyle(c); const h=c.getBoundingClientRect().height + (parseFloat(cs.marginTop)||0) + (parseFloat(cs.marginBottom)||0); meas.innerHTML=''; return h; };   /* §V499 计入 margin：原 rect 高漏掉表头 margin-bottom 与各题上下 margin，逐块累计低估→表头一增高首页内容溢出页底(实测差47px)。相邻 margin 折叠场景会轻微高估=提前换页，宁保守不出纸 */
   // 构建多页容器
   const row=document.createElement('div');
   row.className='myq-page-row myq-ovw';
@@ -46373,6 +47840,32 @@ function myqPaginate(){
   src.style.display='none';
   const old=stage.querySelector('#myqPageRow'); if(old) old.remove();
   stage.appendChild(row);
+  /* §V499 分页验收(渲染后校正)：离屏测量与真实渲染存在细微字体/折行差，预算卡线时首页内容溢出页底
+     (用户报：表头增高后题目在页面下显示不全)。分页 DOM 上屏后按真实 rect 逐页验收：
+     末块底越过内容区底线 → 整块搬到下一页开头(无下页则新建)，循环至全部页合格。表头不搬；
+     单块超高且无表头可让的页交给行级拆分逻辑管辖(防死循环)。 */
+  try{
+    for(let pi=0; pi<row.querySelectorAll('.myq-page').length; pi++){
+      let guard=0;
+      while(guard++<24){
+        const pgs=row.querySelectorAll('.myq-page');
+        const pgEl=pgs[pi]; if(!pgEl) break;
+        const innerEl=pgEl.querySelector('.myq-page-inner'); if(!innerEl) break;
+        const blocks=innerEl.querySelectorAll(':scope > .lib-q');
+        if(!blocks.length) break;
+        const pr=pgEl.getBoundingClientRect(); if(!pr.height) break;
+        const limitY=pr.top + (PAD_T+CONTENT_H)/A4_H*pr.height;   // 内容区底线(随页当前缩放)
+        const last=blocks[blocks.length-1];
+        if(last.getBoundingClientRect().bottom <= limitY+1) break;   // 合格
+        if(blocks.length===1 && !innerEl.querySelector('.myq-paper-header')) break;
+        let next=pgs[pi+1];
+        if(!next){ newPage(); next=row.querySelectorAll('.myq-page')[pi+1]; }
+        if(!next) break;
+        const nInner=next.querySelector('.myq-page-inner'); if(!nInner) break;
+        nInner.insertBefore(last, nInner.querySelector(':scope > .lib-q'));
+      }
+    }
+  }catch(_e){}
   /* §V19.411 分页完成 → 回填「本题卷共 N 页」（源纸+分页容器内所有实例都刷，防克隆残留旧值） */
   try{ document.querySelectorAll('.myq-meta-pages').forEach(el=>{ el.textContent=String(pageNo||1); }); }catch(_e){}
   // §V18.2 分页后进入默认态（所有页基准大小、滑杆锁住、无纵向滚动条）
@@ -47655,6 +49148,24 @@ window._wireMoeSelection=_wireMoeSelection;
 function wireHeaderA4Edit(){
   const cont=document.querySelector('.myq-a4-paper .myq-paper-header');
   if(!cont) return;
+  /* §V499 纸面编辑增高联动分页(用户报：表头在 A4 纸上直接编辑增高后，第1页题目超出页底被截断)：
+     纸面直接编辑刻意不重渲(§V16.20 防打断光标)，但高度变化必须在「编辑结束」时补一次重分页。
+     focusout 且焦点真正离开表头区(relatedTarget 不在表头内——tab/点击切到表头其它字段不打断)
+     且高度较分页时有变(≥2px) → renderLibPaper() 重分页。监听绑在表头节点上，分页搬移后仍有效；
+     重分页生成新表头节点后本函数会再次执行，对新节点重新绑定并记录新基准高。 */
+  if(!cont._hdReflowWired){
+    cont._hdReflowWired=true;
+    cont._hdPagedH=cont.offsetHeight;
+    cont.addEventListener('focusout',(e)=>{
+      if(e.relatedTarget && cont.contains(e.relatedTarget)) return;
+      requestAnimationFrame(()=>{ try{
+        if(!cont.isConnected) return;                                  // 已被重渲替换，交给新节点
+        const h=cont.offsetHeight;
+        if(Math.abs(h-(cont._hdPagedH||h))<2) return;                  // 高度没变(普通改字)不重排
+        renderLibPaper();
+      }catch(_e){} });
+    });
+  }
   // 标题
   cont.querySelectorAll('[data-hd-edit="title"]').forEach(el=>{
     el.addEventListener('input',()=>{ _hdPersistRichEdit(el); });
@@ -48195,14 +49706,12 @@ function myqPrintPreview(){
   window._myqSkipPaginate=false;
   const prevOverlay=document.getElementById('lib-overlay')||document.querySelector('.lib-overlay');
   if(prevOverlay) prevOverlay.classList.remove('print-mode');
-  // §V18.7 打印前彻底清理 + 隐藏预览区过渡，消除下层重影闪烁
   if(window._myqMode==='focus' && typeof _myqExitFocus==='function') _myqExitFocus();
-  const oldRow=document.getElementById('myqPageRow'); if(oldRow) oldRow.remove();
-  const exitBtn=document.getElementById('myqFocusExit'); if(exitBtn) exitBtn.remove();
-  document.body.classList.add('myq-printing');   // CSS 隐藏屏幕态多页结构，避免闪烁
+  /* §V501 打印同源：不再删多页/不再 skipPaginate 生成单张。
+     直接正常重渲(含 myqPaginate 分页)，@media print 就打这套多页——拆题/页数与屏幕逐像素一致(规律⑥根治)。 */
+  document.body.classList.add('myq-printing');
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(_e){}   /* §V19.435 打印前 blur：避免正在编辑的计分位带 focus 高亮进入打印 */
-  window._myqSkipPaginate=true;
-  renderLibPaper();   // 每次都重新渲染当前最新内容到打印用的单张纸
+  renderLibPaper();   // 每次都重新渲染当前最新内容（多页分页态）
   const overlay=document.getElementById('lib-overlay')||document.querySelector('.lib-overlay');
   let _cleaned=false;
   const restore=()=>{ document.body.classList.remove('myq-printing'); window._myqSkipPaginate=false; renderLibPaper(); };
@@ -53501,7 +55010,7 @@ function zoneMarkWave(){
   //   ② 一次性迁移：把早期版本可能写坏的 bqXzDragDX 清一次(以后正常拖拽仍会记住位置)。
   // §V19.120 方案2：「已看过引导」标志绑定版本号 —— 真实用户只看一次；每发一个新版本就把下面的版本号 +1，
   //   该版本第一次打开会自动播一次(不受浏览器里旧标志/file:// 跨文件共享影响)，之后同版本不再自动播(可 ?xzintro 重看)。
-  var XZ_INTRO_KEY='bqXzIntroSeen_v491';
+  var XZ_INTRO_KEY='bqXzIntroSeen_v506';
   try{
     if(location.search.indexOf('xzintro')>=0) localStorage.removeItem('bqXzDragDX');
     if(!localStorage.getItem('bqXzDragReset1')){ localStorage.removeItem('bqXzDragDX'); localStorage.setItem('bqXzDragReset1','1'); }
@@ -54075,6 +55584,74 @@ function zoneMarkWave(){
   setTimeout(applyLogo,300); setTimeout(applyLogo,1200);
   window.__applyAppLogo=applyLogo;
 })();
+</script>
+
+<script>
+/* ===== 魔法区引导·小智三卡(自小样v2移植) ===== */
+function __mzxIntroInit(){
+  var root=document.querySelector('#empty-hint .mz-card');
+  if(!root||root.dataset.mzxInit==='1') return; root.dataset.mzxInit='1';
+
+function stopSpeak(line){
+  line.classList.remove('speaking');
+  const x=line.querySelector('.xz'); if(x){x.classList.remove('work');x.classList.remove('remind');}
+  const c=line.querySelector('.zhi-card-text');
+  if(c){ if(c._tm){clearInterval(c._tm);c._tm=null;}
+    c.classList.remove('typing');
+    c.textContent = (c.dataset.done==='1') ? c.dataset.full : ''; }
+}
+function setWaiting(k){
+  root.querySelectorAll('.zhi-line').forEach(l=>{
+    var done=l.querySelector('.zhi-card-text').dataset.done==='1';   /* 说完的静默常态,不再举手 */
+    l.querySelector('.xz').classList.toggle('wave', k!==null && l.dataset.k!==k && !done);
+  });
+}
+function typeOut(k, onDone){
+  root.querySelectorAll('.zhi-line').forEach(l=>{ if(l.dataset.k!==k) stopSpeak(l); });
+  const line=root.querySelector('.zhi-line[data-k='+k+']');
+  const card=line.querySelector('.zhi-card-text');
+  const xz=line.querySelector('.xz');
+  const full=card.dataset.full;
+  clearInterval(card._tm);
+  line.classList.add('speaking');
+  setWaiting(k);                                   /* 其余小智举手等待 */
+  xz.classList.remove('wave'); xz.classList.add('work');
+  card.classList.add('typing'); card.textContent='';
+  let i=0;
+  card._tm=setInterval(()=>{
+    i++; card.textContent=full.slice(0,i);
+    if(i>=full.length){
+      clearInterval(card._tm); card._tm=null; card.dataset.done='1';
+      card.classList.remove('typing');
+      line.classList.remove('speaking'); xz.classList.remove('work');
+      setWaiting(null);                            /* 全体放下手 */
+      if(onDone) onDone();
+    }
+  },36);
+}
+function show(k){ __demoStop=true; typeOut(k); 
+  root.querySelectorAll('.sline[data-line]').forEach(l=>l.classList.toggle('glow',l.dataset.line===k));
+  clearTimeout(show._t); show._t=setTimeout(()=>{root.querySelectorAll('.sline.glow').forEach(l=>l.classList.remove('glow'));},2000);
+}
+root.querySelectorAll('.zhi-line').forEach(el=>el.addEventListener('click',()=>show(el.dataset.k)));
+/* 初始化：存全文、锁高、清空正文 */
+root.querySelectorAll('.zhi-card-text').forEach(c=>{
+  c.dataset.full=c.textContent;
+  c.style.minHeight=c.getBoundingClientRect().height+'px';
+  c.textContent='';
+});
+/* 开场连播：上→中→下依次 招呼+打字，演毕常驻；用户一点击即接管 */
+let __demoStop=false;
+(function demo(idx){
+  const ks=['auto','manual','special'];
+  if(__demoStop || idx>=ks.length) return;
+  typeOut(ks[idx], ()=>setTimeout(()=>demo(idx+1), 450));
+})(0);
+
+
+}
+window.__mzxIntroInit=__mzxIntroInit;
+if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventListener('DOMContentLoaded',__mzxIntroInit);}
 </script>
 </body>
 </html>
