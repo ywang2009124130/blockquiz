@@ -10715,9 +10715,18 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 /* ===== 外卡片 ===== */
 .mz-panes{display:flex;gap:20px;align-items:stretch;}
 .mz-pane-left{flex:0 0 340px;display:flex;flex-direction:column;}
-.zhi-body-3cards{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:0;}
-.zhi-line{display:flex;gap:10px;align-items:center;}
+/* §V511 左栏改版：三只小智并排一行，下方共享一个卡槽；点谁谁亮灯，卡槽换内容。
+   grid 三列两行：小智各占第一行一格，三张卡叠在第二行同一区域(占位取最高，防跳动)。 */
+.zhi-body-3cards{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto auto;justify-items:center;align-content:start;column-gap:10px;row-gap:14px;min-height:0;}
+.zhi-line{display:contents;}
+.zhi-line[data-k="auto"] .zhi-item{grid-area:1/1;}
+.zhi-line[data-k="manual"] .zhi-item{grid-area:1/2;}
+.zhi-line[data-k="special"] .zhi-item{grid-area:1/3;}
+.zhi-line .zhi-card{grid-area:2/1/3/4;width:100%;justify-self:stretch;}
 .zhi-line .zhi-item{flex:0 0 56px;cursor:pointer;}
+/* 亮灯：被点中的小智整体提亮上浮 */
+.zhi-line.zhi-opened .zhi-item{transform:translateY(-2px) scale(1.06);}
+.zhi-line.zhi-opened .xz{filter:drop-shadow(0 0 9px rgba(139,92,246,.75));}
 .zhi-line .zwrap{width:56px;height:52px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;}
 .zhi-line .xz{transform:scale(1.05);transform-origin:center bottom;}
 .zhi-card{flex:1;border-radius:12px;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.16);padding:8px 12px 9px;}
@@ -11073,6 +11082,22 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 @keyframes spkTwinkle{0%,100%{transform:scale(.82) rotate(-6deg);opacity:.75;}50%{transform:scale(1.08) rotate(8deg);opacity:1;}}
 @keyframes spkMini{0%,100%{transform:scale(.5);opacity:.3;}50%{transform:scale(1.15);opacity:1;}}
 .magic-empty-v2 .mz-card{width:909px;max-width:calc(100% - 16px);margin:0 auto;pointer-events:auto;}
+/* §V507 右栏三步·分步呈现 + 页面指位动画 */
+.mzx-step.mzx-hid,.mzx-arrow.mzx-hid{display:none;}
+/* §V508b 未点「下一步」时右栏只有第一步：整体垂直居中，尾语先藏 */
+.mz-pane-right.mzx-solo{justify-content:center;}
+.mzx-outro-hid{display:none !important;}
+.mzx-step.mzx-in{animation:mzxStepIn .5s ease both;}
+@keyframes mzxStepIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.mzx-next{display:inline-flex;align-items:center;gap:6px;margin:9px 0 0 26px;padding:5px 16px;border:none;border-radius:999px;background:linear-gradient(135deg,#8B5CF6,#7C3AED);color:#fff;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);}
+.mzx-next:hover{filter:brightness(1.08);}
+.mzx-ops{display:flex;gap:8px;margin:12px 0 0 0;align-items:center;justify-content:flex-end;}
+.mzx-ops .mzx-next{margin:0;}
+.mzx-prev{display:inline-flex;align-items:center;gap:6px;padding:5px 16px;border:1.5px solid var(--p-light,#CBBBEC);border-radius:999px;background:#fff;color:#7C3AED;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;}
+.mzx-prev:hover{background:#F6F1FE;}
+/* §V510 左栏静候：小智独立待命，说明卡随点击出场（visibility 占位防跳动） */
+#empty-hint .zhi-line .zhi-card{opacity:0;visibility:hidden;transform:translateX(-6px);transition:opacity .35s ease,transform .35s ease;}
+#empty-hint .zhi-line.zhi-opened .zhi-card{opacity:1;visibility:visible;transform:none;}
 </style>
 </head>
 <body>
@@ -55010,7 +55035,7 @@ function zoneMarkWave(){
   //   ② 一次性迁移：把早期版本可能写坏的 bqXzDragDX 清一次(以后正常拖拽仍会记住位置)。
   // §V19.120 方案2：「已看过引导」标志绑定版本号 —— 真实用户只看一次；每发一个新版本就把下面的版本号 +1，
   //   该版本第一次打开会自动播一次(不受浏览器里旧标志/file:// 跨文件共享影响)，之后同版本不再自动播(可 ?xzintro 重看)。
-  var XZ_INTRO_KEY='bqXzIntroSeen_v506';
+  var XZ_INTRO_KEY='bqXzIntroSeen_v511';
   try{
     if(location.search.indexOf('xzintro')>=0) localStorage.removeItem('bqXzDragDX');
     if(!localStorage.getItem('bqXzDragReset1')){ localStorage.removeItem('bqXzDragDX'); localStorage.setItem('bqXzDragReset1','1'); }
@@ -55613,6 +55638,9 @@ function typeOut(k, onDone){
   const xz=line.querySelector('.xz');
   const full=card.dataset.full;
   clearInterval(card._tm);
+  /* §V511 共享卡槽：亮灯与卡片互斥，点谁谁亮谁出卡 */
+  root.querySelectorAll('.zhi-line.zhi-opened').forEach(l=>{ if(l!==line) l.classList.remove('zhi-opened'); });
+  line.classList.add('zhi-opened');
   line.classList.add('speaking');
   setWaiting(k);                                   /* 其余小智举手等待 */
   xz.classList.remove('wave'); xz.classList.add('work');
@@ -55640,14 +55668,49 @@ root.querySelectorAll('.zhi-card-text').forEach(c=>{
   c.style.minHeight=c.getBoundingClientRect().height+'px';
   c.textContent='';
 });
-/* 开场连播：上→中→下依次 招呼+打字，演毕常驻；用户一点击即接管 */
-let __demoStop=false;
-(function demo(idx){
-  const ks=['auto','manual','special'];
-  if(__demoStop || idx>=ks.length) return;
-  typeOut(ks[idx], ()=>setTimeout(()=>demo(idx+1), 450));
-})(0);
+/* §V508 取消开场自动连播（用户反馈：登场费时、界面太花）。
+   改为静候式：三卡初始留白；鼠标悬浮小智=挥手招呼(全局 .xz:hover 已有)；点击才打字介绍。
+   __demoStop 保留：show() 仍引用，且为将来复播留口。 */
+let __demoStop=true;
 
+/* §V510 右栏单步呈现：每次只显示一步，可「上一步/下一步」往返；
+   旧 §V507 指位光点+光圈已废除（同步失灵、遮挡内容；改由聚光灯导览另行承担指位职责） */
+(function(){
+  var steps=[].slice.call(root.querySelectorAll('.mzx-step'));
+  var arrows=[].slice.call(root.querySelectorAll('.mzx-arrow'));
+  if(steps.length!==3) return;
+  root.querySelectorAll('.mzx-ops').forEach(function(o){o.remove();});      /* 重建去重 */
+  arrows.forEach(function(a){a.classList.add('mzx-hid');});                 /* 单步模式无需衔接箭头 */
+  var pane=root.querySelector('.mz-pane-right'); if(pane) pane.classList.add('mzx-solo');   /* 恒居中 */
+  var outro=root.querySelector('.outro');
+  var cur=0;
+  function showStep(i){
+    cur=i;
+    steps.forEach(function(s,k){
+      s.classList.toggle('mzx-hid',k!==i);
+      if(k===i){ s.classList.remove('mzx-in'); void s.offsetWidth; s.classList.add('mzx-in'); }
+    });
+    if(outro) outro.classList.toggle('mzx-outro-hid', i<2);
+  }
+  steps.forEach(function(s,k){
+    var ops=document.createElement('div'); ops.className='mzx-ops';
+    var html='';
+    if(k>0) html+='<button type="button" class="mzx-prev">← 上一步</button>';
+    html+=(k<2)?'<button type="button" class="mzx-next">下一步 →</button>'
+               :'<button type="button" class="mzx-next">知道啦 ✓</button>';
+    ops.innerHTML=html; s.appendChild(ops);
+    var pb=ops.querySelector('.mzx-prev');
+    if(pb) pb.addEventListener('click',function(e){e.stopPropagation();showStep(k-1);});
+    ops.querySelector('.mzx-next').addEventListener('click',function(e){
+      e.stopPropagation(); if(k<2) showStep(k+1); else showStep(0);        /* 知道啦→回第一步待命 */
+    });
+  });
+  /* §V511b 指南区定高：逐步量取三步各自所需高度，取最高锁在右栏上，切步不跳动 */
+  var maxH=0;
+  for(var mi=0;mi<3;mi++){ showStep(mi); if(pane) maxH=Math.max(maxH,pane.scrollHeight); }
+  if(pane&&maxH) pane.style.minHeight=maxH+'px';
+  showStep(0);
+})();
 
 }
 window.__mzxIntroInit=__mzxIntroInit;
