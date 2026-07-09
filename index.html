@@ -1528,7 +1528,7 @@ html[lang="ar"] .level-folder-tab .lft-name{transform:rotate(90deg);direction:rt
 .punct{display:inline;white-space:nowrap;font-style:normal;}
 .plain-text{display:inline;white-space:normal;}
 .task-icon{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;line-height:1;margin-right:4px;}
-.phrase-token{display:inline-flex;align-items:baseline;gap:2px;white-space:nowrap;vertical-align:baseline;}   /* §V451 align-items:flex-end→baseline，与外部 A. 等纯文本同基线 */
+.phrase-token{display:inline;white-space:normal;vertical-align:baseline;}   /* §V451 align-items:flex-end→baseline，与外部 A. 等纯文本同基线；§V518.32 inline-flex+nowrap→inline+词间可换行：V518.29 整词单 ruby 后词内已天然不可断，整短语再 nowrap 反而把 do homework 锁成不可断长条→选项框内两端被裁(用户报「改题干后选项还是挤压」)。词间允许正常换行、词内仍绝不拆，图一「词中断行」不复发 */
 .phrase-token ruby{margin:0 1px !important;}
 /* §V451 修题卷 ABCD 选项英文文本「下沉一排」：英文词经 withPinyin 后每字母包成 py-punct ruby，其空 rt 在题卷里只 visibility:hidden(§1501)仍占拼音行高度→撑高 phrase-token→在 .pq-ci-opt{align-items:baseline} 里整词落到 A. 下方一行。
    题卷/题卡选项区里这些 rt 是空格(纯占位)，直接 display:none 不占高，phrase-token 回落到字母行高，与 A. 同排。仅限选项/预览区的 phrase-token，不影响需要真拼音的中文 ruby。 */
@@ -2071,6 +2071,11 @@ body.bq-remind-manual input.dc-fi-pcn:placeholder-shown,
 body.bq-remind-manual input.dc-fi-pen:placeholder-shown,
 body.bq-remind-manual input.dc-tj-cn:placeholder-shown,
 body.bq-remind-manual input.dc-tj-sec:placeholder-shown,
+body.bq-remind-manual input.dc-fi-stem:placeholder-shown,
+body.bq-remind-manual input.dc-pc-inp:placeholder-shown,
+body.bq-remind-manual input.dc-open-q:placeholder-shown,
+body.bq-remind-manual input.dc-ab-txt:placeholder-shown,
+body.bq-remind-manual input.dc-fi-needmanual:placeholder-shown,
 body.bq-remind-manual input.dc-fi-opt:placeholder-shown{
   background:#FEF2F2 !important;
   box-shadow:0 0 0 1.6px #F87171 inset !important;
@@ -2187,7 +2192,10 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
    §V19.183 字母移到左上角小方块（不再占词的横向空间），词占满横向：
      二/三/四字横排不折；长到一句话(≥5字)自动换行且文字下移避开字母、居左起排 */
 .dc-imgchoice-opt{position:relative;display:flex;align-items:center;justify-content:center;min-height:60px;
-  background:#fff;border:1.5px solid #E5E1F3;border-radius:12px;padding:10px 10px 10px 10px;transition:.12s;}
+  background:#fff;border:1.5px solid #E5E1F3;border-radius:12px;padding:10px 28px;transition:.12s;}
+/* §V518.33 两侧 10→28：字母徽标绝对定位在左上(left:7,宽20,到x=27)，居中文字越宽起点越靠左，
+   一旦起点 x<27 就滑到徽标底下（用户报 do homework 首字母被盖——它单行放得下、不触发换行，故换行方案全部无感）。
+   预留 28px 安全区后，任何路径生成的文字都不可能与徽标相撞；真超宽内容在安全区内换行（V518.32 预览层已可折行）。 */
 .dc-imgchoice-opt.is-correct{border-color:#7C3AED;background:#F7F3FF;}
 /* 卡片内词框去边框/背景，融入卡片 */
 .dc-imgchoice-opt .dc-field-wrap{width:auto !important;max-width:100% !important;border:none !important;background:transparent !important;box-shadow:none !important;}
@@ -2196,6 +2204,16 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .dc-imgchoice-opt .dc-fi-opt,
 .dc-imgchoice-opt .ruby-preview{width:auto;min-width:0;max-width:100%;text-align:center;white-space:nowrap;
   border:none !important;background:transparent !important;box-shadow:none !important;padding:2px 4px !important;}
+/* §V518.32 预览层（拼音开启时的可见层）允许换行兜底：二三四字汉字词本就放得下不会折，超宽英文/拼音短语
+   在词间自然换行，不再居中溢出裁到字母徽标下。input 保持单行（输入框本性），句子档估宽联动照旧。 */
+.dc-imgchoice-opt .ruby-preview{white-space:normal;overflow-wrap:break-word;}
+/* §V518.34 选项组：①四框恒等高（各行等分）；②超宽内容时整组切两个一排（opts-2col，由排版联动 JS 打开）；
+   ③手动新增空项(needmanual)保持真输入框且撑满可用宽（窄条无法点入编辑的根因是空预览层零尺寸）。 */
+.dc-imgchoice-opts{grid-auto-rows:1fr;}
+.dc-imgchoice-opts.opts-2col{grid-template-columns:repeat(2,1fr) !important;}
+.dc-imgchoice-opts.opts-1col{grid-template-columns:1fr !important;}   /* §V518.35 第三档：超长选项一个一排，四框仍同宽同高 */
+.dc-imgchoice-stemword input.dc-fi-needmanual{width:100%;box-sizing:border-box;}
+.dc-imgchoice-opt input.dc-fi-needmanual{width:100%;box-sizing:border-box;}
 /* 长句档(≥5字)：允许换行；词区顶部留出字母高度，文字从字母下方起、居左排（不和序号挤） */
 .dc-imgchoice-opt.is-sentence{align-items:flex-start;}
 .dc-imgchoice-opt.is-sentence .dc-fi-opt,
@@ -35802,7 +35820,9 @@ function renderPinyinSafe(text, isPy){
         //   → 字母散开且可在任意字母间换行（用户报「选项里英文和字母/词内字母不同排」）。
         //   先把连续英文词/短语（≥2字母，含内部空格短语如 "get up"）整段抽出，用 phrase-token 整体包裹（nowrap+基线），
         //   内部字母仍走 py-punct ruby 保持与汉字基线对齐；孤立单字母(A/B标签)、数字、标点、符号维持原逐字符逻辑。
-        const _engWord=/[A-Za-z][A-Za-z]+(?:\s+[A-Za-z]+)*/g;   // ≥2 连续字母起头的英文词/短语（单字母不吞，留给 A/B 标签逻辑）
+        const _engWord=/[A-Za-z\u00C0-\u024F]{2,}(?:\s+[A-Za-z\u00C0-\u024F]+)*/g;   // ≥2 连续拉丁字母起头的英文/拼音词短语（单字母不吞，留给 A/B 标签逻辑）
+        // §V518.29 字符类扩到 \u00C0-\u024F（Latin-1 补充+扩展A/B）：带声调拼音字母 à á ē ě ǐ ǒ ǔ ǖ… 原先不在 [A-Za-z] 内，
+        //   「chàng gē」被切成 ch/à/ng/g/ē 碎块 → 字母散开、可在词中任意处断行（用户报题卷「ē」被挤到下一行、字母松散如打拼音）。
         const _renderChar=(ch)=>{
           // §V19.376 答案符号（√ ✗ ✓ ✔ ✘ ✕ ×）优先于 EMOJI 判定：这些字符落在 emoji 码段会被误当表情→task-icon（脱离基线跑到拼音行）。
           //   判断题题干「填 √ 或 ✗」的 ✗ 正是此坑。强制走 py-punct（拼音态）/punct（关闭态），与汉字同排。
@@ -35827,7 +35847,11 @@ function renderPinyinSafe(text, isPy){
         let _out='', _last=0, _m; _engWord.lastIndex=0;
         while((_m=_engWord.exec(other))!==null){
           if(_m.index>_last) _out += [...other.slice(_last,_m.index)].map(_renderChar).join('');
-          const _wi=[...(_m[0])].map(_ch=>/\s/.test(_ch)?'<span style="display:inline-block;width:.28em"></span>':`<ruby class="py-punct"><rb>${esc(_ch)}</rb><rt> </rt></ruby>`).join('');
+          const _wi=String(_m[0]).split(/(\s+)/).map(_sg=>{
+            if(!_sg) return '';
+            if(/^\s+$/.test(_sg)) return '<span style="display:inline-block;width:.28em"></span>';
+            return `<ruby class="py-punct"><rb>${esc(_sg)}</rb><rt> </rt></ruby>`;   /* §V518.29 整词一只 ruby（原每字母一只）：词内字距回归字体自然值、词内不可断行；基线对齐机制(py-punct)不变 */
+          }).join('');
           _out += `<span class="phrase-token">${_wi}</span>`;
           _last=_m.index+_m[0].length;
         }
@@ -39961,8 +39985,20 @@ window.MatchGen = (function(){
       }
       // §V19.227 默认出 4 道（不足 4 词由上方 _gate 提示「语料不足」）；其余由老师「新增题项」补到 ITEM_MAX(10)。
       //   _avail 源自 _autoVocab 顺序「新知在前、温故在后」，按序取前 4 = 生词优先、依次覆盖（呈现的打乱由各形式生成逻辑负责）。
-      const want = Math.min(4, _avail.length);
-      const items = _avail.slice(0, want);
+      // §V518.31 不足 4 项循环补足（用户报「题项自己消失、只剩一项」）：真相是词池被本轮入选题耗到只剩 1 个未用词，
+      //   原逻辑 want=min(4,_avail.length) 就只生成 1 项——看着像题项被删。改为：未用的生词优先在前，
+      //   不够 4 个时从「已入选过的词」按原序回收补足（本批内不重复）；语料总量本就不足 4 时维持原样交给 _gate 提示。
+      const items = _avail.slice(0, Math.min(4, _avail.length));
+      if(items.length < 4){
+        const _taken=new Set(items.map(p=>String(p&&p.w||'').replace(/\s/g,'')));
+        for(const _p of allUsable){
+          if(items.length>=4) break;
+          if(!_p || !_p.w) continue;
+          const _k=String(_p.w).replace(/\s/g,'');
+          if(_taken.has(_k)) continue;
+          _taken.add(_k); items.push(_p);
+        }
+      }
       _autoBatchScratch={ blockType, items };
       return items;
     }
@@ -40505,17 +40541,44 @@ window.MatchGen = (function(){
         });
         if(window.XiaoZhi && typeof XiaoZhi.refresh==='function') XiaoZhi.refresh();
       }catch(_){}
-      /* §V504 同卡已入选(committed/modified)切灯＝改这道题的梯度(B方案原地迁移的前半程)：
-         灯≠库里这道题的梯度 → 按钮转「● 已修改」，提示需再点入选确认迁移；切回原灯 → 恢复「✓ 已入选」。
-         fresh/回访态不进此分支：那时调灯只决定「即将入选的新题」落哪个梯度(总有一盏灯亮，默认黄)，不碰历史记录。 */
+      /* §V504→§V518.27 同卡已入选切灯＝改这道题的灯色（用户定终版：「已修改」出现的同一刻题卷即跳库，不再等点击）：
+         换灯瞬间把这道已入选的题迁到新灯色库(finalQuizBank 与 S._v2lib 同步)→重渲题卷→刷新右上计数→toast 明示。
+         按钮态以「入选那一刻的灯色」为锚(card._commitTier)：灯回到锚位→「✓ 已入选」；灯不在锚位→「● 已修改」。
+         fresh/回访态不进此分支：那时调灯只决定「即将入选的新题」落哪个梯度，不碰历史记录。
+         §V518.26 dirty 守卫保留：题面已改(_contentDirty)＝新题，换灯一律不碰按钮态、不迁移。 */
       try{
-        if(card._selState==='committed' || card._selState==='modified'){
+        if((card._selState==='committed' || card._selState==='modified') && card._contentDirty!==true){
           const _uid=card._lastRecUid; let _pr=null;
           if(_uid){ const _fb=window.finalQuizBank||[]; for(let i=_fb.length-1;i>=0;i--){ if(_fb[i]&&_fb[i].uid===_uid){ _pr=_fb[i]; break; } } }
           if(_pr){
-            card._selState = (String(_pr.difficultyKey)===String(key)) ? 'committed' : 'modified';
+            if(card._commitTier==null) card._commitTier=String(_pr.difficultyKey||'low');   /* 老卡兜底：以迁移前所在库为锚 */
+            if(String(_pr.difficultyKey)!==String(key)){
+              const _tg=DIFFS.find(x=>x.key===key)||{};
+              _pr.difficulty=_tg.tag; _pr.difficultyKey=key; _pr.difficultyLabel=_tg.label;
+              _pr.level=(key==='low'?'basic':key==='mid'?'advanced':'high'); _pr.levelLabel=_tg.label;
+              try{ const _m=(S._v2lib||[]).find(r=>r&&r.uid===_pr.uid); if(_m){ _m.difficulty=_tg.tag; _m.difficultyKey=key; _m.difficultyLabel=_tg.label; _m.level=_pr.level; _m.levelLabel=_tg.label; _m.diff=_tg.diff; } }catch(_e2){}
+              /* §V518.30 同步 _libQs 里的浅拷贝（用户报：换灯跳库后回访快照空白）——collectLibrary 推的是 {...q} 拷贝，
+                 只改原件不改拷贝 → 题卷/快照按 _libQs 旧灯色过滤，新灯档成空卷。题卷区自己打开时会重新 collect 掩盖了此坑。 */
+              try{ if(Array.isArray(_libQs)){ const _lq=_libQs.find(r=>r&&r.uid===_pr.uid); if(_lq){ _lq.difficulty=_tg.tag; _lq.difficultyKey=key; _lq.difficultyLabel=_tg.label; _lq.level=_pr.level; _lq.levelLabel=_tg.label; _lq.diff=_tg.diff; } } }catch(_e2){}
+              try{ if(typeof renderLibPaper==='function') renderLibPaper(); }catch(_e2){}
+              try{ if(typeof refreshMyQuizCount==='function') refreshMyQuizCount(); }catch(_e2){}
+              try{ if(typeof showToast==='function') showToast((_pr.typeName||'')+'（✓ 已迁到'+(_tg.tag||'')+'库）','ok'); }catch(_e2){}
+            }
+            card._selState = (String(_pr.difficultyKey)===String(card._commitTier)) ? 'committed' : 'modified';
             if(typeof card._applySaveState==='function') card._applySaveState();
           }
+        }
+      }catch(_e){}
+      /* §V518.28 回访态跟灯走（用户定）：换灯=换了一张题卷 → 先撤当前回访三件套（小智提醒+滑窗关、快照关、
+         按钮回「√ 入选」），再按新灯色的题卷重新评估——新卷里也有同「积木+形式」→ 重新弹小智+快照（数字/红标都按新卷）；
+         没有 → 保持安静，正常点入选即可入新灯库。 */
+      try{
+        if(card._revisitAgain){
+          card._revisitAgain=false;
+          try{ if(window.XiaoZhi){ if(XiaoZhi.clearRemind) XiaoZhi.clearRemind(); if(XiaoZhi.closePanel) XiaoZhi.closePanel(); } }catch(_e2){}
+          try{ if(typeof bqSnapHide==='function') bqSnapHide(); }catch(_e2){}
+          if(typeof card._applySaveState==='function') card._applySaveState();
+          if(typeof card._fireRevisit==='function') card._fireRevisit();   /* 重评：_hist 已按当前灯色过滤(§V518.27)，无同类则不弹 */
         }
       }catch(_e){}
     }
@@ -40962,6 +41025,26 @@ window.MatchGen = (function(){
             if(btn) btn.click();
           }
         });
+        /* §V518.43 剪贴板图片直贴（用户报：占位文案说能贴图，实际贴不上——原来只有回车收文字链接，没有 paste 处理，
+           浏览器不会把位图贴进文本框）：在粘贴框 Ctrl/⌘+V 贴截图/复制的图片 → 取剪贴板 File，走「选择本地文件」同一条路
+           （objectURL + mediaList {kind:'file'}），入列即预览并收起。文字链接粘贴行为不变。 */
+        inp.addEventListener('paste', e=>{
+          try{
+            const items=(e.clipboardData && e.clipboardData.items) || [];
+            for(const it of items){
+              if(it && it.kind==='file' && /^image\//.test(it.type||'')){
+                const f=it.getAsFile(); if(!f) continue;
+                e.preventDefault();
+                const url=URL.createObjectURL(f);
+                card._objectUrls.push(url);
+                mediaList.push({ kind:'file', file:f, url, mime:f.type||'image/png', name:f.name||('粘贴图片-'+Date.now()+'.png') });
+                renderPreview();
+                closeMEdit();
+                return;
+              }
+            }
+          }catch(_e){}
+        });
       });
 
       const forcePy = (type==='echo-wall' && D.key==='low');
@@ -41012,7 +41095,7 @@ window.MatchGen = (function(){
             /* §V19.325b/328 空值保持编辑框（placeholder 可见）——限定手动积木的新输入类：
                V325b 曾对全部字段生效，导致老卡（中英/汉拼选择空壳）从"紧凑空预览"变"大尺寸 input"撑大布局（用户报），
                老字段恢复原行为，新字段保留修复。 */
-            if(!String(val).trim() && f.input.matches('.dc-open-q,.dc-ab-txt,.dc-pc-inp,.dc-sj-mattxt')){ f.preview.style.display='none'; f.input.style.display=''; return; }
+            if(!String(val).trim() && f.input.matches('.dc-open-q,.dc-ab-txt,.dc-pc-inp,.dc-sj-mattxt,.dc-fi-needmanual')){ f.preview.style.display='none'; f.input.style.display=''; return; }
             /* §V19.325 textarea（语段）：空值/无中文保持编辑框（placeholder 可见）；多行按 \n 分行注音 */
             if(f.input.tagName==='TEXTAREA'){
               if(!val.trim() || !/[\u4e00-\u9fff]/.test(val)){ f.preview.style.display='none'; f.input.style.display=''; return; }
@@ -41316,7 +41399,7 @@ window.MatchGen = (function(){
           b.type='button'; b.className='dc-item-del';
           b.dataset.i18nTitle='deleteItem'; b.title=T('deleteItem');
           b.innerHTML='<span class="dc-item-del-ico">🗑</span><span class="dc-item-del-txt" data-i18n="deleteItem">'+T('deleteItem')+'</span>';
-          b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onDel(); });
+          b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onDel(); if(card._markNewQuestion) card._markNewQuestion(); });   /* §V518.26 删除题项=新题→按钮回「入选」（用户定） */
           return b;
         };
         // §V19.122 拖拽手柄：取代「🗑 删除此项」按钮。6 点抓手，按住拖到右下角垃圾桶 = 删除此项。
@@ -41329,7 +41412,7 @@ window.MatchGen = (function(){
           g.dataset.i18nTitle='deleteItem'; g.title=T('deleteItem');
           g.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>';
           g.__del=onDel;
-          g.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); if(typeof onDel==='function') onDel(); });
+          g.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); if(typeof onDel==='function') onDel(); if(card._markNewQuestion) card._markNewQuestion(); });   /* §V518.26 删除题项=新题（用户定） */
           return g;
         };
         // 新增题项：紫色虚线页脚框（spec 一），嵌入卡内、手动填写、不弹窗。
@@ -41338,7 +41421,7 @@ window.MatchGen = (function(){
           b.type='button'; b.className='dc-additem';
           try{ const _lv=card._levelKey||'low', _cc=({low:{bg:'#FFF285',bd:'#EEC53F'},mid:{bg:'#FFCC9B',bd:'#ED9747'},high:{bg:'#C9EFA8',bd:'#7FB659'}})[_lv]; b.style.setProperty('background',_cc.bg,'important'); b.style.setProperty('border-color',_cc.bd,'important'); b.style.setProperty('border-style','solid','important'); }catch(_e){}   /* §V19.276 重建即上耳朵色 */
           b.dataset.i18n='addItem'; b.textContent=T('addItem');
-          b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onAdd(); });
+          b.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); onAdd(); if(card._markNewQuestion) card._markNewQuestion(); });   /* §V518.26 新增题项=新题→按钮回「入选」（用户定） */
           return b;
         };
         const _mkPyMedia=(holder)=>{
@@ -41386,8 +41469,8 @@ window.MatchGen = (function(){
               slot.appendChild(au); slot.appendChild(_mkBadges(()=>{ pick.accept='audio/*'; pick.click(); },'更换音频文件'));
             }else if(m){
               const im=document.createElement('img'); im.src=m; im.title='点击更换材料';
-              im.addEventListener('click',e=>{ e.stopPropagation(); pick.click(); });
-              slot.appendChild(im); slot.appendChild(_mkBadges(()=>{ pick.accept='image/*'; pick.click(); },'更换图片'));
+              im.addEventListener('click',e=>{ e.stopPropagation(); if(window.bqPickImage) bqPickImage(pick, im); else pick.click(); });
+              slot.appendChild(im); slot.appendChild(_mkBadges(()=>{ pick.accept='image/*'; if(window.bqPickImage) bqPickImage(pick, slot); else pick.click(); },'更换图片'));
             }else{
               /* §V19.356 方案B 两入口（用户早定，之前漏落地）：🎤声音 / 🖼图片；点声音弹 inline 小菜单选「文字朗读／上传录音」。 */
               const snd=document.createElement('span'); snd.className='py-mentry';
@@ -41397,7 +41480,7 @@ window.MatchGen = (function(){
               const eimg=document.createElement('span'); eimg.className='py-mentry';
               eimg.innerHTML='<span class="pme-ic">🖼️</span>图片';
               eimg.title='上传图片材料';
-              eimg.addEventListener('click',e=>{ e.stopPropagation(); pick.accept='image/*'; pick.click(); });
+              eimg.addEventListener('click',e=>{ e.stopPropagation(); pick.accept='image/*'; if(window.bqPickImage) bqPickImage(pick, eimg); else pick.click(); });
               slot.appendChild(snd); slot.appendChild(eimg);
             }
             slot.classList.toggle('empty', !m);
@@ -41516,14 +41599,34 @@ window.MatchGen = (function(){
         // §V19.188 温故提醒：新增题项取到温故词、或首轮生成动用温故时，让小智说一句（仅提醒，不拦截）。
         // §V19.228 按用户要求移除温故提醒（提醒过多小智忙不过来）；保留空函数以兼容 4 处调用点。
         function _remindReview(msg){ /* no-op */ }
-        // §V19.226 语料不足时「新增题项」加了空题项 → 小智提醒老师去手动编辑（不拦截、不弹窗）。
-        function _remindNeedManual(){
-          // §V19.228 自动展开滑窗（不再只举手+小气泡、要老师自己去点小智）
+        // §V19.226 语料不足时「新增题项」加了空题项 → 提醒老师去手动编辑（不拦截、不弹窗）。
+        // §V518.34 回滚 V19.228 的自动滑窗（用户定）：退回底部轻 toast、轻弹即撤；小智不参与此提醒。
+        // §V518.36 按语料种类分流（用户定）：词语题型缺词弹「词语不足」、句子题型缺句弹「句子不足」，互不影响；
+        //   「只弹一次」的旗子也按种类各记一枚（原整卡一枚旗：选择形式弹过后，切到正误形式缺料就被吞掉——用户报「判断题型不弹提醒」）。
+        /* §V518.38→40 入选拦截的「有效提醒」统一出口（用户定终版）：
+           红色呼吸直驱 body.bq-remind-manual + 小智滑窗讲清楚「飘红=空项待补」——拦截时刻必须让用户看懂，
+           底部 toast 只配"弹过即可"的轻场合，这里不用。无小智环境才降级 toast。
+           无效提醒（常驻"这是手动编辑的题"举手/确认通行）仍保持移除。 */
+        function _fxRemind(msg, red){
+          try{ if(red!==false) document.body.classList.add('bq-remind-manual'); }catch(_e){}
           try{
-            if(window.XiaoZhi){
-              if(typeof window.XiaoZhi.setRemind==='function') window.XiaoZhi.setRemind('语料不足，以下新增需要手动编辑！');
+            if(window.XiaoZhi && typeof window.XiaoZhi.setRemind==='function'){
+              window.XiaoZhi.setRemind(msg);
               if(typeof window.XiaoZhi.openPanel==='function') window.XiaoZhi.openPanel();
-            }
+            } else if(typeof showToast==='function'){ showToast(msg,'warn'); }
+          }catch(_e){}
+        }
+        window._fxRemind=_fxRemind;   /* §V518.39 修 ReferenceError：入选按钮处理器与本定义不在同一层作用域（用户报红色错误横幅），挂 window 全局可达 */
+        function _remindNeedManual(kind, msg){
+          try{
+            kind = (kind==='sentence') ? 'sentence' : 'word';
+            /* §V518.37 旗子按「形式卡」计（用户定：应该每个题卡弹）：键=当前形式(subtype)+语料种类。
+               同一形式卡内连点新增只弹一次；切到另一形式卡（连线→选择→正误…）各自重新有一次；换积木=新卡自然重置。 */
+            const _k=String((formData && formData._subtype) || (typeof type!=='undefined'?type:'x'))+':'+kind;
+            if(!card._corpusShortToasted || typeof card._corpusShortToasted!=='object') card._corpusShortToasted={};
+            if(card._corpusShortToasted[_k]) return;
+            card._corpusShortToasted[_k]=true;
+            if(typeof showToast==='function') showToast(msg || (kind==='sentence' ? '句子语料不足，新增的空题项需要手动编辑！' : '词语不足，新增的空题项需要手动编辑！'), 'warn');
           }catch(_e){}
         }
         // §V19.230 提醒联动：重估「当前是否还有空白待手动编辑的新增项」。填内容 / 删空项 / 入库后调用，
@@ -41559,7 +41662,7 @@ window.MatchGen = (function(){
           return false;
         }
         function _reEvalManualRemind(){
-          try{ if(!_manualStillNeeded() && window.XiaoZhi && typeof window.XiaoZhi.clearRemind==='function'){ window.XiaoZhi.clearRemind(); } }catch(_e){}
+          try{ if(!_manualStillNeeded()){ if(window.XiaoZhi && typeof window.XiaoZhi.clearRemind==='function') window.XiaoZhi.clearRemind(); document.body.classList.remove('bq-remind-manual'); } }catch(_e){}   /* §V518.38 空项全填好→顺手撤红呼吸 */
         }
         // §V19.187/188 新增题项取词：新知优先(_isReview:false)，新知用完再用温故(_isReview:true)。
         //   返回 {w, en, py, img, _isReview} 或 null。全部(新知+温故)用完返回 null —— 调用方据此提示「无更多词」，
@@ -42214,7 +42317,8 @@ window.MatchGen = (function(){
               // 隐藏文件选择 input（点图片框 → 换图）
               const pick=document.createElement('input'); pick.type='file'; pick.accept='image/*'; pick.hidden=true;
               slot.appendChild(pick);
-              slot.addEventListener('click', ()=> pick.click());
+              slot.addEventListener('click', ()=> { if(window.bqPickImage) bqPickImage(pick, slot); else pick.click(); });
+              if(window.bqSlotPaste) bqSlotPaste(slot, pick);   /* §V518.44 大槽直贴捷径 */
               pick.addEventListener('change', e=>{
                 const f=e.target.files && e.target.files[0]; if(!f) return;
                 const reader=new FileReader();
@@ -42243,17 +42347,17 @@ window.MatchGen = (function(){
                 if(hasImg){
                   const im=document.createElement('img'); im.className='dc-sj-matimg'; im.src=p.imgSrc; im.alt='连线图'; im.title='点击更换图片';
                   const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';
-                  im.addEventListener('click',()=>rpick.click());
+                  im.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(rpick, im); else rpick.click(); });
                   const stk=document.createElement('span'); stk.className='py-mtts-badges';
                   const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换图片';
-                  ed.addEventListener('click',()=>rpick.click());
+                  ed.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(rpick, ed); else rpick.click(); });
                   const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除图片';
                   cl.addEventListener('click',()=>{ p.imgSrc=null; p._imgSrc=null; p._hasImg=false; ei._imgSrc=null; formData._userEdited=true; p._rightTouched=true; formData._manualEdit=true; _rb(); });
                   stk.appendChild(ed); stk.appendChild(cl); wrap.appendChild(im); wrap.appendChild(stk); bar.appendChild(wrap);
                 }else if(!showTxt){
                   const eimg=document.createElement('span'); eimg.className='py-mentry';
                   eimg.innerHTML='<span class="pme-ic">🖼️</span>图片'; eimg.title='上传图片';
-                  eimg.addEventListener('click',ev=>{ ev.stopPropagation(); rpick.click(); });
+                  eimg.addEventListener('click',ev=>{ ev.stopPropagation(); if(window.bqPickImage) bqPickImage(rpick, eimg); else rpick.click(); });
                   bar.appendChild(eimg);
                 }
                 if(showTxt){
@@ -42388,7 +42492,32 @@ window.MatchGen = (function(){
             if((formData.pairs||[]).length>=ITEM_MAX){ _toast('itemMaxReached'); return; }
             const nw=_pickNextWord();
             let newPair;
-            if(!nw){
+            if(formData._subtype==='auto_split_link'){
+              /* §V518.37 词语拆搭·新增题项专用分支（用户报「乱生题」）：原走通用词对构造，V518.21 的 py 兜底
+                 把整词配上拼音（唱歌↔chàng gē）混进拆字连线。改为按拆搭生成器同款规则取「可拆两字词」：
+                 单字/同字词(妈妈)/未经小智确认的多字词不合格→跳过（跳过的词归还取词池，不吞词）；
+                 前半/后半与现有题项冲突（一对一配对不能有歧义）也跳过；无合格词→如实空项+词类提醒。 */
+              const conf=(Array.isArray(window.matchingSplitConfirmations)?window.matchingSplitConfirmations:[]);
+              const _splitOf=(w)=>{ w=String(w||''); const chars=[...w];
+                const c=conf.find(x=>x&&x.original===w&&Array.isArray(x.split)&&x.split[0]&&x.split[1]); if(c) return [c.split[0],c.split[1]];
+                if(chars.length===2 && chars[0]!==chars[1]) return [chars[0],chars[1]];
+                return null; };
+              const _halves=new Set(); (formData.pairs||[]).forEach(p=>{ if(p){ if(p.cn)_halves.add(String(p.cn)); if(p.en)_halves.add(String(p.en)); } });
+              let _pk=null, _cand=nw, _guard=0; const _skip=[];
+              while(_cand && _guard++<24){
+                const sp=_splitOf(_cand.w);
+                if(sp && !_halves.has(sp[0]) && !_halves.has(sp[1])){ _pk={w:_cand.w, a:sp[0], b:sp[1], _isReview:!!_cand._isReview}; break; }
+                _skip.push(_cand.w); _cand=_pickNextWord();
+              }
+              _skip.forEach(w=>{ try{ _recycleWordToPool(w); }catch(_e){} });
+              if(_pk){
+                newPair={ cn:_pk.a, en:_pk.b, _isReview:_pk._isReview, imgSrc:null, _imgSrc:null, _hasImg:false, _imgSlot:false };
+                if(_pk._isReview){ _remindReview('新增的题项用到了温故语料的词，请留意。'); }
+              }else{
+                newPair={ cn:'', en:'', _isReview:false, imgSrc:null, _imgSrc:null, _hasImg:false, _imgSlot:false, _needManual:true };
+                _remindNeedManual('word','可拆词语不足，新增的空题项需要手动编辑！');
+              }
+            } else if(!nw){
               // §V19.226 语料不足：加空连线题项（左词/右元素待老师手填），小智提醒；不再拦截
               newPair = { cn:'', en:'', _isReview:false, imgSrc:null, _imgSrc:null, _hasImg:false, _imgSlot:false, _needManual:true };
               _remindNeedManual();
@@ -42721,7 +42850,8 @@ window.MatchGen = (function(){
                   const r=new FileReader();
                   r.onload=()=>{ it.imgs=it.imgs||{}; it.imgs[ci2]=String(r.result); paint(); formData._userEdited=true; formData._manualEdit=true; };
                   r.readAsDataURL(f); pick.value=''; });
-                slot.addEventListener('click',()=>pick.click());
+                slot.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, slot); else pick.click(); });
+              if(window.bqSlotPaste) bqSlotPaste(slot, pick);   /* §V518.44 */
                 slot.title='点击添加/更换样板图（GIF / PNG / JPG，可选）';
                 slot.appendChild(pick); paint();
                 const gridWrap=document.createElement('div'); gridWrap.className='hz-cell-wrap';
@@ -42884,7 +43014,7 @@ window.MatchGen = (function(){
             try{ const st=(window.CorpusV2&&CorpusV2.state)||{};
               nq=[].concat(st.examples||[]).find(x=>x&&x.enabled!==false&&!x.draft&&/[？?]\s*$/.test(String(x.text||''))&&!used.has(String(x.text).trim())); }catch(_e){}
             if(nq){ formData._openItems.push({q:String(nq.text),_isReview:nq.source==='温故'}); if(nq.source==='温故'){ _remindReview('新增的题项用到了温故语料的问句，请留意。'); } }
-            else { formData._openItems.push({q:'',_needManual:true}); _remindNeedManual(); }
+            else { formData._openItems.push({q:'',_needManual:true}); _remindNeedManual('sentence'); }   /* §V518.36 开放回答的题项是问句=句子类 */
             formData._userEdited=true; buildForm();
           }));
         }else if(formData.kind==='choice'){
@@ -42980,7 +43110,7 @@ window.MatchGen = (function(){
                 const pick=document.createElement('input'); pick.type='file'; pick.accept='image/*'; pick.hidden=true;
                 const im=document.createElement('img'); im.className='dc-ab-img'+(it.optImgs[oi]?'':' empty');
                 im.src=it.optImgs[oi]||BLANK; im.alt=L+'选项图'; im.title='点击添加/更换图片';
-                im.addEventListener('click',()=>pick.click());
+                im.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, im); else pick.click(); });
                 pick.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const rd=new FileReader();
                   rd.onload=ev=>{ it.optImgs[oi]=String(ev.target.result||''); im.src=it.optImgs[oi]; im.classList.remove('empty'); pick.value=''; formData._userEdited=true; formData._manualEdit=true; };
                   rd.readAsDataURL(f); });
@@ -43056,7 +43186,7 @@ window.MatchGen = (function(){
                   au.addEventListener('dblclick',()=>pick.click());
                   const stk=document.createElement('span'); stk.className='py-mtts-badges';
                   const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换音频文件';
-                  ed.addEventListener('click',()=>pick.click());
+                  ed.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, ed); else pick.click(); });
                   const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除材料';
                   cl.addEventListener('click',()=>{ ji.audio=''; bar._player=null; formData._userEdited=true; formData._manualEdit=true; _build(); });
                   stk.appendChild(ed); stk.appendChild(cl);
@@ -43094,10 +43224,10 @@ window.MatchGen = (function(){
                   const im=document.createElement('img'); im.className='dc-sj-matimg'; im.src=ji.img; im.alt='材料图';
                   im.title='点击更换材料图';
                   const wrap=document.createElement('span'); wrap.className='dc-mat-wrap';
-                  im.addEventListener('click',()=>pick.click());
+                  im.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, im); else pick.click(); });
                   const stk=document.createElement('span'); stk.className='py-mtts-badges';
                   const ed=document.createElement('span'); ed.className='py-badge-ed'; ed.textContent='✎'; ed.title='更换图片';
-                  ed.addEventListener('click',()=>pick.click());
+                  ed.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, ed); else pick.click(); });
                   const cl=document.createElement('span'); cl.className='py-badge-cl'; cl.textContent='×'; cl.title='清除图片';
                   cl.addEventListener('click',()=>{ ji.img=''; formData._userEdited=true; formData._manualEdit=true; _build(); });
                   stk.appendChild(ed); stk.appendChild(cl);
@@ -43113,7 +43243,7 @@ window.MatchGen = (function(){
                   }
                   const eimg=document.createElement('span'); eimg.className='py-mentry';
                   eimg.innerHTML='<span class="pme-ic">🖼️</span>图片';
-                  eimg.title='上传图片材料'; eimg.addEventListener('click',ev=>{ ev.stopPropagation(); pick.accept='image/*'; pick.click(); });
+                  eimg.title='上传图片材料'; eimg.addEventListener('click',ev=>{ ev.stopPropagation(); pick.accept='image/*'; if(window.bqPickImage) bqPickImage(pick, eimg); else pick.click(); });
                   bar.appendChild(eimg);
                 }
                 if(showTxt){
@@ -43163,7 +43293,8 @@ window.MatchGen = (function(){
               imgWrap.appendChild(im); imgWrap.appendChild(ov);
               const pick=document.createElement('input'); pick.type='file'; pick.accept='image/*'; pick.hidden=true;
               imgWrap.appendChild(pick);
-              imgWrap.addEventListener('click',()=>pick.click());
+              imgWrap.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, imgWrap); else pick.click(); });
+              if(window.bqSlotPaste) bqSlotPaste(imgWrap, pick);   /* §V518.44 大槽直贴捷径 */
               pick.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=ev=>{ const url=String(ev.target.result||''); im.src=url; ji.img=url; pick.value=''; formData._userEdited=true; formData._manualEdit=true; /* §V19.204 人工换图 */ }; rd.readAsDataURL(f); });
               row.appendChild(imgWrap);
               }
@@ -43363,6 +43494,7 @@ window.MatchGen = (function(){
                   formData._orderItems.push({_sent:'',_toks:[],blocks:[],answer:'',punc:''});
                   formData._userEdited=true;
                   buildForm();
+                  if(card._markNewQuestion) card._markNewQuestion();   /* §V518.26 新增题项=新题（用户定） */
                   return;
                 }
                 const st2=(window.CorpusV2&&window.CorpusV2.state)||{};
@@ -43371,7 +43503,7 @@ window.MatchGen = (function(){
                   .map(it=>({text:String(it.text),toks:(Array.isArray(it.tokens)?it.tokens:[]).map(t=>typeof t==='string'?t:((t&&t.text)||'')).map(x=>String(x).trim()).filter(x=>x&&!/^[。！？，、,.!?\s]+$/.test(x))}))
                   .filter(x=>x.toks.length>=3&&x.toks.length<=8);
                 if(!cand.length){
-                  if(window.XiaoZhi&&typeof window.XiaoZhi.setRemind==='function'){ window.XiaoZhi.setRemind(T('noMoreWords')); if(window.XiaoZhi.openPanel) window.XiaoZhi.openPanel(); }
+                  _remindNeedManual('sentence','句子语料不足，请到语料区补充例句！');   /* §V518.36 连词成句缺句：轻 toast（句子类，一次），不再弹小智滑窗 */
                   return;
                 }
                 const pk=cand[Math.floor(Math.random()*cand.length)];
@@ -43385,6 +43517,7 @@ window.MatchGen = (function(){
                 formData.answerKey={type:'word_order',marks:formData._orderItems.map(it=>it.answer)};
                 formData._userEdited=true;
                 buildForm();
+                if(card._markNewQuestion) card._markNewQuestion();   /* §V518.26 新增题项=新题（用户定） */
               }catch(_e){}
             });
             taWrap.appendChild(addO);
@@ -43434,7 +43567,8 @@ window.MatchGen = (function(){
               };
               slot._refreshQaSlot=_refresh;
               slot.appendChild(im); slot.appendChild(cap); slot.appendChild(pick);
-              slot.addEventListener('click',()=>pick.click());
+              slot.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, slot); else pick.click(); });
+              if(window.bqSlotPaste) bqSlotPaste(slot, pick);   /* §V518.44 */
               pick.addEventListener('change',e=>{
                 const f=e.target.files&&e.target.files[0]; if(!f) return;
                 const rd=new FileReader();
@@ -43486,6 +43620,7 @@ window.MatchGen = (function(){
                 const stemBox=document.createElement('div'); stemBox.className='dc-imgchoice-stemword';
                 const sInp=mkInput('dc-fi-stem', withPy?withPy(item.stemWord,isPinyinEnabled):item.stemWord, (formData._subtype==='auto_qa_choice'?'问句':'题干词'));   /* §V19.256 */
                 if(item && item._isReview){ sInp.classList.add('dc-review-word'); }
+                if(item && item._needManual){ sInp.classList.add('dc-fi-needmanual'); }   /* §V518.34 手动新增空项：空值保持真输入框（placeholder 可见、可直接点入编辑、全宽） */
                 sInp.addEventListener('input',()=>{
                   item.stemWord=sInp.value; formData._userEdited=true; if(card) card._imgUserEdited=true; formData._manualEdit=true; /* §V19.204 人工换字 */
                   // §V19.231 方案B：文本选择手动新增，输题干词→自动查「正确答案」填到一个选项位当起点；
@@ -43505,7 +43640,11 @@ window.MatchGen = (function(){
                         item.options[slot]=auto; item._autoOptIdx=slot;
                         const _optsW=box.querySelector('.dc-imgchoice-opts');
                         const _oi=_optsW?_optsW.querySelectorAll('input.dc-fi-opt'):[];
-                        if(_oi[slot]) _oi[slot].value=auto;
+                        if(_oi[slot]){
+                          _oi[slot].value=auto;
+                          /* §V518.30→34 程序化填入选项走统一排版联动（此路径直写 value 不触发 input 监听） */
+                          try{ if(_optsW && _optsW._syncLayout) _optsW._syncLayout(); }catch(_e9){}
+                        }
                       }
                     }
                   }catch(_e){}
@@ -43535,7 +43674,8 @@ window.MatchGen = (function(){
               imgWrap.appendChild(im); imgWrap.appendChild(ov);
               const pick=document.createElement('input'); pick.type='file'; pick.accept='image/*'; pick.hidden=true;
               imgWrap.appendChild(pick);
-              imgWrap.addEventListener('click',()=>pick.click());
+              imgWrap.addEventListener('click',()=>{ if(window.bqPickImage) bqPickImage(pick, imgWrap); else pick.click(); });
+              if(window.bqSlotPaste) bqSlotPaste(imgWrap, pick);   /* §V518.44 大槽直贴捷径 */
               pick.addEventListener('change',e=>{
                 const f=e.target.files&&e.target.files[0]; if(!f) return;
                 const rd=new FileReader();
@@ -43552,11 +43692,11 @@ window.MatchGen = (function(){
                 const lab=document.createElement('span'); lab.className='dc-flab'; lab.textContent='ABCD'[i];
                 lab.title='点此标为正确答案';
                 const inp=mkInput('dc-fi-opt',o,'选项 '+'ABCD'[i]);
+                if(item && item._needManual){ inp.classList.add('dc-fi-needmanual'); }   /* §V518.34 空选项同保持真输入框 */
                 fields.opts.push(inp);
                 inp.addEventListener('input',()=>{ item.options[i]=inp.value; formData._userEdited=true; if(card) card._imgUserEdited=true; formData._manualEdit=true; /* §V19.204 人工换字 */
                   if(item._autoOptIdx===i) item._autoOptIdx=-1;   // §V19.231 老师手改了自动填的选项 → 不再自动覆盖
-                  const hc=(String(inp.value||'').match(/[\u4e00-\u9fff]/g)||[]).length;
-                  row.classList.toggle('is-sentence', hc>=5);
+                  if(optsWrap._syncLayout) optsWrap._syncLayout();   /* §V518.34 统一排版联动（等高/两列/句子档） */
                   _reEvalManualRemind();
                   try{ if(typeof _reEvalQaImgRemind==='function') _reEvalQaImgRemind(); }catch(_e){}   /* §V19.264 */
                 });
@@ -43568,9 +43708,6 @@ window.MatchGen = (function(){
                   formData._userEdited=true; if(card) card._imgUserEdited=true; formData._manualEdit=true; /* §V19.301 改答案=手编需核对（用户新定，覆盖V19.204） */
                   try{ _reEvalQaImgRemind(); }catch(_e){}   /* §V19.264 正确项变 → 免图判定重估 */
                 });
-                // §V19.183 选项内容≥5 汉字视为「句子档」：允许换行、文字下移避开左上角字母、居左
-                const _hanCount=(String(o||'').match(/[\u4e00-\u9fff]/g)||[]).length;
-                if(_hanCount>=5) row.classList.add('is-sentence');
                 row.appendChild(lab); row.appendChild(inp);
                 // §V19.233/235 空选项可编辑：点卡片任意处（左上角字母除外）→进入编辑。
                 //   坑：拼音开启时 input 被 ruby 预览层取代、display:none，直接 inp.focus() 对隐藏 input 无效；
@@ -43590,6 +43727,20 @@ window.MatchGen = (function(){
                 });
                 optsWrap.appendChild(row);
               });
+              /* §V518.34→35 选项组排版联动（用户定终版：文本自适应三档，四框恒同宽同高）：
+                 按最宽选项的估宽（汉字=1、拉丁/数字=0.55）分三档——
+                 <5：一排四个；5~<10：两个一排(opts-2col)；≥10：一个一排(opts-1col)。
+                 同宽=网格列等分、同高=grid-auto-rows:1fr，天然保证；真长句(≥18)该框再进句子档（左对齐+换行）。
+                 建卡/手编/题干联动自动填三条路径统一调本函数，谁改值谁触发。 */
+              const _syncOptLayout=()=>{ try{
+                const _u=(s)=>{ s=String(s||''); return ((s.match(/[\u4e00-\u9fff]/g)||[]).length)+((s.match(/[A-Za-z0-9\u00C0-\u024F]/g)||[]).length)*0.55; };
+                let _mx=0; (item.options||[]).forEach(o=>{ const u=_u(o); if(u>_mx)_mx=u; });
+                optsWrap.classList.toggle('opts-1col', _mx>=10);
+                optsWrap.classList.toggle('opts-2col', _mx>=5 && _mx<10);
+                optsWrap.querySelectorAll('.dc-imgchoice-opt').forEach((r,j)=>{ r.classList.toggle('is-sentence', _u((item.options||[])[j])>=18); });
+              }catch(_e){} };
+              optsWrap._syncLayout=_syncOptLayout;
+              _syncOptLayout();
               box.appendChild(optsWrap);
               cardWrap.appendChild(box);
               // §V19.184 每道选择题加删除手柄（拖到右下角垃圾桶删整道）：原多道渲染漏加，导致无法删题项。
@@ -43797,7 +43948,7 @@ window.MatchGen = (function(){
         _reEvalManualRemind();   // §V19.230 每次重建后重估：删掉空题项 / 补齐内容后，及时撤掉「需手动编辑」提醒
         // §V19.232 把「本层是否还有待手动编辑空项」挂到所属 level-panel，供切换难度层/题卡时按当前激活层重判提醒
         //   （小智是全局单例，提醒必须跟随当前题卡；否则从连线层新增的提醒会泄漏到切过去的选择/正误层）。
-        try{ const _pnl = taWrap && taWrap.closest && taWrap.closest('.level-panel'); if(_pnl) _pnl._needManualRemind = _manualStillNeeded(); }catch(_e){}
+        try{ const _pnl = taWrap && taWrap.closest && taWrap.closest('.level-panel'); if(_pnl) _pnl._needManualRemind = false; }catch(_e){}   /* §V518.38 断源（用户定）：小智不再常驻提醒「需手动编辑」；空项只在入选被拦时红呼吸+toast */
         /* ═══ §V19.292 方案二覆盖层（版式A·浮层面板）：空壳卡上的「语料不足」轨道状态牌。
            退场只有两条路：①语料补足 → bq:corpus-confirmed 联动重生成顶掉；②用户拨「自由编题」/✕ → 关层进 DIY(_diy)。
            点「语料生成」侧（即使已选中）＝拉开语料抽屉（overlay 浮层），覆盖层原地留守不关闭不重弹。
@@ -43969,6 +44120,7 @@ window.MatchGen = (function(){
       function _reshuffleRightColumn(ps){
         if(!Array.isArray(ps)||ps.length<2) return null;
         const rk=_linkRightKeys(), n=ps.length, imgRight=_isImgRightSub();
+        const _oldAK=(formData.answerKey && Array.isArray(formData.answerKey.pairs) && formData.answerKey.pairs.length) ? formData.answerKey.pairs.slice() : null;   /* §V518.42 存打乱前已画的线 */
         const rights=ps.map(p=>{ const o={}; rk.forEach(k=>o[k]=p[k]); return o; });
         const rTouch=ps.map(p=>!!p._rightTouched);
         let order=[...Array(n).keys()], t=0;
@@ -43980,7 +44132,17 @@ window.MatchGen = (function(){
           p._correctLeft=order[idx];
         });
         formData._linkCorrect=ps.map((p,idx)=>[order[idx], idx]);
-        formData.answerKey={type:'img_link', pairs:formData._linkCorrect.map(c=>[c[0],c[1]])};
+        /* §V518.42 连线跟着内容走（用户定：打乱题项要带着连线的那方一起走，否则乱连）：
+           原来这里把 answerKey 整个重置成「系统正确线」——老师已画/已核对的线被换掉、新加的空项还被硬配一条线。
+           改为：已画的线按同一置换重映射（右端内容原在 oldR、现在在 order.indexOf(oldR)，线端跟过去；左列不动）；
+           打乱前没画过线的项（如刚新增的）不自动配线，由老师自己连。无旧线（全新卡）才落系统正确线。 */
+        if(_oldAK){
+          const _remap=_oldAK.map(pr=>{ if(!Array.isArray(pr)||pr[0]==null||pr[1]==null) return null;
+            const _nr=order.indexOf(pr[1]); return _nr>=0 ? [pr[0], _nr] : null; }).filter(Boolean);
+          formData.answerKey={type:'img_link', pairs:_remap};
+        }else{
+          formData.answerKey={type:'img_link', pairs:formData._linkCorrect.map(c=>[c[0],c[1]])};
+        }
         return order;
       }
       function _reshuffleCurrent(){
@@ -44198,7 +44360,7 @@ window.MatchGen = (function(){
              绝不重新生成、绝不清手编内容；无可打乱的形式（如汉字书写）才提示。 */
           if(_o.corpusUpdate) return;   /* 语料联动对手动积木无意义 */
           if(_o.updateStem) return;     /* §V19.432 维度切换(引擎盖)对手动书写卡静默跳过：不弹「没有可打乱的呈现」提醒 */
-          if(_reshuffleCurrent()) return;
+          if(_reshuffleCurrent()){ if(card._markNewQuestion) card._markNewQuestion(); return; }   /* §V518.26 焕新(重排)=新题（用户定） */
           if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('本形式卡是手动书写内容，没有可打乱的呈现～'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
           return;
         }
@@ -44217,11 +44379,12 @@ window.MatchGen = (function(){
         if(formData && formData._diy===true){
           if(_o.corpusUpdate){ _diyFillEmptyFromCorpus(); return; }
           _reshuffleCurrent();
+          if(card._markNewQuestion) card._markNewQuestion();   /* §V518.26 焕新(重排)=新题（用户定） */
           return;
         }
         if(_o.corpusUpdate && formData && formData._manualEdit===true) return;
         if(_isAutoCard && !_o.updateStem && !_o.corpusUpdate && !_corpusChanged){
-          if(_reshuffleCurrent()) return;   // 就地重排成功 → 焕新到此结束
+          if(_reshuffleCurrent()){ if(card._markNewQuestion) card._markNewQuestion(); return; }   // 就地重排成功 → 焕新到此结束；§V518.26 焕新=新题（用户定）
         }
         // §V13.3.1 普通焕新进入富余轮换；维度切换=换题型，按新维度重规划（配对题已固定6格，此处对其无副作用）
         if(type==='matching-link' && window._mgRowPlanScratch){
@@ -44259,7 +44422,7 @@ window.MatchGen = (function(){
         /* §V19.430 焕新=生成一道全新题（非重排/DIY/手动，那几条已提前 return）。清掉卡片上一次入选的身份，
            使「入选→焕新→入选」变成累加两道题（而非原位替换旧题）；分数闸也会为新题重新要求设分。
            连点两下入选（未焕新）仍在两次点击间保持 _committed→去重，不会重复入库。 */
-        try{ if(typeof card!=='undefined' && card){ card._committed=false; card._lastRecUid=null; card._pendingScoreEach=null; card._pendingScoreTotal=null; card._selState='fresh'; card._revisitAgain=false; try{ if(typeof card._applySaveState==='function') card._applySaveState(); }catch(_e3){} } }catch(_e){}
+        try{ if(typeof card!=='undefined' && card){ card._committed=false; card._lastRecUid=null; card._pendingScoreEach=null; card._pendingScoreTotal=null; card._selState='fresh'; card._revisitAgain=false; card._contentDirty=false; card._commitTier=null; try{ if(typeof card._applySaveState==='function') card._applySaveState(); }catch(_e3){} } }catch(_e){}
         try{ if(scorePanel && scorePanel._resetForNewQuestion) scorePanel._resetForNewQuestion(); }catch(_e){}   /* §V19.433 面板开着时焕新→实时归零显示 */
       }
       try{ /* §V19.127 doRegen 改在 colRefs.push 上注册（见下），此处不再用 length-1 错位挂载 */ }catch(_e){}
@@ -44295,8 +44458,24 @@ window.MatchGen = (function(){
         }catch(_e){}
       };
       card._saveInlineTip=_saveInlineTip;
-      /* 编辑即置「已修改」：committed 态下任何输入/改动 → modified（换积木是新卡，不受影响） */
-      card.addEventListener('input',()=>{ if(card._selState==='committed'){ card._selState='modified'; _applySaveState(); } }, true);
+      /* 编辑即置「已修改」：committed 态下任何输入/改动 → modified（换积木是新卡，不受影响）
+         §V518.26 补「题面已改」标记(_contentDirty)：分数面板(.dc-score-panel)内的输入不算题面(§V494 改分=原地更新语义不变)；
+         其余输入=题面变了 → 换灯不得再翻动按钮态（见 applyCardLevel §V504 分支的 dirty 守卫）。 */
+      card.addEventListener('input',(e)=>{
+        try{ if(!(e && e.target && e.target.closest && e.target.closest('.dc-score-panel'))) card._contentDirty=true; }catch(_e){}
+        if(card._selState==='committed'){ card._selState='modified'; _applySaveState(); }
+      }, true);
+      /* §V518.26 「定为不同的题」统一复位（用户定）：焕新／新增题项／删除题项 → 这是一道新题 →
+         斩断与旧入库记录的绑定（旧题原样留在题卷里）、按钮回「√ 入选」，后续换灯不再出现「已修改」。
+         与 doRegen 全量重生成路径的 §V19.430 复位同语义；guard 保证跨列循环只定义一次。 */
+      if(!card._markNewQuestion){
+        card._markNewQuestion=function(){
+          card._committed=false; card._lastRecUid=null; card._selState='fresh';
+          card._revisitAgain=false; card._contentDirty=false; card._commitTier=null;
+          card._pendingScoreEach=null; card._pendingScoreTotal=null;
+          try{ if(typeof card._applySaveState==='function') card._applySaveState(); }catch(_e){}
+        };
+      }
       save.onclick=()=>{
         /* §V479 回访两段式确认(修「回访提示闪现即被同一次入选吞掉」)：
            首次点入选若是回访卡(有同题型形式历史、且本次还没确认) → 触发三件套(按钮变「仍然入选」+小智提示+快照红标)并「停下不入选」，
@@ -44356,7 +44535,7 @@ window.MatchGen = (function(){
               if(_scPan0.style.display==='none' && _scBtn0) _scBtn0.click();   // 打开面板让老师设分
               _scPan0.classList.add('score-blink');
             }
-            if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请先设定分数！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+            if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请先设定分数！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel({keepScore:true}); }   /* §V518.27 设分提醒要分数栏开着，豁免自动收起 */
             return;
           } else { try{ if(window.XiaoZhi && XiaoZhi.clearRemindIf) XiaoZhi.clearRemindIf('设定分数'); }catch(_e){} }   /* §V19.440 分已设→撤残留的「请先设定分数！」 */
         }
@@ -44387,8 +44566,10 @@ window.MatchGen = (function(){
               /* ① 空位（口径X）：任何一侧空就红该侧、计一次拦 */
               if(!lHas){ const el=_leftEl(i); if(el){ el.classList.add('dc-need-fix'); _emptyHit++; } }
               if(!rHas){ const el=_rightEl(i); if(el){ el.classList.add('dc-need-fix'); if(_rightIsImg) el.classList.add('dc-need-fix-img'); _emptyHit++; } }
-              /* ② 半改（甲）：仅两侧都非空时判；一侧碰过·另一侧没碰→红没碰那侧 */
-              if(lHas && rHas){
+              /* ② 半改（甲）：仅两侧都非空时判；一侧碰过·另一侧没碰→红没碰那侧
+                 §V518.42 收窄到手动新增(_needManual)配对（用户报：自动卡填个左词，配好好的现有图片也被红——
+                 自动生成的右栏本来就无人碰过，半改红在这里是误伤）。 */
+              if(p._needManual===true && lHas && rHas){
                 const lT=(p._leftTouched===true), rT=(p._rightTouched===true);
                 if(lT && !rT){ const el=_rightEl(i); if(el){ el.classList.add('dc-need-fix'); if(_rightIsImg) el.classList.add('dc-need-fix-img'); _halfHit++; } }
                 else if(rT && !lT){ const el=_leftEl(i); if(el){ el.classList.add('dc-need-fix'); _halfHit++; } }
@@ -44396,7 +44577,7 @@ window.MatchGen = (function(){
             });
             /* 空位＝硬拦（口径X，含空卡不能入选）：inline 提醒 + 展开小智，不放行 */
             if(_emptyHit>0){
-              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('有题项还空着，请补齐飘红处再入选！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              _fxRemind('有题项还空着，请补齐飘红处再入选！');   /* §V518.38 有效提醒：红呼吸+轻toast，不经小智 */
               return;
             }
             /* 半改＝可放行硬拦（甲）：绿灯确认后通行；确认即清红、置放行标记重走 save */
@@ -44426,7 +44607,7 @@ window.MatchGen = (function(){
             }
           });
           // 图文正误 —— §V19.314 听音判断题项内容在长条（img/matText），不看 word
-          (formData._imgJudgeItems||[]).forEach(it=>{ if(it&&it._needManual){ _mHas=true;
+          (formData._imgJudgeItems||[]).forEach(it=>{ if(it){ _mHas=true;   /* §V518.40 口径X扩到全部题项（用户报：把自动生成的项删空可绕过闸）——原只查 _needManual */
             const _filled=(formData._subtype==='manual_audio_judge') ? (it.img||_txt(it.matText)) : _txt(it.word);
             if(!_filled) _mEmpty++; else if(it.correct==null) _mNoAns++; } });
           // §V19.292 DIY 排序：空题项（没输句生成词块）拦截；有内容则走绿灯核对
@@ -44434,13 +44615,13 @@ window.MatchGen = (function(){
             formData._orderItems.forEach(it=>{ _mHas=true; if(!(it && it.blocks && it.blocks.length)) _mEmpty++; });
           }
           // 中英/汉拼正误
-          (formData._txtJudgeItems||[]).forEach(it=>{ if(it&&it._needManual){ _mHas=true;
+          (formData._txtJudgeItems||[]).forEach(it=>{ if(it){ _mHas=true;   /* §V518.40 口径X扩到全部题项 */
             if(!_txt(it.cn) || !_txt(it.sec)) _mEmpty++; else if(it.correct==null) _mNoAns++; } });
           // §V19.324 选择填空开关开而选项全空 → 拦截（用户定）
           if(formData.kind==='para' && formData._paraChoiceOn===true){
             const _pcOpts=(formData._paraOptList||[]).map(x=>String(x||'').trim()).filter(Boolean);
             if(!_pcOpts.length){
-              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('已开启「选择填空」，请先在选项框内填写选项内容！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              _fxRemind('已开启「选择填空」，请先在选项框内填写选项内容！');   /* §V518.38 */
               return;
             }
           }
@@ -44450,37 +44631,37 @@ window.MatchGen = (function(){
             /* §V19.332 拼音基础校验 */
             if(formData.kind==='pyfill'){
               const anyF=(formData._pyFillItems||[]).some(it=>it&&(String(it.text!=null?it.text:((it.ans||'')+(it.tail||''))).trim()||it.media));   /* §V19.336 */
-              if(!anyF){ if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请手动编辑好新增题项！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); } return; }
+              if(!anyF){ _fxRemind('有题项还空着，请补齐飘红处再入选！');   /* §V518.38 空项拦截：红呼吸定位 */ return; }
             }
             if(formData.kind==='pychoice'){
               const items=(formData._pyChoiceItems||[]);
               const anyC=items.some(it=>it&&((it.options||[]).some(o=>String(o||'').trim())||it.media));
-              if(!anyC){ if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请手动编辑好新增题项！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); } return; }
+              if(!anyC){ _fxRemind('有题项还空着，请补齐飘红处再入选！');   /* §V518.38 空项拦截：红呼吸定位 */ return; }
               const noAns=items.some(it=>it&&(it.options||[]).some(o=>String(o||'').trim())&&(it.correctIdx==null||it.correctIdx<0));
-              if(noAns){ if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请为手动编辑的题项选定正确答案！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); } return; }
+              if(noAns){ _fxRemind('请为题项选定正确答案！', false);   /* §V518.38 非空项拦截：只toast不点红 */ return; }
             }
             if(!_hzAny){
-              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请先输入要书写的汉字！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              _fxRemind('请先输入要书写的汉字！', false);   /* §V518.38 */
               return;
             }
           }
           // §V19.314 语段填空：语段为空拦截（专属文案）
           if(formData.kind==='para' && !_txt(formData._paraText)){
-            if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请先输入语段材料！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+            _fxRemind('请先输入语段材料！', false);   /* §V518.38 */
             return;
           }
           // §V19.314 阅读理解：卡级语段为空拦截
           if(formData._readingBlock && !_txt(card && card._readingPassage)){
-            if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请先输入阅读语段材料！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+            _fxRemind('请先输入阅读语段材料！', false);   /* §V518.38 */
             return;
           }
           // §V19.314 开放回答：问句空校验
           if(formData.kind==='open'){
-            (formData._openItems||[]).forEach(it=>{ if(it&&it._needManual){ _mHas=true; if(!_txt(it.q)) _mEmpty++; } });
+            (formData._openItems||[]).forEach(it=>{ if(it){ _mHas=true; if(!_txt(it.q)) _mEmpty++; } });   /* §V518.40 口径X扩到全部题项 */
           }
           // §V19.314 听音辨音·AB选择：每选项(文/图其一)即"填了"；correctIdx<0=未选
           if(formData._abChoice){
-            (formData._choiceItems||[]).forEach(it=>{ if(it&&it._needManual){ _mHas=true;
+            (formData._choiceItems||[]).forEach(it=>{ if(it){ _mHas=true;   /* §V518.40 口径X扩到全部题项 */
               const aOk=_txt((it.options||[])[0])||((it.optImgs||[])[0]);
               const bOk=_txt((it.options||[])[1])||((it.optImgs||[])[1]);
               if(!aOk||!bOk) _mEmpty++;
@@ -44489,31 +44670,25 @@ window.MatchGen = (function(){
           // 选择
           if(!formData._abChoice && Array.isArray(formData._choiceItems)){
             const _isImgC=!!formData._autoImgChoice;
-            formData._choiceItems.forEach(it=>{ if(it&&it._needManual){ _mHas=true;
+            formData._choiceItems.forEach(it=>{ if(it){ _mHas=true;   /* §V518.40 口径X扩到全部题项 */
               const _stemEmpty=_isImgC ? !(it.img) : !_txt(it.stemWord);
-              const _optsEmpty=!(it.options||[]).some(o=>_txt(o));
+              /* §V518.38 收紧（用户报：只填1个选项也放行入库了）：任一选项空即算空项拦截（原「全空才拦」）。 */
+              const _optsEmpty=!(it.options||[]).length || (it.options||[]).some(o=>!_txt(o));
               if(_stemEmpty || _optsEmpty) _mEmpty++;
               else if(it.correctIdx==null || it.correctIdx<0) _mNoAns++;
             } });
           }
           if(_mHas){
             if(_mEmpty>0){
-              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请手动编辑好新增题项！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              _fxRemind('有题项还空着，请补齐飘红处再入选！');   /* §V518.38 空项拦截：红呼吸定位 */
               return;
             }
             if(_mNoAns>0){
-              if(window.XiaoZhi){ if(XiaoZhi.setRemind) XiaoZhi.setRemind('请为手动编辑的题项选定正确答案！'); if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }
+              _fxRemind('请为题项选定正确答案！', false);   /* §V518.38 非空项拦截：只toast不点红 */
               return;
             }
-            // 全齐 → 核对确认（绿灯才真入选）；顺带置 _xzConfirmed 跳过下方换字/换图的重复确认
-            if(formData._xzManualConfirmed!==true && window.XiaoZhi && typeof XiaoZhi.confirmMode==='function'){
-              XiaoZhi.confirmMode('该题项有手动编辑，请确认通行！', function(){   /* §V19.301 文案统一（用户定稿） */
-                formData._xzManualConfirmed=true; formData._xzConfirmed=true;
-                save.onclick();
-                formData._xzManualConfirmed=false; formData._xzConfirmed=false; formData._manualEdit=false; formData._userEdited=false;
-              });
-              return;
-            }
+            /* §V518.38 移除「全齐→绿灯核对确认」（用户定：手动编辑的题不再提醒"这是手动编辑的题"——无效提醒；
+               空项/未选答案两道有效闸在上方已拦，全齐就正常入选）。 */
           }
         }
         // §V19.173 老师改过题项（换图/改词/改答案）→ 系统失去把握 → 入选时弹小智滑窗硬拦，
@@ -44546,17 +44721,8 @@ window.MatchGen = (function(){
             return;
           }
         }
-        if(_isAutoAny && _wasEdited && formData._xzConfirmed!==true){
-          if(window.XiaoZhi && typeof window.XiaoZhi.confirmMode==='function'){
-            window.XiaoZhi.confirmMode('该题项有手动编辑，请确认通行！', function(){   /* §V19.301 文案统一（用户定稿） */
-              formData._xzConfirmed=true;
-              save.onclick();   // 重新走入选，这次放行
-              // 入选完成后清标记：回到干净态，之后老师若再改会重新触发确认
-              formData._userEdited=false; formData._xzConfirmed=false; formData._manualEdit=false;
-            });
-            return;
-          }
-        }
+        /* §V518.38 移除「自动卡被手编→绿灯确认通行」拦截（用户定：手动编辑不再需要向小智确认——无效提醒；
+           配图 hard 档确认（上方）与连线半改核对（前方）是实质性有效闸，保留不动）。 */
         // §V19.172/177 系统全程知道答案 → 不再拦截入选；连线题点入选时自动按正确配对填好 answerKey（供判分）。
         //   但若老师改过（_userEdited），保留老师在题卡上连的线，不要用同序覆盖。
         if(_isAutoLink && formData._userEdited!==true){
@@ -44691,6 +44857,7 @@ window.MatchGen = (function(){
         const _changed = !!_prevRec && ( String(_prevRec.text||'')!==String(rec.text||'')
                        || JSON.stringify(_prevRec.structured||null)!==JSON.stringify(rec.structured||null) );
         const _dupNoAdd = !!_prevRec && !_changed;   // 连点两下、内容没改 → 去重(不新增)
+        let _migratedTag='';   /* §V518.26 本次点击是否发生了换灯迁移；记目标灯色(黄/橙/绿)供 toast 明示「已迁到X库」（用户定命名走颜色不走难度） */
         if(_dupNoAdd){
           /* §V504 B方案(用户定)·原地迁移：同卡已入选、题面没变但梯度灯(或维度)变了 →
              不新增、把这道已入选的题原地挪到新梯度/维度(finalQuizBank 与 S._v2lib 同步)，
@@ -44702,7 +44869,9 @@ window.MatchGen = (function(){
           if(_moved){
             _MIG_KEYS.forEach(k=>{ _prevRec[k]=rec[k]; });
             try{ const _m=(S._v2lib||[]).find(r=>r&&r.uid===_prevRec.uid); if(_m){ _MIG_KEYS.forEach(k=>{ _m[k]=rec[k]; }); _m.diff=dObj.diff; } }catch(_e){}
+            try{ if(Array.isArray(_libQs)){ const _lq=_libQs.find(r=>r&&r.uid===_prevRec.uid); if(_lq){ _MIG_KEYS.forEach(k=>{ _lq[k]=rec[k]; }); _lq.diff=dObj.diff; } } }catch(_e){}   /* §V518.30 同步 _libQs 浅拷贝（与换灯迁移同族坑） */
             try{ if(typeof renderLibPaper==='function') renderLibPaper(); }catch(_e){}
+            _migratedTag=String(dObj.tag||'');   /* §V518.26 */
           }
           // 去重：保留旧记录、库不变；rec 指回旧 uid 并回填旧分/标签，让分数栏刷新显示正确值。
           rec.uid = _prevRec.uid;
@@ -44766,16 +44935,17 @@ window.MatchGen = (function(){
         /* §V466 三态持久(用户定)：入选成功→committed 态保持「✓ 已入选」，不再 1.1s 复位回「入选」。
            去重(committed 且没改又点)→inline 提示「已入选，请勿重复添加」(A条不弹窗)，按钮维持已入选。 */
         const _wasModified=(card._selState==='modified');   /* §V494 抓「已修改」态(须在下行重置 committed 之前)：改分/改标签已实时同步进记录，此点击=确认修改，不该被当成重复添加骂 */
-        const _wasRevisitAgain=card._revisitAgain; card._selState='committed'; card._revisitAgain=false; if(_wasRevisitAgain){ try{ if(window.XiaoZhi&&window.XiaoZhi.closePanel) window.XiaoZhi.closePanel(); }catch(_e){} }   /* §V489 仍然入选→关小智 */
+        const _wasRevisitAgain=card._revisitAgain; card._selState='committed'; card._contentDirty=false; card._commitTier=String(rec.difficultyKey||'low'); card._revisitAgain=false; try{ document.body.classList.remove('bq-remind-manual'); }catch(_e){} if(_wasRevisitAgain){ try{ if(window.XiaoZhi&&window.XiaoZhi.closePanel) window.XiaoZhi.closePanel(); }catch(_e){} }   /* §V489 仍然入选→关小智；§V518.26 入选成功=新基准，清题面脏标记；§V518.27 锚定入选灯色(换灯态判定基准)；§V518.38 入选成功=拦截解除，撤红呼吸 */
         try{ if(window.XiaoZhi && XiaoZhi.clearRemindIf) XiaoZhi.clearRemindIf('之前入过'); }catch(_e){}   /* §V466 入选后撤回访提醒 */
         if(typeof _applySaveState==='function') _applySaveState();
         if(typeof showToast==='function'){   /* §V467 恢复底部居中提示(用户原有)：去重=警告色，新增=绿色ok */
           const dName = T(dObj.key==='low'?'basic':dObj.key==='mid'?'advanced':'high');
           /* §V494 三分文案：题面没变但卡处于「已修改」(改过分数/标签，已实时同步)→「已按修改更新」ok 绿；
              真·连点两下什么都没改→维持「请勿重复添加」警告；题面变了→新增「已加入题库」。 */
-          const _msg = _dupNoAdd ? (_wasModified ? (name+'（✓ 已按修改更新）') : (name+'（已入选，请勿重复添加！）'))
+          const _msg = _dupNoAdd ? (_migratedTag ? (name+'（✓ 已迁到'+_migratedTag+'库）')
+                                 : _wasModified ? (name+'（✓ 已按修改更新）') : (name+'（已入选，请勿重复添加！）'))
                                  : T('addedToLibraryToast',{name:name,diff:dName,n:window.finalQuizBank.length});
-          showToast(_msg, (_dupNoAdd && !_wasModified) ? 'warn' : 'ok');
+          showToast(_msg, (_dupNoAdd && !_wasModified && !_migratedTag) ? 'warn' : 'ok');
         }
         if(typeof refreshMyQuizCount==='function') refreshMyQuizCount();   /* §V13.1.1 更新已入选数量 */
         /* §V453 快照实时联动(用户定)：入选成功后，若快照浮卡正开着 → 用本次入选记录刷新快照，
@@ -44877,7 +45047,8 @@ window.MatchGen = (function(){
              传 revisitUids(该积木+形式的全部历史 uid)与任一历史 rec(供快照定位所属维度×梯度档)。 */
           let _revisitUids=null, _anchorRec=rec;
           if(!rec && card._revisitAgain && card._revisitType){
-            const _hist=(window.finalQuizBank||[]).filter(r=>r&&r.sourceBlockId===card._revisitType&&r.formType===card._revisitForm);
+            const _curTier2=String(card._levelKey||'low');   /* §V518.27 与回访提醒同源：只红标当前灯色题卷里的历史题 */
+            const _hist=(window.finalQuizBank||[]).filter(r=>r&&r.sourceBlockId===card._revisitType&&r.formType===card._revisitForm&&String(r.difficultyKey||'low')===_curTier2);
             if(_hist.length){ _revisitUids=_hist.map(r=>r.uid); _anchorRec=_hist[_hist.length-1]; }
           }
           if(window.bqSnapShow) window.bqSnapShow(snapBtn, _anchorRec, false, _revisitUids);
@@ -45099,7 +45270,10 @@ window.MatchGen = (function(){
              改：实时读「当前激活档」activeLevelKey(函数级共享变量)，据此算 ftR，才能对上实际入库的 formType。 */
           const _actKey=(typeof activeLevelKey!=='undefined'&&activeLevelKey)||D.key||'low';
           const _ftR=({low:'link',mid:'choice',high:'judge',ex:'extra'})[_actKey]||'link';
-          const _hist=(window.finalQuizBank||[]).filter(r=>r&&r.sourceBlockId===type&&r.formType===_ftR);
+          /* §V518.27 回访范围收窄（用户定）：只看「当前灯色那张题卷」里有没有同积木+形式——同卷才提醒防重复；
+             跨题卷（其他灯色库）完全不提，不啰嗦。 */
+          const _curTier=String(card._levelKey||'low');
+          const _hist=(window.finalQuizBank||[]).filter(r=>r&&r.sourceBlockId===type&&r.formType===_ftR&&String(r.difficultyKey||'low')===_curTier);
           /* committed===true=这张卡已入选且没离开过→原地更新不拦；false=新卡/离开过(切档/换积木/焕新已重置)→有历史则回访。 */
           if(!_hist.length || card._committed===true) return;
           card._revisitAgain=true; card._revisitCount=_hist.length; card._revisitType=type; card._revisitForm=_ftR;
@@ -45115,7 +45289,7 @@ window.MatchGen = (function(){
           const _tn=(({auto_image_text:'图文搭配',auto_cn_en:'中英互译',auto_cn_pinyin:'汉拼对照',auto_qa_dialogue:'问答对话'})[type])||'';
           const _fn=({link:'连线',choice:'选择',judge:'正误'})[_ftR]||'';
           if(window.XiaoZhi && XiaoZhi.setRemind){
-            XiaoZhi.setRemind('这个「'+_tn+(_fn?'·'+_fn:'')+'」你之前入过 '+_hist.length+' 道题啦～右边📷已打开，可看看以前加过的题，确认要不要再加一道。');
+            XiaoZhi.setRemind('「'+_tn+(_fn?'·'+_fn:'')+'」在这张题卷里已入过 '+_hist.length+' 道啦～右边📷已打开，可看看以前加过的题，确认要不要再加一道。');
             /* §V481 直接打开小智滑窗(用户定)：不只举手等用户去点(没人知道要点小智)，回访直接把提示滑窗弹出来。 */
             try{ if(XiaoZhi.openPanel) XiaoZhi.openPanel(); }catch(_e){}
             /* §V483 回访滑窗绿灯不闪(用户定)：绿灯闪烁类 pn-blink 由 confirmMode 添加、只有点绿灯才移除——
@@ -46196,7 +46370,11 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
           else{
             const _have=new Set(_libQs.map(q=>q&&q.uid).filter(Boolean));
             const _inLib=new Set(_qs.map(q=>q&&q.uid).filter(Boolean));
+            const _freshMap=new Map(_qs.filter(q=>q&&q.uid).map(q=>[q.uid,q]));   /* §V518.30 uid→最新采集拷贝 */
             _libQs=_libQs.filter(q=>q && (!q.uid || _inLib.has(q.uid)));
+            /* §V518.30 保留条目改「原位换新」：_libQs 存的是 collectLibrary 的浅拷贝，换灯迁移/改分等只更新原件时
+               拷贝会陈旧（灯色过滤按旧值 → 新灯档空卷）。合并规则升级：顺序保持不变、内容按 uid 换成最新拷贝。 */
+            _libQs=_libQs.map(q=>{ if(q&&q.uid&&_freshMap.has(q.uid)){ return {..._freshMap.get(q.uid), num:q.num}; } return q; });
             _qs.forEach(q=>{ if(q && q.uid && !_have.has(q.uid)) _libQs.push(q); });
             _libQs.forEach((q,i)=>{ q.num=i+1; });
           }
@@ -52567,8 +52745,8 @@ function zoneMarkWave(){
       xbtn.type = 'button'; xbtn.className = 'qb-thumb-x'; xbtn.title = T('remove');
       xbtn.innerHTML = '<svg viewBox="0 0 10 10"><path d="M1.5 1.5 L8.5 8.5 M8.5 1.5 L1.5 8.5"/></svg>';
       // 点缩略图 / 换图浮层 → 换图（再弹文件选择）
-      img.addEventListener('click', ()=> imgPickInput.click());
-      hint.addEventListener('click', ()=> imgPickInput.click());
+      img.addEventListener('click', ()=> { if(window.bqPickImage) bqPickImage(imgPickInput, w); else imgPickInput.click(); });   /* §V518.44/47 锚=缩略图整框(58×42)，光环贴着骑线设计描边不再穿图 */
+      hint.addEventListener('click', ()=> { if(window.bqPickImage) bqPickImage(imgPickInput, w); else imgPickInput.click(); });
       // 点叉 → 删除图片（吞掉冒泡，避免误触发换图）
       xbtn.addEventListener('click', (ev)=>{
         ev.stopPropagation();
@@ -52595,7 +52773,7 @@ function zoneMarkWave(){
     refreshImgCell();
 
     // 点「+图片」→ 直接弹文件选择
-    imgBtn.addEventListener('click', e=>{ e.preventDefault(); imgPickInput.click(); });
+    imgBtn.addEventListener('click', e=>{ e.preventDefault(); if(window.bqPickImage) bqPickImage(imgPickInput, imgBtn); else imgPickInput.click(); });   /* §V518.44/47 锚=按钮自身 */
     // 选好文件 → 读 dataURL 写入 it.imgSrc → 刷新缩略图
     imgPickInput.addEventListener('change', e=>{
       const f = e.target.files && e.target.files[0];
@@ -55328,7 +55506,19 @@ function zoneMarkWave(){
     host.classList.add('xz-vmove');
     clearTimeout(host._vmoveT); host._vmoveT=setTimeout(function(){ host.classList.remove('xz-vmove'); },340);
   }
-  function openPanel(){
+  function openPanel(opts){
+    /* §V518.27 滑窗与分数栏互斥（用户定：小智滑窗提醒时分数设置栏自动收起，免遮挡）。
+       走 scoreBtn.click() 的正规关闭路径(同步按钮态+重排小智位置)；「请先设定分数」流程传 keepScore 豁免——那条提醒就是要分数栏开着让老师填。 */
+    try{
+      if(!(opts&&opts.keepScore)){
+        document.querySelectorAll('.dc-score-panel').forEach(function(p){
+          if(p.style.display!=='none'){
+            var _sb=p.parentNode&&p.parentNode.querySelector&&p.parentNode.querySelector('.dc-mini-score');
+            if(_sb){ _sb.click(); } else { p.style.display='none'; }
+          }
+        });
+      }
+    }catch(_e){}
     panelOpen=true;
     if(bubbleEl) bubbleEl.textContent='拍拍我关闭滑窗';   // §V19.111 有滑窗时提示语
     host.classList.remove('remind');
@@ -55556,7 +55746,7 @@ function zoneMarkWave(){
     reposition:placeXiaozhi,
     refresh:function(){ placeXiaozhi(); refreshState(); },
     setRemind:function(reason){ manualRemind=true; remindReason=reason||''; refreshState();
-      try{ document.body.classList.toggle('bq-remind-manual', /请手动编辑好新增题项/.test(remindReason)); }catch(_e){} },   // §V19.240 标红呼吸只挂「点入选后」弹的提醒；新增时的「语料不足…」只举手气泡+滑窗，不标红
+      try{ document.body.classList.toggle('bq-remind-manual', /请手动编辑好新增题项|有题项还空着|请补齐飘红/.test(remindReason)); }catch(_e){} },   // §V19.240 标红呼吸只挂「点入选后」弹的提醒；§V518.41 正则扩到新拦截文案「有题项还空着…请补齐飘红处」——原正则不匹配时 toggle(false) 会把 _fxRemind 刚点亮的红反手摘掉（用户报：提示说飘红却没红）
     clearRemind:function(){ manualRemind=null; remindReason=''; refreshState();
       try{ document.body.classList.remove('bq-remind-manual'); }catch(_e){} },
     clearRemindIf:function(sub){ if(manualRemind!==null && remindReason && sub && remindReason.indexOf(sub)>=0){ manualRemind=null; remindReason=''; refreshState();
@@ -56360,10 +56550,20 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
       // 自动填料（打字机 + 温故两词 + 题卷标题——标题是「语料确认」的必填闸，属于演示素材一并填好）
       try{
         var _ti=document.getElementById('quiz-title-input');
-        if(_ti && !(_ti.value||'').trim()){ _ti.value='示例课'; _ti.dispatchEvent(new Event('input',{bubbles:true})); _ti.dispatchEvent(new Event('change',{bubbles:true})); }
+        // §V518.25 演示标题固定「演示版」（用户定）：不管原来有没有标题都覆盖，避免演示里露出用户旧标题（如「第二课」）。
+        //   注意：不派发 input 事件——input 监听会把标题写进 localStorage('bqQuizTitle')，那会把用户真标题永久冲掉；
+        //   这里只直写 value + 手动同步 S.quizTitle 与顶部显示（「语料确认」必填闸只读输入框 value，直写即过闸），
+        //   演示结束 cleanup 会 location.reload()，localStorage 里的用户原标题原样回填。
+        if(_ti){
+          _ti.value='演示版';
+          if(typeof S!=='undefined') S.quizTitle='演示版';
+          var _td=document.getElementById('quiz-title-display'); if(_td) _td.textContent='演示版';
+        }
       }catch(e){}
       var ta=document.getElementById('vi-corpus');
-      if(ta){ await typeInto(ta,'唱歌\n跳舞\n看书'); }
+      // §V518.25 演示语料补句子+对话（用户定）：只填词会让人误以为语料区只能输入词。
+      //   格式照抄输入框占位的官方示例（词一行逗号分隔；问句、答句各一行，相邻问答即识别为对话），保证识别必过。
+      if(ta){ await typeInto(ta,'唱歌，跳舞，看书\n你喜欢唱歌吗？\n我喜欢唱歌。'); }
       await wait(150); if(_abort) return;
       fillReview();
       await wait(500); if(_abort) return;
@@ -56601,6 +56801,106 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
     }catch(e){console.warn('[tour]',e);cleanup(true);}
   }
   window.__startTour=startTour;
+})();
+</script>
+
+<script>
+/* ═══════════ §V518.44 全局图片粘贴窗 bqPickImage + 大槽直贴 bqSlotPaste（B案·用户定） ═══════════
+   bqPickImage(fileInput)：弹粘贴窗（Ctrl+V/右键粘贴、拖拽、选本地文件、预览确认）。确认后把图片合成 File
+   灌回传入的 <input type=file> 并派发 change —— 各入口原有落库回调一行不改。
+   bqSlotPaste(slotEl, fileInput)：大槽捷径——槽可聚焦，聚焦后 Ctrl+V 直贴（同样走 File 注入）。 */
+(function(){
+  var css=document.createElement('style');
+  css.textContent='.bqpw-mask{position:fixed;inset:0;background:rgba(43,20,80,.34);display:none;align-items:center;justify-content:center;z-index:100000;}'
+  +'.bqpw-mask.show{display:flex;}'
+  +'.bqpw{width:min(480px,92vw);background:#fff;border-radius:18px;border:1.5px solid #E0D6F6;box-shadow:0 18px 60px rgba(43,20,80,.28);overflow:hidden;}'
+  +'.bqpw-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(135deg,#4A1B86,#6D28D9);color:#fff;}'
+  +'.bqpw-head b{font-size:14px;letter-spacing:.06em;}'
+  +'.bqpw-x{border:none;background:rgba(255,255,255,.16);color:#fff;width:26px;height:26px;border-radius:8px;font-size:15px;line-height:1;cursor:pointer;}'
+  +'.bqpw-body{padding:16px;}'
+  +'.bqpw-zone{border:2px dashed #CFC6EF;border-radius:14px;background:#FAF8FF;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;outline:none;padding:16px;text-align:center;caret-color:transparent;}'
+  +'.bqpw-zone:focus,.bqpw-zone.drag{border-color:#7C3AED;background:#F1EAFE;box-shadow:0 0 0 4px rgba(124,58,237,.12);}'
+  +'.bqpw-zone .z1{font-size:14px;color:#3C1470;font-weight:700;pointer-events:none;}'
+  +'.bqpw-zone .z2{font-size:12px;color:#8a80a5;line-height:1.7;pointer-events:none;}'
+  +'.bqpw-zone .kbd{display:inline-block;border:1px solid #CFC6EF;border-bottom-width:2.5px;border-radius:6px;background:#fff;padding:1px 8px;font-size:12px;color:#6D28D9;font-weight:700;}'
+  +'.bqpw-zone img.pv{max-width:100%;max-height:180px;border-radius:10px;box-shadow:0 4px 14px rgba(59,7,100,.18);pointer-events:none;}'
+  +'.bqpw-ops{display:flex;gap:10px;margin-top:12px;}'
+  +'.bqpw-btn{flex:1;border:1.5px solid #CFC6EF;background:#fff;border-radius:10px;padding:9px 0;font-size:12.5px;color:#6D28D9;font-weight:700;cursor:pointer;font-family:inherit;}'
+  +'.bqpw-btn:hover{background:#F5F0FE;border-color:#7C3AED;}'
+  +'.bqpw-btn.ok{background:linear-gradient(135deg,#7C3AED,#9F5CF7);border-color:#6D28D9;color:#fff;}'
+  +'.bqpw-btn.ok:disabled{opacity:.4;cursor:default;}'
+  +'.bqpw-anchor{animation:bqpw-halo 1.15s ease-in-out infinite;border-radius:8px;}'   /* §V518.46 光环零布局影响（用户报：加 position:relative 劫持了语料区缩略图的绝对定位基准→图飞出框）：只留 box-shadow 呼吸，不动 position/z-index；隔遮罩略暗但清晰可辨 */
+  +'@keyframes bqpw-halo{0%,100%{box-shadow:0 0 0 3px rgba(124,58,237,.95),0 0 0 9px rgba(124,58,237,.22);}50%{box-shadow:0 0 0 5px #A78BFA,0 0 20px 7px rgba(167,139,250,.7);}}';
+  document.head.appendChild(css);
+  var mask=null,zone=null,useBtn=null,fIn=null,_file=null,_target=null,_anchorEl=null;
+  function _anchorOn(el){ _anchorOff(); if(el){ _anchorEl=el; try{ el.classList.add('bqpw-anchor'); }catch(_e){} } }
+  function _anchorOff(){ if(_anchorEl){ try{ _anchorEl.classList.remove('bqpw-anchor'); }catch(_e){} _anchorEl=null; } }
+  function build(){
+    mask=document.createElement('div'); mask.className='bqpw-mask';
+    mask.innerHTML='<div class="bqpw">'
+      +'<div class="bqpw-head"><b>🖼️ 添加图片</b><button type="button" class="bqpw-x">×</button></div>'
+      +'<div class="bqpw-body">'
+      +'<div class="bqpw-zone" tabindex="0" contenteditable="true" spellcheck="false">'
+      +'<span class="z1">点这里，<span class="kbd">Ctrl</span>+<span class="kbd">V</span> 或 右键→粘贴</span>'
+      +'<span class="z2">也可以把图片文件直接拖进来</span></div>'
+      +'<div class="bqpw-ops"><button type="button" class="bqpw-btn bqpw-file">📁 选择本地文件</button>'
+      +'<button type="button" class="bqpw-btn ok" disabled>✓ 使用这张图</button></div>'
+      +'</div></div>';
+    document.body.appendChild(mask);
+    zone=mask.querySelector('.bqpw-zone'); useBtn=mask.querySelector('.bqpw-btn.ok');
+    fIn=document.createElement('input'); fIn.type='file'; fIn.accept='image/*'; fIn.hidden=true; mask.appendChild(fIn);
+    var zoneHome=zone.innerHTML;
+    function preview(f){ if(!f||!/^image\//.test(f.type||'')) return;
+      _file=f; var r=new FileReader();
+      r.onload=function(ev){ zone.innerHTML='<img class="pv" src="'+ev.target.result+'"/>'; useBtn.disabled=false; };
+      r.readAsDataURL(f); }
+    function reset(){ _file=null; zone.innerHTML=zoneHome; useBtn.disabled=true; }
+    function close(){ mask.classList.remove('show'); _target=null; _anchorOff(); }
+    mask.querySelector('.bqpw-x').addEventListener('click', close);
+    mask.addEventListener('mousedown', function(e){ if(e.target===mask) close(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'&&mask.classList.contains('show')) close(); });
+    zone.addEventListener('keydown', function(e){ if(!(e.ctrlKey||e.metaKey)&&e.key.length===1) e.preventDefault(); });
+    zone.addEventListener('input', function(){ if(!_file){ zone.innerHTML=zoneHome; } });
+    zone.addEventListener('paste', function(e){ var its=(e.clipboardData&&e.clipboardData.items)||[];
+      for(var i=0;i<its.length;i++){ var it=its[i];
+        if(it&&it.kind==='file'&&/^image\//.test(it.type||'')){ e.preventDefault(); preview(it.getAsFile()); return; } }
+      e.preventDefault(); });
+    zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', function(){ zone.classList.remove('drag'); });
+    zone.addEventListener('drop', function(e){ e.preventDefault(); zone.classList.remove('drag');
+      preview(e.dataTransfer.files&&e.dataTransfer.files[0]); });
+    mask.querySelector('.bqpw-file').addEventListener('click', function(){ fIn.click(); });
+    fIn.addEventListener('change', function(){ preview(fIn.files[0]); fIn.value=''; });
+    useBtn.addEventListener('click', function(){
+      if(!_file||!_target) return;
+      try{ var dt=new DataTransfer(); dt.items.add(_file); _target.files=dt.files;
+        _target.dispatchEvent(new Event('change',{bubbles:true})); }catch(_e){}
+      close(); });
+    mask._reset=reset;
+  }
+  window.bqPickImage=function(fileInput, anchor){
+    if(!fileInput) return;
+    if(!mask) build();
+    _target=fileInput; mask._reset();
+    /* §V518.45 入口呼吸光环（用户定：弹窗居中易忘给谁配图）：触发入口临时提到遮罩之上+紫圈呼吸，
+       关窗即撤。未显式传锚点时取文件选择器的父容器（图槽/按钮格通常就是它爹）。 */
+    _anchorOn(anchor || fileInput.parentElement || null);
+    mask.classList.add('show');
+    setTimeout(function(){ try{ zone.focus(); }catch(_e){} },60);
+  };
+  window.bqSlotPaste=function(slotEl, fileInput){
+    if(!slotEl||!fileInput||slotEl._bqSlotPasted) return; slotEl._bqSlotPasted=true;
+    try{ if(slotEl.tabIndex<0) slotEl.tabIndex=0; }catch(_e){}
+    slotEl.addEventListener('paste', function(e){
+      var its=(e.clipboardData&&e.clipboardData.items)||[];
+      for(var i=0;i<its.length;i++){ var it=its[i];
+        if(it&&it.kind==='file'&&/^image\//.test(it.type||'')){
+          e.preventDefault(); e.stopPropagation();
+          try{ var dt=new DataTransfer(); dt.items.add(it.getAsFile()); fileInput.files=dt.files;
+            fileInput.dispatchEvent(new Event('change',{bubbles:true})); }catch(_e){}
+          return; } }
+    });
+  };
 })();
 </script>
 </body>
