@@ -10070,6 +10070,7 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
   margin:0 -6px 0 0;   /* scale 后视觉占位约 20px，用负 margin 抵消 scale 留下的空白，不撑开行距 */
   align-self:baseline;flex-shrink:0;position:relative;top:2px;   /* top 微调让缩小后的积木底部落到中文基线，与题号同排 */
 }
+.pq-title-inline .pq-type-cube .mb-ico svg{height:16px!important;max-width:19px!important;}   /* §V519.13 宽版图示出框修复（用户报连词成句）：该积木 SVG viewBox 44×32 是横长条，只锁高 16px 时宽会到 22px 溢出积木框；补 max-width 19px，preserveAspectRatio 自动等比缩入框内；方形图示(≤19px)不受影响 */
 .pq-title-inline .pq-stem-cn{font-family:var(--font-han);font-size:16.5px;font-weight:700;line-height:1.55;color:var(--ink,#2b2540);}
 .pq-stem-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0;}   /* §V19.63 中文+英文竖排成一列：英文对齐中文左缘。§V19.433 改 flex:1 1 0 占满序号右侧剩余宽 + 默认 align-items:stretch 让中文行按列宽自然折行（原 inline-flex+flex-start 令中文按完整内容宽定宽、永不折行，稍长即被外层 flex-wrap 整列甩到下行→序号孤立） */
 .pq-stem-ar{font-family:"Geeza Pro","Noto Naskh Arabic","Arial",sans-serif;direction:rtl;unicode-bidi:isolate;text-align:left;align-self:flex-start;}   /* §V19.67 阿语行左对齐(B：末字对齐中文首字)，文字仍 RTL */
@@ -10161,12 +10162,27 @@ body.myq-printing .myq-zoom-hint{ display:none !important; }
 .pq-py-txt{font-family:var(--font-py);font-size:17px;letter-spacing:.5px;}
 .pq-hzf-txt{font-family:var(--font-han);font-size:17px;}
 .pq-ans-line{border-bottom:1.5px solid var(--ink3,#8a83a8);height:26px;margin:8px 2px 0;}
-.pq-ord-item{padding:2px 0;}
-.pq-ord-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;}   /* §V498b center→baseline：序号与词块内汉字基线对齐(用户定原则)，不再按行高居中漂移 */
-.pq-ord-chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--ink3,#8a83a8);border-radius:8px;padding:3px 10px;background:#fff;}
+.pq-ord-item{display:grid;column-gap:12px;row-gap:10px;align-items:baseline;padding:2px 0;}   /* §V519.14 网格分散：列=序号+每词块1fr 等分铺满行宽，上下两排同列天然对齐（用户定） */
+.pq-ord-chip{display:inline-flex;align-items:flex-end;gap:6px;border:none;border-radius:0;padding:0;background:transparent;justify-self:start;}   /* §V519.12 去框；§V519.20 baseline→flex-end：flex 对含 ruby 的成员基线合成不可靠，字母浮到汉拼中间（用户报）——改底对齐，字母底=汉字底同排 */
+.pq-ord-ch{line-height:1;padding-bottom:2px;}   /* §V519.20 底对齐微调：字母行高收 1，底部垫 2px 贴住汉字基线视觉 */
+.pq-ord-chipwrap{flex:1;min-width:0;display:flex;align-items:flex-end;flex-wrap:wrap;gap:26px;row-gap:9px;}   /* §V519.20 换行缩进容器 */
 .pq-ord-ch{font-weight:700;color:var(--ink2,#5b3fa8);font-size:13px;}
 .pq-ord-w{font-family:var(--font-han);font-size:16px;}
-.pq-ord-punc{font-family:var(--font-han);font-weight:600;}
+.pq-ord-lidx{visibility:hidden;}
+.pq-ord-lcell{display:flex;}
+.pq-ord-line{display:inline-block;width:78%;min-width:44px;max-width:88px;border-bottom:1.6px solid var(--ink,#2b2540);height:1em;}   /* §V519.14 一截一截短线，随列分散 */
+/* §V519.16 长句版式：词对行可换行；答题=一整条长线 */
+.pq-ord-longitem{display:block;padding:2px 0;}
+.pq-ord-flexrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:26px;row-gap:9px;}   /* §V519.18 18→26px：长句词对行更透气（用户报拥挤） */
+.pq-ord-flexrow+.pq-ord-flexrow{margin-top:10px;}
+.pq-ord-longline{flex:1;border-bottom:1.6px solid var(--ink,#2b2540);height:1em;min-width:180px;}
+/* §V519.15 题干注音行距三修（终）：V519.14 挂容器被 .pq-stem-cn 自己的 line-height:1.55（10073，元素级优先）顶住＝未生效。
+   ① 行距直接改到元素级（含 ruby 的题干行 2.15）；
+   ② 计分句零高低差（用户定）：计分组原是内部行高 1.2 的 inline-block 小盒（§V494b 按 1.55 宿主调平），宿主一变就错位；
+     改为 line-height:inherit——与题干行几何完全同源，题干行距怎么变它跟着变，永远同排。 */
+.pq-title-inline .pq-stem-cn:has(ruby){line-height:2.15;}
+.myq-a4-paper .pq-stem:has(ruby){line-height:2.15;}
+.pq-stem-cn:has(ruby) .pq-score{line-height:inherit;}
 .pq-hz-list{margin-top:8px;display:flex;flex-direction:column;gap:14px;padding-left:6px;}
 .pq-hz-item{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 .pq-hz-phraseimg{width:64px;height:64px;object-fit:contain;border-radius:6px;flex-shrink:0;align-self:center;}
@@ -10376,7 +10392,7 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 <style id="xz-style">
 /* ===== §V19.93 小智(Xiaozhi) 通用助手组件 —— 由 xiaozhi_mock_v15 接入 ===== */
 /* 题卡滚动容器设为定位上下文，小智/浮窗以绝对定位随题卡内容一起滚动 */
-#magic-canvas{position:relative;}
+#magic-canvas{position:relative;z-index:10;}   /* §V519.10 题卡画布抬层：让下拉的题卡盖住演示胶囊（用户定：没删也不用管） */
 /* 小智宿主：绝对定位，坐在当前梯度顶栏底线上、悬于材料区水平中点 */
 .xz.xz-host{position:absolute;z-index:32;left:0;top:0;will-change:left,top;}  /* §V19.98 z 提到划窗(31)之上：工作态键盘贴到窗顶时不被划窗压住 */
 .xz-host.xz-hide{opacity:0;pointer-events:none;transition:opacity .2s;}
@@ -39541,13 +39557,17 @@ window.MatchGen = (function(){
       if(usable.length<1) return _gate('可用于排序的句子不足：需要至少 1 条完整例句（3~8 个词块），当前 0 条！\n① 到「语句库 → 例句区」添加完整句子 ➕；\n② 点击「语料启用」完成确认 ✅。', usable.length);   /* §V19.287 统一格式 */
       const picks=shuf(usable).slice(0, Math.min(4, usable.length));   /* §V19.279 默认4题（语料足时），与其他题型一致 */
       const items=picks.map(pk=>{
-        const n=pk.toks.length, order=_scramble(n);
+        /* §V519.14 标点归 ABCD 一员（用户定）：句末标点作为末位词块参与排序与作答，横线不再额外配标点；
+           自动判标点会判错，改为完全取决于句子本身。punc 字段清空（渲染端不再用）。 */
+        const _pu=(String(pk.text).match(/[。！？?!.]$/)||[''])[0];
+        const tks=_pu ? pk.toks.concat([_pu]) : pk.toks.slice();
+        const n=tks.length, order=_scramble(n);
         return {
           _sent:pk.text,
-          _toks:pk.toks.slice(),
-          blocks:order.map((src,i)=>({ch:L[i], word:pk.toks[src]})),
-          answer:pk.toks.map((_,pos)=>L[order.indexOf(pos)]).join(''),
-          punc:(String(pk.text).match(/[。！？?!.]$/)||[''])[0],
+          _toks:tks.slice(),
+          blocks:order.map((src,i)=>({ch:L[i], word:tks[src]})),
+          answer:tks.map((_,pos)=>L[order.indexOf(pos)]).join(''),
+          punc:'',
           _isReview:pk._isReview
         };
       });
@@ -43455,10 +43475,16 @@ window.MatchGen = (function(){
                   const L3='ABCDEFGHIJ'; const tk=toks.slice(0,10); const n3=tk.length;
                   let od=[...Array(n3).keys()]; let t3=0;
                   do{ for(let k=n3-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[od[k],od[r]]=[od[r],od[k]];} t3++; }while(t3<20&&od.some((v,i)=>v===i));
-                  it._sent=raw; it._toks=tk.slice();
-                  it.blocks=od.map((src,i)=>({ch:L3[i],word:tk[src]}));
-                  it.answer=tk.map((_,pos)=>L3[od.indexOf(pos)]).join('');
-                  it.punc=(raw.match(/[。！？?!.]$/)||[''])[0];
+                  /* §V519.14 标点=末位词块（用户定）：随词块一起打乱作答，不再单列 */
+                  const _pu3=(raw.match(/[。！？?!.]$/)||[''])[0];
+                  const tk3=_pu3 ? tk.concat([_pu3]) : tk;
+                  const n3b=tk3.length;
+                  let od3=[...Array(n3b).keys()]; let t3b=0;
+                  do{ for(let k=n3b-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[od3[k],od3[r]]=[od3[r],od3[k]];} t3b++; }while(t3b<20&&od3.some((v,i)=>v===i));
+                  it._sent=raw; it._toks=tk3.slice();
+                  it.blocks=od3.map((src,i)=>({ch:L3[i],word:tk3[src]}));
+                  it.answer=tk3.map((_,pos)=>L3[od3.indexOf(pos)]).join('');
+                  it.punc='';
                   formData.answerKey={type:'word_order',marks:formData._orderItems.map(x=>x.answer)};
                   formData._userEdited=true;
                   buildForm();
@@ -43507,13 +43533,15 @@ window.MatchGen = (function(){
                   return;
                 }
                 const pk=cand[Math.floor(Math.random()*cand.length)];
-                const L2='ABCDEFGHIJ'; const n2=pk.toks.length;
+                const _pu2=(String(pk.text).match(/[。！？?!.]$/)||[''])[0];   /* §V519.14 标点=末位词块 */
+                const tk2=_pu2 ? pk.toks.concat([_pu2]) : pk.toks.slice();
+                const L2='ABCDEFGHIJ'; const n2=tk2.length;
                 let order=[...Array(n2).keys()]; let t=0;
                 do{ for(let k=n2-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[order[k],order[r]]=[order[r],order[k]];} t++; }while(t<20&&order.some((v,i)=>v===i));
-                formData._orderItems.push({_sent:pk.text,_toks:pk.toks.slice(),
-                  blocks:order.map((src,i)=>({ch:L2[i],word:pk.toks[src]})),
-                  answer:pk.toks.map((_,pos)=>L2[order.indexOf(pos)]).join(''),
-                  punc:(pk.text.match(/[。！？?!.]$/)||[''])[0]});
+                formData._orderItems.push({_sent:pk.text,_toks:tk2.slice(),
+                  blocks:order.map((src,i)=>({ch:L2[i],word:tk2[src]})),
+                  answer:tk2.map((_,pos)=>L2[order.indexOf(pos)]).join(''),
+                  punc:''});
                 formData.answerKey={type:'word_order',marks:formData._orderItems.map(it=>it.answer)};
                 formData._userEdited=true;
                 buildForm();
@@ -44797,11 +44825,10 @@ window.MatchGen = (function(){
           .concat(structured.options.map((o,i)=>'ABCD'[i]+'. '+o))
           .concat(structured.pairs.map((p,i)=>(i+1)+'.'+p.cn+' — '+'ABCD'[i]+'.'+p.en))
           .filter(Boolean).join('\n');
-        // §V19.143 维度（引擎盖空间开关，用户选择，非自动判断）：筑基=foundation / 提升=growth
-        const _dimRaw=(typeof window!=='undefined' && window.generationConfig && window.generationConfig.dimension) || 'recognition_understanding';
-        const _tier=(typeof DIMENSION_TO_TIER!=='undefined' && DIMENSION_TO_TIER[_dimRaw]) || 'zhuji';
-        const _dimension=(_tier==='zhuji')?'foundation':'growth';
-        const _dimensionLabel=(_tier==='zhuji')?'筑基':'提升';
+        // §V19.143→§V519.1 多维空间（用户定稿）：维度=纯分流房间（dim0 默认间 / dimA 粉 / dimB 蓝 / dimC 金），
+        //   不代表等级、不参与生成。打标读引擎当前房间；label=用户自定义名（默认间为空→题卷左上角只显 3D 积木）。
+        const _dimension=(typeof window!=='undefined' && window.bqDimKey)?window.bqDimKey():'dim0';
+        const _dimensionLabel=(typeof window!=='undefined' && window.bqDimLabel)?window.bqDimLabel():'';
         const rec={
           type, typeName:name,
           difficulty:dObj.tag, difficultyKey:finalKey, difficultyLabel:dObj.label,
@@ -45075,6 +45102,7 @@ window.MatchGen = (function(){
       const _dspLblTotal=scorePanel.querySelector('.dsp-lbl-total');  /* §V19.420 可编辑标签「共」 */
       const _defLblEach=(type==='custom_para_cloze')?'每个空':'每小题';   /* §V19.433 语段填空默认「每个空」，其余题型「每小题」——供面板各处默认标签统一取用 */
       const _dspBody=scorePanel.querySelector('.dsp-body');
+      try{ const _mv0=localStorage.getItem('bqScoreEachDefault')||''; if(_mv0!=='' && String(_dspEach.value||'').trim()===''){ _dspEach.value=_mv0; } }catch(_e){}   /* §V519.16 初建面板预填（联动监听尚未挂，仅填值；共分待用户开面板或入选链路触发计算） */
       const _dspHint=scorePanel.querySelector('.dsp-hint');
       const _scoreResolveRec=()=>{ let rec=null; const uid=card._lastRecUid;
         if(uid){ const _find=(arr)=>{ if(!Array.isArray(arr))return null; for(let i=arr.length-1;i>=0;i--){ if(arr[i]&&arr[i].uid===uid) return arr[i]; } return null; };
@@ -45097,6 +45125,7 @@ window.MatchGen = (function(){
         try{ _scoreSub=_liveSubCount(); }catch(_e){}
         card._scoreTotalManual=false;
         _dspEach.value=''; _dspTotal.value='';   /* §V478 新题清空输入框(唯一真相)，不再有 pending */
+        try{ const _mv=localStorage.getItem('bqScoreEachDefault')||''; if(_mv!==''){ _dspEach.value=_mv; _dspEach.dispatchEvent(new Event('input')); } }catch(_e){}   /* §V519.16 分数记忆（用户定）：首次输入后，新题/新卡/新题型默认预填上次的每小题分，共分随联动自动算，入选闸直接放行，全程丝滑 */
         if(_dspLblEach) _dspLblEach.textContent=_defLblEach;
         if(_dspLblTotal) _dspLblTotal.textContent='共';
         scorePanel.classList.remove('score-blink'); scoreBtn.classList.remove('score-blink');
@@ -45111,6 +45140,7 @@ window.MatchGen = (function(){
         if(_dspLblTotal) _dspLblTotal.textContent=(rec.lblTotal!=null&&rec.lblTotal!=='')?rec.lblTotal:'共';
       };
       _dspEach.addEventListener('input',()=>{
+        try{ const _v=String(_dspEach.value||'').trim(); if(_v!=='') localStorage.setItem('bqScoreEachDefault',_v); }catch(_e){}   /* §V519.16 分数记忆：记住用户最近一次每小题分 */
         scorePanel.classList.remove('score-blink'); scoreBtn.classList.remove('score-blink');   /* §V19.428 开始编辑 → 停止面板绿灯闪烁 */
         try{ if(String(_dspEach.value||'').trim()!=='' && window.XiaoZhi && XiaoZhi.clearRemindIf) XiaoZhi.clearRemindIf('设定分数'); }catch(_e){}   /* §V19.440 填了分数即撤「请先设定分数！」提醒(联动) */
         const ev=_numOrNull(_dspEach.value);
@@ -45140,6 +45170,7 @@ window.MatchGen = (function(){
         if(_scoreRec && card._committed){ _bqPersistCardScore(_scoreRec, null, tv===''?'':String(tv)); }
       });
       [_dspEach,_dspTotal].forEach(inp=>{ inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } }); });
+      try{ if(String(_dspEach.value||'').trim()!==''){ _dspEach.dispatchEvent(new Event('input')); } }catch(_e){}   /* §V519.17 修共分不联动（用户报）：初建预填发生在监听器挂载前，值到了、乘法没人算——监听器挂好后补发一次 input，共分=每小题×当前题数即刻算出 */
       /* §V19.442 填完分数离焦→自动关闭小智面板（仅当提醒是「设定分数」类时，不影响其他提醒场景）。
          blur 而非 input 触发，避免边填边关。Enter 已接 blur，两路都覆盖。 */
       [_dspEach,_dspTotal].forEach(inp=>{ inp.addEventListener('blur',()=>{
@@ -45592,6 +45623,9 @@ let _myqDim='foundation';
 function _myqDimOf(q){
   if(!q) return 'foundation';
   const d=String(q.dimension||'').toLowerCase().trim();
+  /* §V519.1 Step1 过渡：新维度值(dim0/dima/dimb/dimc)暂全部归入现行 foundation 视图（题卷区房间导航属 Step2），
+     保证新打标的题在题卷区可见不丢；growth 旧数据仍走旧通道。 */
+  if(d==='dim0'||d==='dima'||d==='dimb'||d==='dimc') return 'foundation';
   if(d==='growth') return 'growth';
   if(d==='foundation') return 'foundation';
   const l=String(q.dimensionLabel||'');
@@ -46063,12 +46097,26 @@ function renderPaperQuestion(q, displayNum){
     return `<div class="paper-q paper-q-judge">${titleHtml}<div class="pq-jd-list${_jdShort?' pq-jd-2col':''}">${rows}</div></div>`;
   }
 
-  /* 3) 连词成句（_orderItems）：字母词块横排 + 句末标点 + 答题线 */
+  /* 3) 连词成句（_orderItems）§V519.14 版式三修（用户定）：
+     网格分散布局——每题一个 grid（列=序号+每词块一列 1fr 等分铺满行宽），上排词对与下排短横线同列天然对齐；
+     词对无框、随列分散；短横线一截一截；标点已归为词块之一（§V519.14 生成端），纸面不再渲染任何附加标点。 */
   if(st && Array.isArray(st._orderItems) && st._orderItems.length){
     const rows = st._orderItems.map((it,i)=>{
-      const chips = ((it&&it.blocks)||[]).map(b=>`<span class="pq-ord-chip"><span class="pq-ord-ch">${_ppEsc(b.ch)}</span><span class="pq-ord-w">${_ppPy(b.word)}</span></span>`).join('');
-      const punc  = (it && it.punc) ? `<span class="pq-ord-punc">（${_ppEsc(it.punc)}）</span>` : '';
-      return `<div class="pq-ord-item"><div class="pq-ord-row"><span class="pq-idx">${withPinyin('（ '+(i+1)+' ）')}</span>${chips}${punc}</div><div class="pq-ans-line"></div></div>`;
+      const blocks=((it&&it.blocks)||[]);
+      const N=Math.max(1,blocks.length);
+      const idxHtml=withPinyin('（ '+(i+1)+' ）');
+      const chips=blocks.map(b=>`<span class="pq-ord-chip"><span class="pq-ord-ch">${_ppEsc(b.ch)}</span><span class="pq-ord-w">${_ppPy(b.word)}</span></span>`).join('');
+      /* §V519.16→18 长句规则改按宽度（用户定：词语切分有长有短，数 ABCDEF 个数不公平）：
+         逐块估宽（字母位16 + 词宽：汉字19px/拉丁数字10px一位，最少14）+ 块间距18，估出整排所需宽度；
+         超过行可用宽 ~560px（A4 内容宽减序号列）→ 长句版式（词对可换行 + 一整条长线）。 */
+      const _wEst = blocks.reduce((a,b)=>{ const w=String(b.word||''); let u=0; for(const ch of w){ u += /[\u3000-\u9fff\uff00-\uffef]/.test(ch)?19:10; } return a + 16 + 6 + Math.max(u,14); },0) + Math.max(0,blocks.length-1)*18;
+      if(_wEst>560){
+        /* §V519.20 换行缩进（用户报：第二行的 I 应对齐 A）：词对包进 chipwrap 弹性容器（序号右侧起步），
+           换行的词对回到 chipwrap 左缘＝对齐第一个选项 A，而不是行容器最左。 */
+        return `<div class="pq-ord-item pq-ord-longitem"><div class="pq-ord-flexrow"><span class="pq-idx">${idxHtml}</span><span class="pq-ord-chipwrap">${chips}</span></div><div class="pq-ord-flexrow"><span class="pq-idx pq-ord-lidx" aria-hidden="true">${idxHtml}</span><span class="pq-ord-longline"></span></div></div>`;
+      }
+      const cells=blocks.map(()=>'<span class="pq-ord-lcell"><span class="pq-ord-line"></span></span>').join('');
+      return `<div class="pq-ord-item" style="grid-template-columns:auto repeat(${N},1fr)"><span class="pq-idx">${idxHtml}</span>${chips}<span class="pq-idx pq-ord-lidx" aria-hidden="true">${idxHtml}</span>${cells}</div>`;
     }).join('');
     return `<div class="paper-q paper-q-order">${titleHtml}<div class="pq-ord-list">${rows}</div></div>`;
   }
@@ -46235,7 +46283,7 @@ function _bqCardSubCount(rec){
     if(rec && rec.match && Array.isArray(rec.match.left) && rec.match.left.length) return rec.match.left.length;
     const html=(typeof renderPaperQuestion==='function')?renderPaperQuestion(rec,1):'';
     if(html){ const t=document.createElement('div'); t.innerHTML=html;
-      let n=t.querySelectorAll('.pq-idx').length; if(n>0) return n;
+      let n=t.querySelectorAll('.pq-idx:not(.pq-ord-lidx)').length; if(n>0) return n;   /* §V519.19 排除连词成句答题排的隐形占位序号（§V519.14 对齐用）——被当成小题重复计数，4 题算成 8、共分翻倍（用户报 2×4=16） */
       n=t.querySelectorAll('.hz-card').length; if(n>0) return n;
     }
   }catch(_e){}
@@ -46329,7 +46377,7 @@ function bqSnapShow(anchor, rec, forceRefresh, revisitUids){
        与题卷同数据(collectLibrary 按维度×梯度过滤)、同渲染(renderPaperHeader/renderPaperQuestion)、
        同分页常数后台模拟整卷 → 初始定位到本题所在页并高亮，可用 ‹ › 翻看所有页。
        浮卡顶边与题卡区(#workbench)顶线齐、底边不超题卡区底；单页缩到该高度内，不再被裁不可滚。 */
-    const _lab=[rec.dimensionLabel||'', rec.difficultyLabel||rec.levelLabel||''].filter(Boolean).join('·');
+    const _dl0=String(rec.dimensionLabel||''); const _lab=(_dl0&&_dl0!=='筑基'&&_dl0!=='提升')?_dl0:'';   /* §V519.1 角标只显自定义维度名：黄橙绿不设名、旧筑基/提升标签抑制（用户定） */
     /* §V458 方案A（用户定）：快照彻底放弃「collectLibrary 过滤 + 自跑一套离屏分页模拟」——那是与题卷 myqPaginate
        分叉的根因（同一份题，两套分页算法算出不同页数：2 页题卷快照却成 4 页）。改为【直接镜像题卷真实分页 DOM】：
        读取 #myqPageRow 里每一页 .myq-page-inner 的真实 innerHTML 作为快照页，用 rec.uid 在其中定位「这道题」所在页、
@@ -55976,7 +56024,7 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
 <!-- §V512 操作演示导览·入口胶囊浮钮（一体：单容器单圆角单阴影单动画，内分左右两区+中缝） -->
 <style id="tour-invite-css">
 #tour-invite{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(22px);opacity:0;pointer-events:none;
-  z-index:9000;display:inline-flex;align-items:stretch;border-radius:999px;overflow:hidden;
+  z-index:5;display:inline-flex;align-items:stretch;border-radius:999px;overflow:hidden;   /* §V519.10 9000→5：低于题卡画布(z:10)，高于空白页面 */
   box-shadow:0 10px 26px rgba(109,40,217,.42);animation:tourInviteFloat 2.4s ease-in-out infinite;
   transition:opacity .5s ease,transform .5s ease;}
 #tour-invite.on{opacity:1;pointer-events:auto;transform:translateX(-50%);}
@@ -56901,6 +56949,159 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
           return; } }
     });
   };
+})();
+</script>
+
+<script>
+/* ═══════ §V519.4 多维空间引擎（小样v2定稿移植）═══════
+   封面铁律（用户定）：紫轮+「多维空间」四字、无条框；刷新永远回封面——只持久化三个维度名，
+   不持久化当前房间（V519.3 把 active 也存了→重开页面直接停在维度态，封面消失，即用户报的 bug）。
+   开盖后：轮面中央=真内嵌机芯窗口（框内比轮面暗一档+顶部内阴影=挖进去；未命名=空框无占位字）。
+   手势：封面单击发光/双击开盖进粉紫；开盖单击转圈循环 粉紫→青春蓝→金；双击窗口=紫边输入条+【启用】命名；
+   双击轮面=合盖回默认。维度=纯分流房间，不代表等级、不触碰生成。 */
+(function(){
+  var ORDER=['A','B','C'];
+  var CN={A:'蜜桃粉',B:'活力蓝',C:'金'};   /* §V519.7 A2/B3 */
+  var st={names:{A:'',B:'',C:''},active:null};   /* active 永不入库：每次加载=封面 */
+  try{ var sv=JSON.parse(localStorage.getItem('bqDims')||'null'); if(sv&&sv.names){ st.names=Object.assign({A:'',B:'',C:''},sv.names); } }catch(_e){}
+  function save(){ try{ localStorage.setItem('bqDims',JSON.stringify({names:st.names})); }catch(_e){} }
+  window.bqDims=st;
+  window.bqDimKey=function(){ return st.active?('dim'+st.active):'dim0'; };
+  window.bqDimLabel=function(){ return st.active?(st.names[st.active]||''):''; };
+
+  var css=document.createElement('style');
+  css.textContent=''
+  /* 通体配色（提升金轮三件套工艺）：A粉紫(往粉拉开，与品牌封面紫可分) B青春蓝 C金(原配方) */
+  +'.engine-core[data-dim="A"]{border-color:rgba(209,90,64,.66) !important;background:repeating-conic-gradient(from 0deg,rgba(240,130,100,.20) 0deg,rgba(240,130,100,.20) 4deg,rgba(255,240,234,.18) 4deg,rgba(255,240,234,.18) 8deg),radial-gradient(circle at 35% 28%, #fff5f1 0%, #ffe4da 28%, #ffbfa8 60%, #f98165 84%, #d15a40 100%) !important;box-shadow:inset 0 2px 4px rgba(255,255,255,.7), inset 0 -4px 8px rgba(180,70,45,.22), 0 5px 12px rgba(190,80,55,.20) !important;}'   /* §V519.7 用户拍板 A2 蜜桃粉 */
+  +'.engine-core[data-dim="B"]{border-color:rgba(43,95,206,.68) !important;background:repeating-conic-gradient(from 0deg,rgba(70,125,240,.20) 0deg,rgba(70,125,240,.20) 4deg,rgba(235,242,255,.18) 4deg,rgba(235,242,255,.18) 8deg),radial-gradient(circle at 35% 28%, #f1f6ff 0%, #dce9ff 28%, #a8c8ff 60%, #4a86f7 84%, #2b5fce 100%) !important;box-shadow:inset 0 2px 4px rgba(255,255,255,.7), inset 0 -4px 8px rgba(30,70,170,.22), 0 5px 12px rgba(35,80,185,.20) !important;}'   /* §V519.7 用户拍板 B3 活力蓝 */
+  +'.engine-core[data-dim="C"]{border-color:rgba(184,133,26,.68) !important;background:repeating-conic-gradient(from 0deg,rgba(170,120,24,.20) 0deg,rgba(170,120,24,.20) 4deg,rgba(255,246,210,.18) 4deg,rgba(255,246,210,.18) 8deg),radial-gradient(circle at 35% 28%, #fffaf0 0%, #fdf0cf 28%, #f8dd9e 60%, #e8b43c 84%, #b8851a 100%) !important;box-shadow:inset 0 2px 4px rgba(255,255,255,.7), inset 0 -4px 8px rgba(180,130,30,.22), 0 5px 12px rgba(180,140,40,.20) !important;}'
+  /* 机芯窗口：真内嵌（框内更暗+顶部内阴影=坑；下沿反光+坑口棱线） */
+  +'.bqdm-inrect{pointer-events:auto !important;width:60px;height:23px;border-radius:7px;cursor:pointer;'
+  +'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;'
+  +'overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 6px;border:none;'
+  +'background:rgba(60,20,90,.16);'
+  +'box-shadow:inset 0 2.5px 5px rgba(30,5,60,.42), inset 0 -1px 0 rgba(255,255,255,.45), 0 1px 0 rgba(255,255,255,.5);}'
+  +'.engine-core[data-dim="A"] .bqdm-inrect{color:#93381f;}'
+  +'.engine-core[data-dim="B"] .bqdm-inrect{color:#1a3f92;}'
+  +'.engine-core[data-dim="C"] .bqdm-inrect{color:#5a3d05;}'
+  +'.engine-core .etb-name{letter-spacing:.06em;}'
+  +'.engine-core[data-dim] .engine-wand,.engine-core[data-dim] .engine-wand-stars{display:none !important;}'   /* §V519.5 开盖后不要魔法棒（用户定：封面保留、内部居中） */
+  +'.engine-core[data-dim] .engine-window{width:auto !important;height:auto !important;background:none !important;border:none !important;box-shadow:none !important;transform:none !important;padding:0 !important;display:flex;align-items:center;justify-content:center;pointer-events:auto !important;}'   /* §V519.8 放开点击透明链：engine-window/badge 原带 pointer-events:none，target 恒为按钮→机芯窗双击被判成轮面双击=合盖（用户报） */   /* §V519.6 压平旧药丸底衬：50×20 带底色的 engine-window 叠在 60px 机芯窗后＝用户报的"顶窄底宽"梯形叠影 */
+  +'.engine-core[data-dim] .engine-tier-badge{background:none !important;border:none !important;box-shadow:none !important;padding:0 !important;transform:none !important;display:flex;pointer-events:auto !important;}'
+  +'@keyframes bqdm-glow{0%,100%{text-shadow:none;}50%{text-shadow:0 0 8px #fff,0 0 16px #C9A9FF,0 0 24px #A78BFA;}}'
+  +'.engine-core.bqdm-glowing .etb-name{animation:bqdm-glow .9s ease-in-out 2;}'
+  +'@keyframes bqdm-spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}'
+  +'.engine-core.bqdm-spinning{animation:bqdm-spin .45s ease;}'
+  /* 命名输入条（双击机芯窗口才出现）：紫边紫底+【启用】 */
+  +'.bqdm-pop{position:fixed;z-index:99995;display:none;align-items:center;gap:8px;width:262px;'
+  +'background:#F1EAFE;border:2px solid #7C3AED;border-radius:12px;padding:9px 10px;'
+  +'box-shadow:0 12px 32px rgba(43,20,80,.28);}'
+  +'.bqdm-pop.show{display:flex;}'
+  +'.bqdm-pop input{flex:1;min-width:0;border:1.5px solid #C9B8F0;border-radius:9px;padding:8px 10px;'
+  +'font-size:13px;font-family:inherit;outline:none;background:#fff;}'
+  +'.bqdm-pop input:focus{border-color:#7C3AED;box-shadow:0 0 0 3px rgba(124,58,237,.14);}'
+  +'.bqdm-go{flex:none;border:none;border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:700;'
+  +'color:#fff;background:linear-gradient(135deg,#7C3AED,#9F5CF7);cursor:pointer;font-family:inherit;}'
+  +'.bqdm-go:hover{filter:brightness(1.08);}';
+  document.head.appendChild(css);
+
+  var pop=null;
+  function buildPop(){
+    pop=document.createElement('div'); pop.className='bqdm-pop';
+    pop.innerHTML='<input placeholder="给这个维度空间起个名字…"/><button type="button" class="bqdm-go">启用</button>';
+    document.body.appendChild(pop);
+    pop.querySelector('.bqdm-go').addEventListener('click',popOk);
+    pop.querySelector('input').addEventListener('keydown',function(e){ if(e.key==='Enter') popOk(); if(e.key==='Escape') popClose(); });
+    document.addEventListener('mousedown',function(e){ if(pop.classList.contains('show') && !pop.contains(e.target) && !(e.target.closest&&e.target.closest('.bqdm-inrect'))) popClose(); });
+  }
+  function popOpen(){ if(!st.active) return; if(!pop) buildPop();
+    var core=document.getElementById('engine-core'); if(!core) return;
+    var r=core.getBoundingClientRect();
+    pop.style.left=Math.max(8,Math.min(window.innerWidth-270,r.left+r.width/2-131))+'px';
+    pop.style.top=(r.bottom+8)+'px';
+    var inp=pop.querySelector('input'); inp.value=st.names[st.active]||'';
+    pop.classList.add('show'); setTimeout(function(){ inp.focus(); },60);
+  }
+  function popClose(){ if(pop) pop.classList.remove('show'); }
+  function popOk(){ if(!st.active){ popClose(); return; }
+    st.names[st.active]=pop.querySelector('input').value.trim();
+    save(); popClose(); refresh();
+    try{ if(typeof showToast==='function') showToast('已启用「'+(st.names[st.active]||CN[st.active]+'色空间')+'」','ok'); }catch(_e){}
+  }
+  function refresh(){
+    var core=document.getElementById('engine-core'); if(!core) return;
+    var badge=document.getElementById('engine-tier-badge'); if(!badge) return;
+    if(st.active){
+      core.setAttribute('data-dim',st.active);
+      badge.innerHTML='<span class="bqdm-inrect"></span>';
+      var rect=badge.querySelector('.bqdm-inrect');
+      rect.textContent=st.names[st.active]||'';
+      rect.title='双击命名这个维度空间';   /* §V519.6 点击统一由轮的捕获层调度，不再自挂监听（重建 DOM 也不丢行为） */
+    }else{
+      core.removeAttribute('data-dim');
+      badge.innerHTML='<span class="etb-name">多维空间</span>';   /* 封面铁律：紫轮+四字、无条框 */
+      popClose();
+    }
+    core.style.boxShadow='';
+    core.title = st.active ? '单击：切换维度（粉-蓝-金）；双击盖面：合盖回封面；双击中央窗口：命名' : '多维空间引擎：双击开盖进入维度房间';   /* §V519.9/10 悬停文案用户定稿 */
+  }
+  function spin(core){ core.classList.remove('bqdm-spinning'); void core.offsetWidth; core.classList.add('bqdm-spinning'); }
+  function toast(msg){ try{ if(typeof showToast==='function') showToast(msg,'ok'); }catch(_e){} }
+  function label(d){ return st.names[d]||(CN[d]+'色空间'); }
+  function single(core){
+    if(!st.active){ core.classList.remove('bqdm-glowing'); void core.offsetWidth; core.classList.add('bqdm-glowing'); return; }
+    var i=ORDER.indexOf(st.active); st.active=ORDER[(i+1)%ORDER.length];
+    spin(core); popClose(); refresh();
+    toast('已切入「'+label(st.active)+'」');
+  }
+  function dbl(core){
+    if(!st.active){ st.active='A'; spin(core); refresh(); toast('已开盖 · 进入「'+label('A')+'」'); }
+    else{ st.active=null; refresh(); toast('已合盖 · 回到默认空间'); }
+  }
+  function hook(){
+    var core=document.getElementById('engine-core'); if(!core) return;
+    var _t=null,_rt=null;
+    core.addEventListener('click',function(e){
+      var onRect = e.target.closest && e.target.closest('.bqdm-inrect');
+      e.stopImmediatePropagation(); e.preventDefault();   /* §V519.6 机芯窗点击也全拦：原先放行→被旧 cycleDimension 接管重建徽章，双击监听被连根拔（用户报双击不弹输入窗）+ 梯形旧样式回魂 */
+      if(onRect){
+        if(_rt){ clearTimeout(_rt); _rt=null; popOpen(); return; }   /* 双击窗口=弹紫边输入条 */
+        _rt=setTimeout(function(){ _rt=null; },260);                  /* 单击窗口=无动作（防误切色） */
+        return;
+      }
+      if(_t){ clearTimeout(_t); _t=null; dbl(core); return; }
+      _t=setTimeout(function(){ _t=null; single(core); },240);
+    },true);
+    core.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.stopImmediatePropagation(); e.preventDefault(); single(core); } },true);
+    refresh();
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',hook); } else { hook(); }
+  window.addEventListener('load',function(){ setTimeout(refresh,300); });   /* §V519.6 保险拍：旧 updateEngineMini 等在加载尾重写徽章时，再刷回我们的态 */
+})();
+</script>
+
+<script>
+/* §V519.11 演示胶囊避让（用户报 z 调整未奏效：胶囊祖先与画布分属不同层叠上下文，纯 z-index 赌不赢）：
+   改确定性几何检测——胶囊矩形与任一题卡矩形相交即隐身让路（透明+不可点），错开后自动现身。 */
+(function(){
+  var el=document.getElementById('tour-invite'); if(!el) return;
+  var canvas=document.getElementById('magic-canvas');
+  var tick=false;
+  function chk(){ tick=false;
+    if(!el.classList.contains('on')){ el.style.opacity=''; el.style.pointerEvents=''; return; }
+    var r=el.getBoundingClientRect(); if(!r.width) return;
+    var hit=false;
+    var cards=document.querySelectorAll('#magic-canvas .drop-card');
+    for(var i=0;i<cards.length;i++){ var b=cards[i].getBoundingClientRect();
+      if(b.bottom>r.top && b.top<r.bottom && b.right>r.left && b.left<r.right){ hit=true; break; } }
+    el.style.opacity = hit ? '0' : '';
+    el.style.pointerEvents = hit ? 'none' : '';
+  }
+  function req(){ if(!tick){ tick=true; requestAnimationFrame(chk); } }
+  (canvas||window).addEventListener('scroll',req,true);
+  window.addEventListener('scroll',req,true);
+  window.addEventListener('resize',req);
+  setInterval(req,800);   /* 卡片增删/换卡/展开等非滚动变化兜底 */
 })();
 </script>
 </body>
