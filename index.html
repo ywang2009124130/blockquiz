@@ -194,6 +194,7 @@ window.HSK_EN_FALLBACK = {"爱":"love","八":"eight","爸爸":"father","白天":
   --surface:#FFFFFF; --surf2:rgba(255,255,255,0.85);
   --border:rgba(124,58,237,0.16); --border2:rgba(124,58,237,0.32); --border3:rgba(124,58,237,0.58);
   --p1:#3B0764; --p2:#6B21A8; --p3:#7C3AED; --p4:#A855F7; --p5:#C4B5FD; --p6:#F3EEFF;
+  --p-deep:#5B21B6; --p-mid:#8B5CF6; --p-light:#C4B5FD;   /* 小积木三色：介绍卡圆点/标题对应各自积木本体色 */
   --ink:#1A0533; --ink2:#3D1472; --ink3:#7B4FA8; --ink4:#B09ACC;
   --yellow:#FED233; --yd:#C4980A; --ylt:#FFF8D6;
   --orange:#FF8C42; --od:#C05A10; --olt:#FFECD6;
@@ -11095,7 +11096,42 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 .mzx-ops .mzx-next{margin:0;}
 .mzx-prev{display:inline-flex;align-items:center;gap:6px;padding:5px 16px;border:1.5px solid var(--p-light,#CBBBEC);border-radius:999px;background:#fff;color:#7C3AED;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;}
 .mzx-prev:hover{background:#F6F1FE;}
-/* §V510 左栏静候：小智独立待命，说明卡随点击出场（visibility 占位防跳动） */
+/* §V513 聚光灯导览引擎 */
+/* §V519 挖洞三合一：一个元素同时是遮罩(超大投影)+洞(自身位置)+光圈(自身描边)。
+   位置只改这一个元素 → 同一次重绘，遮罩/洞/光圈天然同步；transition 让它平滑跟随目标滑动，零延迟零残留。 */
+/* §V522 常亮暗层：导览全程都罩着（包括语料区输入、步骤之间、完成提示时）。
+   有高亮目标时显示挖洞的 hole（自带更暗投影盖住 scrim）；无目标时隐藏 hole、由 scrim 继续暗屏——保证「永远有遮罩」。 */
+#bq-tour-scrim{position:fixed;inset:0;z-index:9099;background:rgba(22,8,46,.68);pointer-events:none;display:none;}
+#bq-tour-hole{position:fixed;z-index:9100;border-radius:14px;pointer-events:none;display:none;
+  box-shadow:0 0 0 9999px rgba(22,8,46,.68), 0 0 0 3px #A78BFA, 0 0 28px 8px rgba(167,139,250,.5), inset 0 0 16px rgba(167,139,250,.28);
+  transition:none;}
+#bq-tour-hole.no-anim{transition:none;}
+#bq-tour-ghost{position:fixed;z-index:9120;width:14px;height:14px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 38% 32%,#EDE9FE,#8B5CF6 70%);
+  box-shadow:0 0 14px 6px rgba(139,92,246,.55);opacity:0;
+  transform:translate(-50%,calc(-50% + 12px));transition:left .65s cubic-bezier(.4,.1,.2,1),top .65s cubic-bezier(.4,.1,.2,1),opacity .3s;}
+/* 幽灵光标「戳一下」脉冲：外扩一圈涟漪，不改变本体位置 */
+#bq-tour-ghost.gc::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(139,92,246,.65);transform:translate(-50%,-50%);animation:bqGhostTap .55s ease-out;}
+@keyframes bqGhostTap{0%{opacity:.9;width:8px;height:8px;}100%{opacity:0;width:44px;height:44px;}}
+#bq-tour-bubble{position:fixed;z-index:9130;max-width:450px;background:#fff;border-radius:14px;padding:12px 15px;
+  box-shadow:0 14px 34px rgba(20,8,60,.32);display:none;font-size:13.5px;color:#2E1A52;line-height:1.65;}
+#bq-tour-bubble .tb-title{font-weight:900;color:#7C3AED;margin-bottom:3px;font-size:14px;}
+#bq-tour-bubble .tb-hand{display:inline-block;font-size:17px;animation:handJab .7s ease-in-out infinite;margin-right:2px;vertical-align:-1px;}
+#bq-tour-skip{position:fixed;top:14px;left:14px;z-index:9200;border:none;cursor:pointer;
+  background:rgba(255,255,255,.16);color:#EDE9FF;border:1.5px solid rgba(237,230,255,.5);
+  border-radius:999px;padding:7px 16px;font-size:12.5px;font-weight:800;backdrop-filter:blur(4px);display:none;}
+/* 拖拽替身 */
+#bq-tour-drag{position:fixed;z-index:9118;pointer-events:none;opacity:.82;transform-origin:center center;display:none;}
+/* §V518 常驻手型：大手指向目标（贴在目标下缘正中，向上点） */
+#bq-tour-hand{position:fixed;z-index:9136;pointer-events:none;font-size:40px;line-height:1;
+  transform:translate(-50%,0);filter:drop-shadow(0 4px 7px rgba(60,20,110,.5));
+  animation:bqHandTap .85s ease-in-out infinite;display:none;}
+@keyframes bqHandTap{0%,100%{transform:translate(-50%,0);}50%{transform:translate(-50%,-9px);}}
+/* §V518 撒花 */
+@keyframes bqConfFall{0%{transform:translateY(-10px) rotate(0);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:.9;}}
+.hand-anim{display:inline-block;animation:handJab .75s ease-in-out infinite;font-size:16px;}
+@keyframes handJab{0%,100%{transform:translateX(0);}50%{transform:translateX(7px);}}
 #empty-hint .zhi-line .zhi-card{opacity:0;visibility:hidden;transform:translateX(-6px);transition:opacity .35s ease,transform .35s ease;}
 #empty-hint .zhi-line.zhi-opened .zhi-card{opacity:1;visibility:visible;transform:none;}
 </style>
@@ -12556,7 +12592,7 @@ requestAnimationFrame(tick);
       </svg>
       
     </div></div></div>
-<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:#a78bfa"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:var(--p-light)"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
 </div>
 </div>
 </div>
@@ -39031,7 +39067,7 @@ window.MatchGen = (function(){
       </svg>
       
     </div></div></div>
-<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:#a78bfa"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
+<div class="zhi-card"><div class="zhi-card-title" style="color:#a78bfa"><span class="dot" style="background:var(--p-light)"></span>专项特色积木</div><div class="zhi-card-text">「汉字工坊」与「拼音基础」为两个专项特色题型：内置默认范例，拖入积木即可预览题卡，范例仅作为参考。</div></div>
 </div>
 </div>
 </div>
@@ -55035,7 +55071,7 @@ function zoneMarkWave(){
   //   ② 一次性迁移：把早期版本可能写坏的 bqXzDragDX 清一次(以后正常拖拽仍会记住位置)。
   // §V19.120 方案2：「已看过引导」标志绑定版本号 —— 真实用户只看一次；每发一个新版本就把下面的版本号 +1，
   //   该版本第一次打开会自动播一次(不受浏览器里旧标志/file:// 跨文件共享影响)，之后同版本不再自动播(可 ?xzintro 重看)。
-  var XZ_INTRO_KEY='bqXzIntroSeen_v511';
+  var XZ_INTRO_KEY='bqXzIntroSeen_v513';
   try{
     if(location.search.indexOf('xzintro')>=0) localStorage.removeItem('bqXzDragDX');
     if(!localStorage.getItem('bqXzDragReset1')){ localStorage.removeItem('bqXzDragDX'); localStorage.setItem('bqXzDragReset1','1'); }
@@ -55715,6 +55751,787 @@ let __demoStop=true;
 }
 window.__mzxIntroInit=__mzxIntroInit;
 if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventListener('DOMContentLoaded',__mzxIntroInit);}
+</script>
+<!-- §V512 操作演示导览·入口胶囊浮钮（一体：单容器单圆角单阴影单动画，内分左右两区+中缝） -->
+<style id="tour-invite-css">
+#tour-invite{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(22px);opacity:0;pointer-events:none;
+  z-index:9000;display:inline-flex;align-items:stretch;border-radius:999px;overflow:hidden;
+  box-shadow:0 10px 26px rgba(109,40,217,.42);animation:tourInviteFloat 2.4s ease-in-out infinite;
+  transition:opacity .5s ease,transform .5s ease;}
+#tour-invite.on{opacity:1;pointer-events:auto;transform:translateX(-50%);}
+#tour-invite button{border:none;cursor:pointer;font-weight:900;color:#fff;background:transparent;}
+#tour-invite .ti-go{display:inline-flex;align-items:center;gap:8px;font-size:15px;letter-spacing:2px;padding:12px 26px;
+  background:linear-gradient(135deg,#8B5CF6,#6D28D9);}
+#tour-invite .ti-go .ti-play{font-size:12px;}
+#tour-invite .ti-sep{width:1px;align-self:center;height:22px;background:rgba(120,90,170,.25);}
+#tour-invite .ti-close{padding:0 15px;font-size:15px;color:#8A7AA8;background:#EEE9F5;}
+#tour-invite .ti-go:hover{filter:brightness(1.08);}
+#tour-invite .ti-close:hover{color:#5B3FA8;background:#E3DCEF;}
+@keyframes tourInviteFloat{0%,100%{box-shadow:0 10px 26px rgba(109,40,217,.42);}
+  50%{transform:translateX(-50%) translateY(-5px);box-shadow:0 16px 32px rgba(109,40,217,.5);}}
+#tour-invite.on{animation:tourInviteFloatOn 2.4s ease-in-out infinite;}
+@keyframes tourInviteFloatOn{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-5px);}}
+</style>
+<div id="tour-invite" role="group" aria-label="操作演示">
+  <button type="button" class="ti-go" id="tour-invite-go"><span class="ti-play">▶</span>请看操作演示！</button>
+  <span class="ti-sep" aria-hidden="true"></span>
+  <button type="button" class="ti-close" id="tour-invite-close" title="关闭" aria-label="关闭">✕</button>
+</div>
+<!-- §V519 聚光灯导览·DOM节点：挖洞三合一 -->
+<div id="bq-tour-scrim"></div>
+<div id="bq-tour-hole"></div>
+<button type="button" id="bq-tour-skip" aria-label="跳过演示">跳过演示 ✕</button>
+<div id="bq-tour-bubble"></div>
+<div id="bq-tour-ghost"></div>
+<div id="bq-tour-drag"></div>
+<script>
+/* §V512 胶囊浮钮行为 */
+(function(){
+  var el=document.getElementById('tour-invite');
+  var go=document.getElementById('tour-invite-go');
+  var cl=document.getElementById('tour-invite-close');
+  if(!el) return;
+  function show(){ el.classList.add('on'); }
+  function hide(){ el.classList.remove('on'); }
+  window.__tourInviteShow=show; window.__tourInviteHide=hide;
+  cl.addEventListener('click',function(){ hide(); });
+  go.addEventListener('click',function(){
+    if(typeof window.__startTour==='function'){ hide(); window.__startTour(); }
+  });
+  setTimeout(function(){ if(document.querySelector('#empty-hint')) show(); },1200);
+})();
+
+/* §V519 聚光灯导览引擎（挖洞三合一） */
+(function(){
+  var hole=document.getElementById('bq-tour-hole');
+  var scrim=document.getElementById('bq-tour-scrim');
+  var ghost=document.getElementById('bq-tour-ghost');
+  var bubble=document.getElementById('bq-tour-bubble');
+  var skipBtn=document.getElementById('bq-tour-skip');
+  var dragEl=document.getElementById('bq-tour-drag');
+  var touring=false;
+  var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
+  // 轮询等目标「真正就位」：宽>8、可见、且连续两帧位置不再变（动画停稳）——替代盲等固定 ms
+  function waitStable(el){
+    return new Promise(function(resolve){
+      var last=null,still=0;
+      (function tick(){
+        if(_abort){resolve(false);return;}
+        var r=el.getBoundingClientRect();
+        var ok=r.width>8&&r.height>4&&el.offsetParent!==null;
+        if(ok&&last&&Math.abs(r.left-last.left)<1&&Math.abs(r.top-last.top)<1&&Math.abs(r.width-last.width)<1){
+          if(++still>=2){resolve(true);return;}
+        } else { still=0; }
+        last=r;
+        requestAnimationFrame(tick);
+      })();
+    });
+  }
+  // 等抽屉真开：drawer 有 .open 且宽度>40（打开动画走完）——无超时，等到真开为止
+  function waitDrawerOpen(){
+    var drawer=document.querySelector('.drawer'); if(!drawer) return wait(600);
+    return new Promise(function(resolve){
+      (function tick(){
+        if(_abort){resolve(false);return;}
+        var w=parseFloat(getComputedStyle(drawer).width)||0;
+        if(drawer.classList.contains('open')&&w>40){ resolve(true); return; }
+        requestAnimationFrame(tick);
+      })();
+    });
+  }
+  function waitDrawerClosed(){
+    var drawer=document.querySelector('.drawer'); if(!drawer) return wait(500);
+    return new Promise(function(resolve){
+      (function tick(){
+        if(_abort){resolve(false);return;}
+        var w=parseFloat(getComputedStyle(drawer).width)||0;
+        if(!drawer.classList.contains('open')||w<8){ resolve(true); return; }
+        requestAnimationFrame(tick);
+      })();
+    });
+  }
+
+  // scrim 与 hole 是「二选一」的暗层：有高亮目标时用 hole（挖洞暗层+亮圈），无目标时用 scrim（纯暗层）。
+  //   两者背景同色，切换无闪；关键是任何时刻「至少有一个」在暗屏——绝不出现无遮罩。
+  function scrimOn(){ scrim.style.display='block'; }
+  function scrimOff(){ scrim.style.display='none'; }
+  function maskOn(){ scrimOn(); skipBtn.style.display='block'; }
+  function maskOff(){ scrimOff(); hole.style.display='none'; skipBtn.style.display='none'; bubble.style.display='none'; ghost.style.opacity=0; }
+  function holeOff(){ hole.style.display='none'; scrimOn(); /* 收洞→改用纯暗层，屏幕仍暗 */ }
+  // 把洞放到目标上；animate=false 时瞬移（避免从旧位置滑来），=true 时平滑跟随（用于目标本身在动，如把手滑开）
+  function holeOn(el,pad,round){
+    if(!el) return;
+    scrimOff();                                // 用挖洞暗层，关掉纯暗层，避免双层叠暗/盖住亮圈
+    pad=pad==null?10:pad; round=round||14;
+    var r=el.getBoundingClientRect();
+    var x=r.left-pad,y=r.top-pad,w=r.width+pad*2,h=r.height+pad*2;
+    hole.style.display='block';
+    // 永远瞬间精准套在目标上，绝不做平移动画（平移途中会「洞对不上按钮」）
+    Object.assign(hole.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:round+'px'});
+  }
+  // 切换到新目标：瞬间精准重定位（无动画）
+  function switchHole(el,pad,round){ holeOn(el,pad,round); return wait(0); }
+  // §V520 洞「持续粘住」目标：每帧按目标实时位置重算洞，直到 ms 结束或目标连续 stableFrames 帧不动。
+  //   解决：①把手异步滑开洞跟不上；②新增/删除后卡片重排，洞停在旧位置甚至压住别的题项。
+  function holeGlue(el,pad,round,ms){
+    return new Promise(function(resolve){
+      if(!el){ resolve(); return; }
+      pad=pad==null?8:pad; round=round||12; ms=ms||900;
+      scrimOff();
+      var t0=Date.now(), lastX=null,lastY=null, still=0, moved=false;
+      hole.classList.add('no-anim');            // 逐帧对齐，不需要 CSS 过渡，避免"追着跑"的滞后
+      (function tick(){
+        if(_abort){ resolve(); return; }
+        var el2 = (typeof el==='function') ? el() : el;   // 允许传函数，动作后重新定位到最新元素
+        if(el2){
+          var r=el2.getBoundingClientRect();
+          hole.style.display='block';
+          hole.style.left=(r.left-pad)+'px'; hole.style.top=(r.top-pad)+'px';
+          hole.style.width=(r.width+pad*2)+'px'; hole.style.height=(r.height+pad*2)+'px';
+          hole.style.borderRadius=round+'px';
+          if(lastX!==null){
+            if(Math.abs(r.left-lastX)>0.5 || Math.abs(r.top-lastY)>0.5){ moved=true; still=0; }
+            else { still++; }
+          }
+          lastX=r.left; lastY=r.top;
+        }
+        // 只有在"已经动过、且随后连续静止"时才提前结束；否则跑满 ms（避免滑动前的短暂停顿被误判为稳定）
+        if(Date.now()-t0>=ms || (moved && still>=6)){ resolve(); return; }
+        requestAnimationFrame(tick);
+      })();
+    });
+  }
+  // §V520 等右上角「我的题卷」数量徽标增加（= 入选真的落库成功）。返回是否成功。
+  function waitCountBadge(prevN,timeout){
+    // timeout 可选；不传则无限等待（只要 _abort 就停）
+    var hasTimeout=arguments.length>=2 && typeof timeout==='number';
+    function readN(){
+      var el=document.getElementById('my-quiz-count');
+      if(!el) return 0;
+      var m=(el.textContent||'').match(/\d+/);
+      if(m) return parseInt(m[0],10);
+      // 徽标可能分梯度显示，回退用 collectLibrary/finalQuizBank
+      try{ if(typeof collectLibrary==='function') return collectLibrary().length; }catch(e){}
+      return (window.finalQuizBank||[]).length;
+    }
+    return new Promise(function(resolve){
+      var t0=Date.now();
+      (function tick(){
+        if(_abort){ resolve(false); return; }
+        if(readN()>prevN){ resolve(true); return; }
+        if(hasTimeout && Date.now()-t0>timeout){ resolve(false); return; }
+        setTimeout(tick,120);
+      })();
+    });
+  }
+  function readBankCount(){
+    var el=document.getElementById('my-quiz-count');
+    if(el){ var m=(el.textContent||'').match(/\d+/); if(m) return parseInt(m[0],10); }
+    try{ if(typeof collectLibrary==='function') return collectLibrary().length; }catch(e){}
+    return (window.finalQuizBank||[]).length;
+  }
+
+  // 把气泡贴到 anchor 旁边（自动兜回屏内）。纯展示，不含按钮。单手只用外部大手，气泡内不再放手型。
+  function placeBubble(anchor,title,body,side){
+    bubble.innerHTML='<div class="tb-title">'+title+'</div>'+body;
+    bubble.style.visibility='hidden'; bubble.style.display='block'; bubble.style.left='0px'; bubble.style.top='0px';
+    var bb=bubble.getBoundingClientRect(), bw=bb.width||260, bh=bb.height||90;
+    var r=anchor?anchor.getBoundingClientRect():null,W=window.innerWidth,H=window.innerHeight,M=10;
+    // 兜底：anchor 不存在或尺寸为 0（未布局/不可见）时，居中显示，绝不甩到左上角
+    if(!r || (r.width<=0 && r.height<=0)){
+      var cL=(W-bw)/2, cT=(H-bh)/2;
+      bubble.style.left=cL+'px'; bubble.style.top=cT+'px'; bubble.style.visibility='visible'; return;
+    }
+    // 显式居中：完成/告知类提示统一放屏幕正中
+    if(side==='center' || !anchor){
+      var _cL=(W-bw)/2, _cT=(H-bh)/2;
+      bubble.style.left=_cL+'px'; bubble.style.top=_cT+'px'; bubble.style.visibility='visible'; return;
+    }
+    var L,T;
+    if(side==='left'){ L=r.left-bw-14; T=r.top+r.height/2-bh/2; }
+    else if(side==='above'){ L=r.left+r.width/2-bw/2; T=r.top-bh-14; }
+    else if(side==='below'){ L=r.left+r.width/2-bw/2; T=r.bottom+14; }
+    else{ L=r.right+14; T=r.top+r.height/2-bh/2; }
+    if(side==='left'&&L<M){ L=r.right+14; }
+    if(side==='right'&&L+bw>W-M){ L=r.left-bw-14; }
+    if(side==='above'&&T<M){ T=r.bottom+14; }
+    if(side==='below'&&T+bh>H-M){ T=r.top-bh-14; }
+    L=Math.max(M,Math.min(W-bw-M,L)); T=Math.max(M,Math.min(H-bh-M,T));
+    bubble.style.left=L+'px'; bubble.style.top=T+'px'; bubble.style.visibility='visible';
+  }
+  function hideBubble(){ bubble.style.display='none'; }
+
+  // 纯演示步骤用：贴气泡 + 停留若干毫秒（不需要点，自动往下）
+  function tell(title,body,anchor,side,ms){
+    placeBubble(anchor,title,body,side);
+    return wait(ms||1600);
+  }
+  // §V522 完成/告知类：在遮罩之上居中显示，带「下一步 →」按钮，点了才继续，绝不自动消失。
+  //   scrim 保持暗屏（holeOff 已保证），气泡 z-index 高于 scrim，用户能看清、自己掌握节奏。
+  function tellStep(title,body,btnText){
+    return new Promise(function(resolve){
+      holeOff();                                  // 收洞、保留纯暗层 scrim
+      bubble.innerHTML='<div class="tb-title">'+title+'</div>'+body
+        +'<div style="margin-top:6px;text-align:right;">'
+        +'<button type="button" id="bq-tour-next" style="cursor:pointer;border:none;border-radius:999px;'
+        +'padding:8px 20px;font-size:13px;font-weight:800;color:#fff;'
+        +'background:linear-gradient(135deg,#8B5CF6,#7C3AED);box-shadow:0 4px 14px rgba(124,58,237,.4);">'+(btnText||'下一步 →')+'</button></div>';
+      bubble.style.visibility='hidden'; bubble.style.display='block'; bubble.style.left='0px'; bubble.style.top='0px';
+      var bb=bubble.getBoundingClientRect(), bw=bb.width||280, bh=bb.height||120, W=window.innerWidth, H=window.innerHeight;
+      bubble.style.left=((W-bw)/2)+'px'; bubble.style.top=((H-bh)/2)+'px'; bubble.style.visibility='visible';
+      var btn=document.getElementById('bq-tour-next');
+      var done=false;
+      function go(){ if(done) return; done=true; try{btn.removeEventListener('click',go);}catch(e){} resolve(true); }
+      btn.addEventListener('click',go);
+      (function poll(){ if(_abort){ if(!done){done=true; resolve(false);} return; } if(!done) setTimeout(poll,120); })();
+    });
+  }
+  // §V523 带「下一步」按钮，但保留高亮洞、气泡放在指定位置（不居中）。placement:
+  //   'rightblank' = 把气泡放到 anchor 右下的空白区（用于配图：📷 亮着，气泡在右侧空白）。
+  function tellStepAt(title,body,anchor,placement){
+    return new Promise(function(resolve){
+      bubble.innerHTML='<div class="tb-title">'+title+'</div>'+body
+        +'<div style="margin-top:12px;text-align:right;">'
+        +'<button type="button" id="bq-tour-next" style="cursor:pointer;border:none;border-radius:999px;'
+        +'padding:8px 20px;font-size:13px;font-weight:800;color:#fff;'
+        +'background:linear-gradient(135deg,#8B5CF6,#7C3AED);box-shadow:0 4px 14px rgba(124,58,237,.4);">下一步 →</button></div>';
+      bubble.style.visibility='hidden'; bubble.style.display='block'; bubble.style.left='0px'; bubble.style.top='0px';
+      var bb=bubble.getBoundingClientRect(), bw=bb.width||280, bh=bb.height||120, W=window.innerWidth, H=window.innerHeight, M=12;
+      var L,T;
+      var r=anchor?anchor.getBoundingClientRect():null;
+      if(r && placement==='rightblank'){
+        // 放在 📷 的右侧空白（语句库那侧）；若右侧放不下就落到 📷 下方偏右
+        L=r.right+18; T=r.top-6;
+        if(L+bw>W-M){ L=Math.max(M, r.left - bw - 18); }   // 右边不够就挪到左边
+        if(L<M){ L=Math.min(W-bw-M, r.left+r.width/2 - bw/2); T=r.bottom+16; }
+      } else if(r){
+        L=r.right+16; T=r.top+r.height/2-bh/2;
+      } else { L=(W-bw)/2; T=(H-bh)/2; }
+      L=Math.max(M,Math.min(W-bw-M,L)); T=Math.max(M,Math.min(H-bh-M,T));
+      bubble.style.left=L+'px'; bubble.style.top=T+'px'; bubble.style.visibility='visible';
+      var btn=document.getElementById('bq-tour-next');
+      var done=false;
+      function go(){ if(done) return; done=true; try{btn.removeEventListener('click',go);}catch(e){} resolve(true); }
+      btn.addEventListener('click',go);
+      (function poll(){ if(_abort){ if(!done){done=true; resolve(false);} return; } if(!done) setTimeout(poll,120); })();
+    });
+  }
+
+  function ghostTo(el){
+    var r=el.getBoundingClientRect();
+    ghost.style.left=(r.left+r.width/2)+'px'; ghost.style.top=(r.bottom+6)+'px'; ghost.style.opacity=1;
+  }
+  function ghostHide(){ghost.style.opacity=0;}
+  function ghostClick(){ghost.classList.remove('gc');void ghost.offsetWidth;ghost.classList.add('gc');}
+
+  function animDrag(fromEl,toEl){
+    return new Promise(function(resolve){
+      var fr=fromEl.getBoundingClientRect(),tr=toEl.getBoundingClientRect();
+      dragEl.innerHTML=fromEl.outerHTML;
+      dragEl.style.cssText='position:fixed;z-index:9118;pointer-events:none;opacity:.85;display:block;'
+        +'left:'+fr.left+'px;top:'+fr.top+'px;width:'+fr.width+'px;height:'+fr.height+'px;'
+        +'border-radius:16px;transition:left 2s ease-in-out,top 2s ease-in-out,opacity .5s;';
+      void dragEl.offsetWidth;
+      var tx=tr.left+tr.width/2-fr.width/2, ty=tr.top+tr.height/2-fr.height/2;
+      dragEl.style.left=tx+'px'; dragEl.style.top=ty+'px';
+      setTimeout(function(){dragEl.style.opacity=0;},1900);
+      setTimeout(function(){dragEl.style.display='none';resolve();},2500);
+    });
+  }
+
+  // 唯一的交互原语：光圈亮起真按钮 + 气泡贴旁边(👉) + 等用户真点它。点了才 resolve。
+  // 只有角落「跳过演示✕」可退出；没有底部条、没有「跳过此步」。
+  function pointAndClick(el,title,body,side,pad,round){
+    return new Promise(function(resolve){
+      if(!el){ resolve(false); return; }
+      holeOn(el, pad==null?8:pad, round==null?10:round);
+      placeBubble(el,title,body,side||'left');
+      var settled=false;
+      var onClick=function(){ if(settled) return; settled=true;
+        try{el.removeEventListener('click',onClick,true);}catch(e){}
+        hideBubble(); resolve(true); };
+      el.addEventListener('click',onClick,true);
+    });
+  }
+
+  // 真积木缓动移到魔法区（真 DOM 位移，不做假替身），到位后调真实落卡函数
+  function moveRealBlock(block,toEl){
+    return new Promise(function(resolve){
+      var fr=block.getBoundingClientRect(),tr=toEl.getBoundingClientRect();
+      var ph=document.createElement('div'); // 占位，保持积木条排版不塌
+      ph.style.cssText='width:'+fr.width+'px;height:'+fr.height+'px;flex:0 0 auto;';
+      block.parentNode.insertBefore(ph,block);
+      var oldCss=block.style.cssText;
+      block.style.cssText='position:fixed;z-index:9119;margin:0;left:'+fr.left+'px;top:'+fr.top+'px;'
+        +'width:'+fr.width+'px;height:'+fr.height+'px;transition:left 1.6s ease-in-out,top 1.6s ease-in-out;pointer-events:none;';
+      void block.offsetWidth;
+      var tx=tr.left+tr.width/2-fr.width/2, ty=tr.top+40;
+      block.style.left=tx+'px'; block.style.top=ty+'px';
+      setTimeout(function(){
+        block.style.cssText=oldCss; if(ph.parentNode) ph.parentNode.removeChild(ph);
+        resolve();
+      },1750);
+    });
+  }
+
+  // 演示期间临时把某积木显示名改成 label（本体 data-name 不改），演示后还原
+  var _renameSlot=null;
+  function tempRename(block,label){
+    if(!block) return;
+    var el=block.querySelector('.qn'); if(!el) return;
+    _renameSlot={el:el,old:el.textContent};
+    el.textContent=label;
+  }
+  function restoreRename(){ if(_renameSlot){ try{_renameSlot.el.textContent=_renameSlot.old;}catch(e){} _renameSlot=null; } }
+
+  // 温故区填两个词（切到温故子标签→填 textarea→识别整理）
+  function fillReview(){
+    try{
+      if(window.CorpusV2 && CorpusV2.switchSub) CorpusV2.switchSub('words','wold');
+    }catch(e){}
+    var rv=document.getElementById('vi-old');
+    if(rv){ rv.value='起床\n上学'; rv.dispatchEvent(new Event('input',{bubbles:true})); }
+  }
+
+  // 逐字打字（打字机效果），幽灵光标停在输入框、能看到输入过程
+  function typeInto(el,text){
+    return new Promise(function(resolve){
+      el.value=''; el.focus();
+      var r=el.getBoundingClientRect();
+      ghost.style.left=(r.left+18)+'px'; ghost.style.top=(r.top+22)+'px'; ghost.style.opacity=1;
+      var i=0;
+      (function step(){
+        if(_abort){ resolve(); return; }
+        el.value=text.slice(0,i);
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+        i++;
+        if(i<=text.length){ setTimeout(step,90); }
+        else { ghost.style.opacity=0; resolve(); }
+      })();
+    });
+  }
+
+  var _abort=false;
+  function cleanup(skipped){
+    _abort=true; touring=false; maskOff(); dragEl.style.display='none'; ghostHide(); restoreRename();
+    // 演示完/跳过 → 直接刷新整页，最干净（清掉演示卡、语料输入、临时状态）
+    if(typeof showToast==='function') showToast(skipped?'已跳过演示，正在复原…':'演示完毕，正在复原…',1500);
+    setTimeout(function(){ try{ location.reload(); }catch(e){} },700);
+  }
+  skipBtn.onclick=function(){if(touring) cleanup(true);};
+
+  /* ═══ §V518 新增导览原语 ═══ */
+
+  // 在若干候选选择器里找第一个可见元素；找不到再按「按钮可见文字」兜底匹配（应对动态类名）
+  function findCtl(root0,selectors,texts){
+    root0=root0||document;
+    for(var i=0;i<(selectors||[]).length;i++){
+      var el=root0.querySelector(selectors[i]);
+      if(el&&el.offsetParent!==null) return el;
+    }
+    if(texts&&texts.length){
+      var cand=[].slice.call(root0.querySelectorAll('button,[role="button"],.dc-mini,[data-action],span,a'));
+      for(var t=0;t<texts.length;t++){
+        for(var k=0;k<cand.length;k++){
+          var c=cand[k];
+          if(c.offsetParent===null) continue;
+          var txt=(c.textContent||'').replace(/\s+/g,'');
+          if(txt.indexOf(texts[t])>=0){
+            // 命中文字的可能是内层 span，回退到最近的可点祖先
+            var btn=c.closest('button,[role="button"],.dc-mini,[data-action]')||c;
+            if(btn.offsetParent!==null) return btn;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // 常驻「手型」标记：贴在目标旁，一直上下轻点，直到 handOff()。区别于气泡里的 👉，这是页面上的实体手。
+  var handEl=document.getElementById('bq-tour-hand');
+  if(!handEl){
+    handEl=document.createElement('div'); handEl.id='bq-tour-hand';
+    handEl.textContent='👆'; handEl.style.display='none';
+    document.body.appendChild(handEl);
+  }
+  function handAt(el,dx,dy){
+    if(!el){handOff();return;}
+    var r=el.getBoundingClientRect();
+    var x=r.left+r.width/2+(dx||0), y=r.bottom+2+(dy||0);
+    x=Math.max(20,Math.min(window.innerWidth-20,x));
+    y=Math.max(20,Math.min(window.innerHeight-44,y));
+    handEl.textContent='👆';
+    handEl.style.left=x+'px'; handEl.style.top=y+'px'; handEl.style.display='block';
+  }
+  function handOff(){ handEl.style.display='none'; }
+
+  // 让「洞 + 气泡 + 常驻手」一起指向 el，并等用户真正完成某个动作。
+  //   done(resolve) 由调用方注册真实事件；返回 Promise。跳过时 _abort=true。
+  function waitUser(el,title,body,side,pad,round,bind){
+    return new Promise(function(resolve){
+      if(!el){ resolve(false); return; }
+      holeOn(el, pad==null?8:pad, round==null?10:round);
+      placeBubble(el,title,body,side||'left');
+      handAt(el);
+      var settled=false;
+      function finish(ok){ if(settled) return; settled=true; try{cleanupBind();}catch(e){} hideBubble(); handOff(); /* 保持遮罩(洞)常亮，避免步骤衔接出现无遮罩空档；下一步 switchHole 只移动洞 */ resolve(ok); }
+      var cleanupBind=bind(el,finish);   // bind 返回解绑函数
+      // 全程无计时器兜底：只等用户真实动作完成，或点「跳过演示」(_abort) 退出
+      (function poll(){ if(_abort){ finish(false); return; } if(!settled) setTimeout(poll,120); })();
+    });
+  }
+
+  // 绑定：真「点击」
+  function bindClick(el,finish){
+    var h=function(){ finish(true); };
+    el.addEventListener('click',h,true);
+    return function(){ try{el.removeEventListener('click',h,true);}catch(e){} };
+  }
+  // 绑定：真「双击」（也接受快速两次 pointerup，移动端友好）
+  function bindDblClick(el,finish){
+    var h=function(){ finish(true); };
+    el.addEventListener('dblclick',h,true);
+    var lastT=0,hp=function(){ var n=Date.now(); if(n-lastT<400){ finish(true);} lastT=n; };
+    el.addEventListener('pointerup',hp,true);
+    return function(){ try{el.removeEventListener('dblclick',h,true);el.removeEventListener('pointerup',hp,true);}catch(e){} };
+  }
+  // 绑定：等一张「新题卡」出现在魔法区（拖入或双击后都会生成）——用于「拖积木」这一步，
+  //   既接受真拖拽落卡、也接受用户改用双击，二者皆可完成（都触发 bqHandleBlockActivate）。
+  function bindCardAppear(el,finish){
+    var stop=false;
+    (function watch(){
+      if(stop) return;
+      var c=document.querySelector('#magic-canvas .drop-card:not([data-tour-demo])');
+      if(c){ finish(true); return; }
+      setTimeout(watch,200);
+    })();
+    return function(){ stop=true; };
+  }
+  // 绑定：等某个「计数」变化（题项数增/减）。getN 返回当前数量，dir=+1/-1。
+  function bindCountChange(getN,dir){
+    return function(el,finish){
+      var base=getN(); var stop=false;
+      (function watch(){
+        if(stop) return;
+        var n=getN();
+        if(dir>0 && n>base){ finish(true); return; }
+        if(dir<0 && n<base){ finish(true); return; }
+        setTimeout(watch,180);
+      })();
+      return function(){ stop=true; };
+    };
+  }
+
+  // 撒花：纯 CSS/JS，自包含，无外部依赖
+  function confetti(ms){
+    ms=ms||1800;
+    var wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;inset:0;z-index:9300;pointer-events:none;overflow:hidden;';
+    var colors=['#8B5CF6','#7C3AED','#F59E0B','#EC4899','#10B981','#3B82F6','#FDE047'];
+    var N=90;
+    for(var i=0;i<N;i++){
+      var p=document.createElement('div');
+      var sz=6+Math.random()*8;
+      var left=Math.random()*100;
+      var dur=1.1+Math.random()*1.1;
+      var delay=Math.random()*0.3;
+      var rot=Math.random()*360;
+      var col=colors[i%colors.length];
+      var round=Math.random()<0.5?'50%':'2px';
+      p.style.cssText='position:absolute;top:-16px;left:'+left+'%;width:'+sz+'px;height:'+sz+'px;'
+        +'background:'+col+';border-radius:'+round+';opacity:.95;'
+        +'transform:rotate('+rot+'deg);animation:bqConfFall '+dur+'s '+delay+'s ease-in forwards;';
+      wrap.appendChild(p);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(function(){ try{wrap.remove();}catch(e){} }, ms+400);
+  }
+
+  // 找某积木（按显示名）
+  function blockByName(name){
+    return [].slice.call(document.querySelectorAll('.qblock')).find(function(b){return b.dataset.name===name;});
+  }
+  // 等抽屉收起后，题卡区某积木稳定就位
+  function findDemoCard(){
+    return document.querySelector('#magic-canvas .drop-card:not([data-tour-demo])');
+  }
+  // 数当前题卡里的题项数（连线卡=.pair；兼容其他题型的常见行类）
+  function itemCount(card){
+    if(!card) return 0;
+    return card.querySelectorAll('.pair,.dc-frow,.dc-item-row,.qi-row,.item-row').length;
+  }
+
+  async function startTour(){
+    if(touring) return; touring=true; _abort=false;
+    maskOn(); holeOff(); bubble.style.display='none';   // 导览一开始就罩上暗层，全程保持
+    var handle=document.getElementById('drawer-handle');
+    var recognize=document.getElementById('cv2-btn-recognize');
+    var confirm=document.getElementById('cv2-btn-confirm');
+    var canvas=document.getElementById('magic-canvas');
+    var myQuizBtn=document.getElementById('my-quiz-btn');
+    // §V518 修复：导览开始时把抽屉强制「收起」到已知状态。
+    //   有时浏览器缓存会让抽屉一开始就是打开的，那样「点把手拉开」这步就自相矛盾。
+    //   先统一收起，保证第一步永远是「关着→提示用户拉开」。
+    try{
+      var _dw=document.querySelector('.drawer');
+      if(_dw && _dw.classList.contains('open')){
+        if(handle){ handle.click(); }               // 把手 onclick 即真正的开合逻辑 __bqToggleDrawer
+        await waitDrawerClosed();
+        await wait(300);
+      }
+    }catch(e){}
+    if(_abort) return;
+    try{
+      /* ═══ 第一步 · 备料 ═══ */
+      await wait(300); if(_abort) return;
+      // ① 用户点把手
+      await waitUser(handle,'第一步 · 备料','点击这个亮起的<b>「语料区」</b>把手，可以拉开抽屉！','left',6,12,bindClick); if(_abort) return;
+      // 点完把手：洞持续粘住把手滑到打开位（transition .4s），到位后立刻收洞——不让把手继续亮着（修图一）
+      await holeGlue(handle,6,12,1300); if(_abort) return;
+      await waitDrawerOpen(); if(_abort) return;
+      holeOff(); handOff();                    // 抽屉开好，收掉把手上的洞
+      await waitStable(recognize); if(_abort) return;
+      // 自动填料（打字机 + 温故两词 + 题卷标题——标题是「语料确认」的必填闸，属于演示素材一并填好）
+      try{
+        var _ti=document.getElementById('quiz-title-input');
+        if(_ti && !(_ti.value||'').trim()){ _ti.value='示例课'; _ti.dispatchEvent(new Event('input',{bubbles:true})); _ti.dispatchEvent(new Event('change',{bubbles:true})); }
+      }catch(e){}
+      var ta=document.getElementById('vi-corpus');
+      if(ta){ await typeInto(ta,'唱歌\n跳舞\n看书'); }
+      await wait(150); if(_abort) return;
+      fillReview();
+      await wait(500); if(_abort) return;
+      // ② 用户点识别：光圈套住识别按钮，用户点了就识别语料，和「把手」「语料确认」完全一样
+      await waitUser(recognize,'语料【识别】','语料已自动为您填好，点击<b>【识别】</b>按钮，词句会整理到右侧词句库！','left',3,8,bindClick); if(_abort) return;
+      holeOff(); handOff();   // 下一步（配图）不挖洞且抽屉会加宽——洞立即撤走，绝不滞留在旧位置
+      // 若语料区之前有旧数据，app 会弹「重新识别会覆盖」确认浮层——洞移到它的确认按钮上，让你自己点
+      for(var _rc=0;_rc<3;_rc++){
+        var _rcOk=document.querySelector('#cv2-inline-confirm .rp-btn-ok, #cv2-inline-confirm .ic-btn-ok');
+        if(_rcOk&&_rcOk.offsetParent){
+          await switchHole(_rcOk,6,10); if(_abort) return;
+          await waitUser(_rcOk,'确认一下','弹出了覆盖确认——点亮起的按钮继续识别。','below',6,10,bindClick); if(_abort) return;
+          holeOff(); handOff();
+          break;
+        }
+        await wait(120);
+      }
+      await wait(300); if(_abort) return;      // 等识别结果渲染
+      // §V524 配图步骤：不挖洞，手型 👆 放在 +图片 按钮正下方，气泡放词条下方空白区
+      var _prevDW=getComputedStyle(document.documentElement).getPropertyValue('--drawer-w');
+      try{
+        var _wantW=Math.round(Math.min(window.innerWidth-40, Math.max(820, window.innerWidth*0.68)));
+        document.documentElement.style.setProperty('--drawer-w', _wantW+'px');
+      }catch(e){}
+      await wait(300); if(_abort) return;
+      var imgBtn=null;
+      for(var _ib=0;_ib<12 && !imgBtn;_ib++){
+        var _cand=findCtl(document,['.vtag .img-btn','.img-btn','.qb-img-btn'],['+\u56fe\u7247','\ud83d\udcf7']);
+        if(_cand){ var _r2=_cand.getBoundingClientRect();
+          if(_r2.width>6 && _r2.left>40 && _r2.right<window.innerWidth-4 && _r2.top>90){ imgBtn=_cand; break; } }
+        await wait(120);
+      }
+      holeOff(); handOff();  // 配图步骤全程不挖洞
+      if(imgBtn){
+        var _ir=imgBtn.getBoundingClientRect();
+        // 手型 👆 放在 +图片 按钮正下方（向上指）
+        handEl.textContent='\ud83d\udc46';
+        handEl.style.left=Math.round(_ir.left+_ir.width/2-18)+'px';
+        handEl.style.top=Math.round(_ir.bottom+4)+'px';
+        handEl.style.display='block';
+        // 气泡放在手型下方空白区，与 +图片 列左对齐
+        var _bodyTxt='如需使用图文配对题型，我们可以给词语配图，这一步我们先不做！';
+        bubble.innerHTML='<div class="tb-title">给词语配图</div>'+_bodyTxt
+          +'<button type="button" id="bq-tour-next" style="float:right;margin:2px 0 0 12px;cursor:pointer;border:none;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#8B5CF6,#7C3AED);">下一步 →</button><div style="clear:both"></div>';
+        bubble.style.visibility='hidden'; bubble.style.display='block'; bubble.style.left='0'; bubble.style.top='0';
+        var _bbr=bubble.getBoundingClientRect(), _bw2=_bbr.width||300, _bh2=_bbr.height||110;
+        var _W=window.innerWidth, _M=12;
+        var _bl2=Math.max(_M, Math.min(_W-_bw2-_M, _ir.left-_bw2+_ir.width));
+        var _bt2=Math.round(_ir.bottom+50);
+        if(_bt2+_bh2>window.innerHeight-_M){ _bt2=Math.max(_M, window.innerHeight-_bh2-_M); }
+        bubble.style.left=_bl2+'px'; bubble.style.top=_bt2+'px'; bubble.style.visibility='visible';
+        await new Promise(function(res){
+          var done=false;
+          function go(){ if(done) return; done=true; try{document.getElementById('bq-tour-next').removeEventListener('click',go);}catch(e){} res(true); }
+          document.getElementById('bq-tour-next').addEventListener('click',go);
+          (function poll(){ if(_abort){if(!done){done=true;res(false);} return;} if(!done) setTimeout(poll,120); })();
+        }); if(_abort) return;
+        hideBubble(); handOff();
+      } else {
+        await tellStep('给词语配图','如需使用图文配对题型，我们可以给词语配图，这一步我们先不做！'); if(_abort) return;
+        hideBubble();
+      }
+      try{ if(_prevDW && _prevDW.trim()){ document.documentElement.style.setProperty('--drawer-w', _prevDW.trim()); }}catch(e){}
+      await waitStable(confirm); if(_abort) return;
+      await wait(120); if(_abort) return;
+      // ③ 用户点语料确认（点后抽屉自动收起）
+      await waitUser(confirm,'语料确认','点击<b>「语料确认」</b>按钮，会启用整理好的语料，抽屉会自动收起，备料完成！','left',6,10,bindClick); if(_abort) return;
+      await waitDrawerClosed(); if(_abort) return;
+      holeOff(); handOff();
+      await wait(450); if(_abort) return;
+
+      /* ═══ 第二步 · 出题（两种手法都体验）═══ */
+      // (A) 双击体验：双击「中英互译」→ 生成第一张卡（保留，不删除，避免打乱状态）
+      var b1=blockByName('中英互译');
+      if(b1){
+        await switchHole(b1,8,18); if(_abort) return;
+        await waitUser(b1,'第二步 · 出题(双击积木)','试试<b>双击「中英互译」</b>题型积木——双击等于把它丢进下方魔法区，题卡会自动生成！','below',8,18,bindCardAppear); if(_abort) return;
+        // 等这张卡出现（bindCardAppear 已确认有新卡，这里等到拿到它为止，无超时）
+        var teachCard=findDemoCard();
+        while(!teachCard){ if(_abort) return; await wait(200); teachCard=findDemoCard(); }
+        if(teachCard){
+          teachCard.dataset.tourDemo='1';
+          await switchHole(teachCard,12,18); if(_abort) return;
+          holeOff(); handOff();
+          await tellStep('题卡生成','手法一：双击任意题型积木，题卡自动生成了 👍'); if(_abort) return;
+          hideBubble();   // 保持遮罩(洞)常亮，下一步 switchHole 移动到拖拽积木
+        }
+      }
+      // (B) 拖拽体验：拖「汉拼对照」到魔法区（也接受改用双击）→ 这张作为要打磨的卡
+      var b2=blockByName('汉拼对照')||blockByName('拼音基础');
+      if(!b2){cleanup(true);return;}
+      await switchHole(b2,8,18); if(_abort) return;
+      await waitUser(b2,'第二步·出题（拖拽积木)','现在按住亮起的<b>「'+(b2.dataset.name||'')+'」</b>，把它拖进下方魔法区则松手！','below',8,18,bindCardAppear); if(_abort) return;
+
+      var demoCard=findDemoCard();
+      while(!demoCard){ if(_abort) return; await wait(200); demoCard=findDemoCard(); }
+      demoCard.dataset.tourDemo='1';
+      holeOff(); handOff();
+      await tellStep('题卡生成','手法二：拖拽任意题型积木，题卡自动生成了 👍'); if(_abort) return;
+      hideBubble();
+
+      /* ═══ 第三步 · 打磨：增 → 删 → 焕新 → 分数 → 入选 ═══
+         每个"操作"提示紧贴按钮；点一下即完成、立即收洞往下，不再靠数题项个数判定（修图四/图五：点过了洞还摆着、能一直点）。 */
+      // 进「增/删/焕新」这段可选体验前，先总说明：这几步都是选做，不是必须
+      holeOff(); handOff();
+      await tellStep('打磨题卡 ·选做功能预览','体验「增题、删题、焕新」，我们开始吧！'); if(_abort) return;
+      hideBubble();
+      // 增：洞套「新增题项」，用户点，多出一道空白题项
+      var addBtn=findCtl(demoCard,['.dc-additem','.dc-add-item','[data-action="add"]'],['新增题项','＋ 新增','增题','＋']);
+      var _added=false;
+      if(addBtn){
+        await switchHole(addBtn,8,12); if(_abort) return;
+        await waitUser(addBtn,'新增题项','点亮起的<b>「＋ 新增题项」</b>——马上新增一个小题项！','above',8,12,bindClick); if(_abort) return;
+        holeOff(); handOff();
+        await wait(400); if(_abort) return;
+        demoCard=findDemoCard()||demoCard;
+        _added=true;
+      }
+      // 删：洞套住「最后一个可见 ✕」（即刚新增的题项），点一次即完成。
+      var delBtn=null;
+      var _vx=[].slice.call((demoCard||document).querySelectorAll('.dc-item-x')).filter(function(x){
+        var r=x.getBoundingClientRect(); return r.width>4 && r.height>4 && x.offsetParent!==null;
+      });
+      if(_vx.length) delBtn=_vx[_vx.length-1];
+      if(delBtn){
+        await switchHole(delBtn,5,9); if(_abort) return;
+        await waitUser(delBtn,'删除题项','点亮起的<b>【✕】</b>，我们可以把任意题项删掉——增删就是这么简单！','left',5,9,bindClick); if(_abort) return;
+        holeOff(); handOff();
+        await wait(350); if(_abort) return;
+      } else {
+        holeOff(); handOff();
+        await tellStep('删除题项','每个题项右侧都有个 <b>✕</b> 可以删掉它（鼠标移到题项上就会出现）。这步先略过，我们继续～'); if(_abort) return;
+        hideBubble();
+      }
+      demoCard=findDemoCard()||demoCard;
+      // 焕新：点一次即完成（打乱题项/选项排列顺序，不是出新题）
+      var renewBtn=findCtl(demoCard,['.dc-mini-regen','.dc-mini-renew','[title*="焕新"]'],['焕新']);
+      if(renewBtn){
+        await switchHole(renewBtn,8,12); if(_abort) return;
+        await waitUser(renewBtn,'题卡焕新','点亮起的<b>「✦ 焕新」</b>——会随机打乱选项、题项的排列顺序（同样的题，换个排法，适合入选做AB卷）。','above',8,12,bindClick); if(_abort) return;
+        holeOff(); handOff();
+        await wait(500); if(_abort) return;
+        demoCard=findDemoCard()||demoCard; if(demoCard) demoCard.dataset.tourDemo='1';
+      }
+      // 进「分数→入选」这两步必做前，先总说明：从这里开始是必经步骤
+      holeOff(); handOff();
+      await tellStep('打磨题卡·必做两步','分数 → 入选'); if(_abort) return;
+      hideBubble();
+      // 分数（先设分）：点「分数」展开分值框 → 填每小题分值。app 的闸：分要在入选前设好，入选才带分落库。
+      var scoreBtn=findCtl(demoCard,['.dc-mini-score','[title*="分数"]'],['分数']);
+      if(scoreBtn){
+        await switchHole(scoreBtn,8,12); if(_abort) return;
+        await waitUser(scoreBtn,'设定分数（1/2）','先点亮起的<b>「分数」</b>按钮，每小题的分值框会自动展开！','above',8,12,bindClick); if(_abort) return;
+        // 等分值框真的出现再走（无超时，用户点了分数它必然展开）
+        while(!findCtl(demoCard,['.dsp-each','.dsp-in.dsp-each'],[])){ if(_abort) return; await wait(150); }
+      }
+      var scoreInp=findCtl(demoCard,['.dsp-each','.dsp-in.dsp-each'],[]);
+      if(scoreInp){
+        await switchHole(scoreInp,6,8); if(_abort) return;
+        await waitUser(scoreInp,'输入分值（2/2）','在亮起的框里输入每小题分值（例如 2）。','above',6,8,
+          function(el,finish){
+            var h=function(){ if((el.value||'').trim()!==''){ finish(true); } };
+            el.addEventListener('input',h,true); el.addEventListener('change',h,true);
+            el.focus();
+            return function(){ try{el.removeEventListener('input',h,true);el.removeEventListener('change',h,true);}catch(e){} };
+          }); if(_abort) return;
+        holeOff(); handOff();
+        await wait(300); if(_abort) return;
+        demoCard=findDemoCard()||demoCard;
+      }
+      // 入选（最后一步）：分设完后 app 会让「入选」按钮绿灯闪烁提示你点它。
+      //   这里重新抓「最新位置」的入选按钮（填分后面板展开可能让它移位——修：闪烁但点不中），
+      //   洞粘住它、并说明"正在闪、点它"，点完等右上角数字 +1 才算成功。
+      var _bankBefore=readBankCount();
+      function _liveSave(){ return findCtl(demoCard,['.level-panel.active .dc-mini-save','.dc-mini-save'],['入选','√ 入选']); }
+      var saveBtn=_liveSave();
+      var _selOK=false;
+      if(saveBtn){
+        // 洞先粘住入选按钮的实时位置（填分后它可能刚移动过），对齐它现在真正所在的地方
+        await holeGlue(_liveSave,10,14,600); if(_abort) return;
+        saveBtn=_liveSave()||saveBtn;
+        await waitUser(saveBtn,'题目入选','<b>「√ 入选」</b>按钮在<b>绿灯闪烁</b>，请点击将这道题入选进题卷！','above',10,14,bindClick); if(_abort) return;
+        // 等徽标真的 +1（落库成功）。无超时、无代点；正常流程点完即落库。
+        _selOK=await waitCountBadge(_bankBefore); if(_abort) return;
+        if(window.finalQuizBank) window.finalQuizBank.forEach(function(q){q._tourDemo=true;});
+        demoCard=findDemoCard()||demoCard;
+      }
+
+      /* ═══ 第四步 · 我的题卷 → PDF演示 → 返回工作台（只有真入选成功才引导查看）═══ */
+      if(_selOK && readBankCount()>0){
+        await switchHole(myQuizBtn,8,12); if(_abort) return;
+        await waitUser(myQuizBtn,'查看题卷','入选的题都进入了相应的题卷（看右上角数字），请点击查看！','below',8,12,bindClick); if(_abort) return;
+        var libOv=document.getElementById('lib-overlay');
+        while(!(libOv&&libOv.classList.contains('show'))){ if(_abort) return; await wait(200); libOv=document.getElementById('lib-overlay'); }
+        await wait(500); if(_abort) return;
+        // PDF 步骤：洞套 PDF 按钮，点它进入下载页面（浏览器打印弹窗是系统窗口，页面提示画不上去，
+        // 弹窗里不加任何提示；不管【保存】还是【取消】，关闭后 JS 恢复，直接亮「返回工作台」）。
+        var pdfBtn=findCtl(document,['.lib-ce-cube.r','button[onclick*="exportLibraryPDF"]'],['PDF']);
+        if(pdfBtn){
+          holeOn(pdfBtn,8,12);
+          placeBubble(pdfBtn,'进入下载页面','点击右侧👉 PDF 按钮进入下载页面！','left');
+          await new Promise(function(res){
+            var done=false;
+            function fin(){ if(done) return; done=true; try{unb();}catch(e){} res(true); }
+            var unb=bindClick(pdfBtn,fin);
+            (function poll(){ if(_abort){ fin(); return; } if(!done) setTimeout(poll,120); })();
+          }); if(_abort) return;
+          hideBubble(); holeOff();
+          await wait(300); if(_abort) return;   // 打印弹窗关闭、页面恢复后稍稳一下
+        }
+        // 返回工作台：光圈套住按钮
+        var backBtn=findCtl(document,['.pt-back'],['返回工作台','← 返回']);
+        if(backBtn){
+          await switchHole(backBtn,8,12); if(_abort) return;
+          await waitUser(backBtn,'返回工作台','点亮起的<b>「← 返回工作台」</b>，回到工作台页面！','right',8,12,bindClick); if(_abort) return;
+          holeOff(); handOff();
+          await wait(400); if(_abort) return;
+        }
+      }
+
+      /* ═══ 收尾：撒花 + 提示语（在遮罩上、带下一步）→ 你点下一步才刷新 ═══ */
+      holeOff(); handOff(); ghostHide();      // 收洞但保留暗层 scrim，完成提示在遮罩之上
+      if(readBankCount()>0){
+        confetti(4000);                         // 延长到 4s，确保撒花看得清
+        await tellStep('🎉 演示完毕！','你已经走完 <b>备料 → 出题 → 打磨 → 入选 → 下载题卷</b> 的完整流程！点击下方👇按钮，开始正式出题吧！','结束演示'); if(_abort) return;
+      } else {
+        await tellStep('演示告一段落','流程走完啦～这道题<b>还没入选进题卷</b>（右上角数字为空）。你随时可以点题卡上的<b>「√ 入选」</b>把它收进「我的题卷」。','结束演示'); if(_abort) return;
+      }
+      hideBubble();
+      cleanup(false);
+    }catch(e){console.warn('[tour]',e);cleanup(true);}
+  }
+  window.__startTour=startTour;
+})();
 </script>
 </body>
 </html>
