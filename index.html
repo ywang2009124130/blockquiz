@@ -11102,6 +11102,10 @@ html[lang="ar"] .blocks-zone-mark-i18n{
 /* §V522 常亮暗层：导览全程都罩着（包括语料区输入、步骤之间、完成提示时）。
    有高亮目标时显示挖洞的 hole（自带更暗投影盖住 scrim）；无目标时隐藏 hole、由 scrim 继续暗屏——保证「永远有遮罩」。 */
 #bq-tour-scrim{position:fixed;inset:0;z-index:9099;background:rgba(22,8,46,.68);pointer-events:none;display:none;}
+/* §V518.22 遮罩真隔离（用户定）：透明全屏 SVG 承担点击拦截——evenodd 路径「外框减洞」，
+   遮蔽处不可点（防误触），洞内点击穿透到真按钮；视觉仍由 scrim/hole 负责，零视觉变化。 */
+#bq-tour-block{position:fixed;inset:0;width:100vw;height:100vh;z-index:9110;display:none;pointer-events:none;}
+#bq-tour-block path{fill:rgba(0,0,0,0);pointer-events:fill;}
 #bq-tour-hole{position:fixed;z-index:9100;border-radius:14px;pointer-events:none;display:none;
   box-shadow:0 0 0 9999px rgba(22,8,46,.68), 0 0 0 3px #A78BFA, 0 0 28px 8px rgba(167,139,250,.5), inset 0 0 16px rgba(167,139,250,.28);
   transition:none;}
@@ -42382,7 +42386,16 @@ window.MatchGen = (function(){
               newPair = { cn:'', en:'', _isReview:false, imgSrc:null, _imgSrc:null, _hasImg:false, _imgSlot:false, _needManual:true };
               _remindNeedManual();
             } else {
-              newPair = { cn:nw.w, en:(nw.en||''), _isReview:!!nw._isReview, imgSrc:(nw.img||null), _imgSrc:(nw.img||null), _hasImg:!!nw.img, _imgSlot:(formData._subtype==='auto_img_link' && !!nw.img) };
+              /* §V518.21 修复：汉拼对照「新增题项」拼音丢失——_pickNextWord 的汉拼池字段是 py 不是 en，
+                 原 en:(nw.en||'') 把拼音丢成空（右栏出现空白框）。取值链：en → py → 按 subtype 现查兜底。 */
+              let _second=(nw.en!=null && String(nw.en).trim()!=='') ? nw.en : (nw.py||'');
+              if(!_second){
+                try{
+                  if(formData._subtype==='auto_py_link' && typeof _autoPyOf==='function') _second=_autoPyOf(nw.w)||'';
+                  else if(formData._subtype==='auto_en_link' && typeof _autoEnOf==='function') _second=_autoEnOf(nw.w)||'';
+                }catch(_e){}
+              }
+              newPair = { cn:nw.w, en:_second, _isReview:!!nw._isReview, imgSrc:(nw.img||null), _imgSrc:(nw.img||null), _hasImg:!!nw.img, _imgSlot:(formData._subtype==='auto_img_link' && !!nw.img) };
               if(nw._isReview){ _remindReview('新增的题项用到了温故语料的词，请留意。'); }
             }
             formData.pairs.push(newPair);
@@ -55779,6 +55792,7 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
 </div>
 <!-- §V519 聚光灯导览·DOM节点：挖洞三合一 -->
 <div id="bq-tour-scrim"></div>
+<svg id="bq-tour-block" aria-hidden="true"><path d="" fill-rule="evenodd" clip-rule="evenodd"/></svg>
 <div id="bq-tour-hole"></div>
 <button type="button" id="bq-tour-skip" aria-label="跳过演示">跳过演示 ✕</button>
 <div id="bq-tour-bubble"></div>
@@ -55809,6 +55823,38 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
   var bubble=document.getElementById('bq-tour-bubble');
   var skipBtn=document.getElementById('bq-tour-skip');
   var dragEl=document.getElementById('bq-tour-drag');
+  /* §V518.22 遮罩真隔离：透明 SVG evenodd「外框减洞」拦截命中。
+     - blockFull()：全屏拦截（配合纯暗层 scrim / 自动演示阶段）
+     - blockHole(x,y,w,h,r)：拦截全屏但洞内放行（与 hole 同步逐帧重画）
+     - blockExtra(el)：额外放行一个元素（拖拽积木步骤给魔法区开第二个洞，drop 才落得进去）
+     - blockOff()：撤掉拦截（演示结束/跳过）
+     退出通道不受影响：跳过按钮 z9200、气泡「下一步」z9130 都在拦截层 z9110 之上。 */
+  var blockEl=document.getElementById('bq-tour-block');
+  var blockPath=blockEl?blockEl.querySelector('path'):null;
+  var _blockExtra=null, _blockLast=null;
+  function _rrPath(x,y,w,h,r){
+    r=Math.max(0,Math.min(r||0,w/2,h/2));
+    return 'M'+(x+r)+' '+y+'H'+(x+w-r)+'A'+r+' '+r+' 0 0 1 '+(x+w)+' '+(y+r)
+      +'V'+(y+h-r)+'A'+r+' '+r+' 0 0 1 '+(x+w-r)+' '+(y+h)
+      +'H'+(x+r)+'A'+r+' '+r+' 0 0 1 '+x+' '+(y+h-r)
+      +'V'+(y+r)+'A'+r+' '+r+' 0 0 1 '+(x+r)+' '+y+'Z';
+  }
+  function _blockPaint(holeRect,round){
+    if(!blockEl||!blockPath) return;
+    _blockLast={hole:holeRect,round:round};
+    var W=window.innerWidth,H=window.innerHeight;
+    var d='M0 0H'+W+'V'+H+'H0Z';
+    if(holeRect) d+=_rrPath(holeRect.x,holeRect.y,holeRect.w,holeRect.h,round||0);
+    if(_blockExtra){ try{ var r2=_blockExtra.getBoundingClientRect();
+      if(r2.width>0) d+=_rrPath(r2.left-4,r2.top-4,r2.width+8,r2.height+8,10); }catch(_e){} }
+    blockPath.setAttribute('d',d);
+    blockEl.style.display='block';
+  }
+  function blockFull(){ _blockPaint(null,0); }
+  function blockHole(x,y,w,h,r){ _blockPaint({x:x,y:y,w:w,h:h},r); }
+  function blockOff(){ _blockLast=null; _blockExtra=null; if(blockEl) blockEl.style.display='none'; }
+  function blockExtra(el){ _blockExtra=el||null; if(_blockLast) _blockPaint(_blockLast.hole,_blockLast.round); }
+  window.addEventListener('resize',function(){ if(_blockLast && blockEl && blockEl.style.display==='block') _blockPaint(_blockLast.hole,_blockLast.round); });
   var touring=false;
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
   // 轮询等目标「真正就位」：宽>8、可见、且连续两帧位置不再变（动画停稳）——替代盲等固定 ms
@@ -55853,10 +55899,10 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
 
   // scrim 与 hole 是「二选一」的暗层：有高亮目标时用 hole（挖洞暗层+亮圈），无目标时用 scrim（纯暗层）。
   //   两者背景同色，切换无闪；关键是任何时刻「至少有一个」在暗屏——绝不出现无遮罩。
-  function scrimOn(){ scrim.style.display='block'; }
+  function scrimOn(){ scrim.style.display='block'; blockFull(); }   /* §V518.22 纯暗层=全屏拦截 */
   function scrimOff(){ scrim.style.display='none'; }
   function maskOn(){ scrimOn(); skipBtn.style.display='block'; }
-  function maskOff(){ scrimOff(); hole.style.display='none'; skipBtn.style.display='none'; bubble.style.display='none'; ghost.style.opacity=0; }
+  function maskOff(){ scrimOff(); hole.style.display='none'; skipBtn.style.display='none'; bubble.style.display='none'; ghost.style.opacity=0; blockOff(); }   /* §V518.22 */
   function holeOff(){ hole.style.display='none'; scrimOn(); /* 收洞→改用纯暗层，屏幕仍暗 */ }
   // 把洞放到目标上；animate=false 时瞬移（避免从旧位置滑来），=true 时平滑跟随（用于目标本身在动，如把手滑开）
   function holeOn(el,pad,round){
@@ -55868,6 +55914,7 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
     hole.style.display='block';
     // 永远瞬间精准套在目标上，绝不做平移动画（平移途中会「洞对不上按钮」）
     Object.assign(hole.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:round+'px'});
+    blockHole(x,y,w,h,round);   /* §V518.22 拦截层同步挖洞：遮蔽处不可点，洞内放行 */
   }
   // 切换到新目标：瞬间精准重定位（无动画）
   function switchHole(el,pad,round){ holeOn(el,pad,round); return wait(0); }
@@ -55889,6 +55936,7 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
           hole.style.left=(r.left-pad)+'px'; hole.style.top=(r.top-pad)+'px';
           hole.style.width=(r.width+pad*2)+'px'; hole.style.height=(r.height+pad*2)+'px';
           hole.style.borderRadius=round+'px';
+          blockHole(r.left-pad,r.top-pad,r.width+pad*2,r.height+pad*2,round);   /* §V518.22 逐帧同步拦截洞 */
           if(lastX!==null){
             if(Math.abs(r.left-lastX)>0.5 || Math.abs(r.top-lastY)>0.5){ moved=true; still=0; }
             else { still++; }
@@ -56373,8 +56421,10 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
       // (A) 双击体验：双击「中英互译」→ 生成第一张卡（保留，不删除，避免打乱状态）
       var b1=blockByName('中英互译');
       if(b1){
+        blockExtra(canvas);   /* §V518.22 本步接受双击或拖拽落卡：给魔法区开第二个放行洞，其余照旧拦截 */
         await switchHole(b1,8,18); if(_abort) return;
         await waitUser(b1,'第二步 · 出题(双击积木)','试试<b>双击「中英互译」</b>题型积木——双击等于把它丢进下方魔法区，题卡会自动生成！','below',8,18,bindCardAppear); if(_abort) return;
+        blockExtra(null);
         // 等这张卡出现（bindCardAppear 已确认有新卡，这里等到拿到它为止，无超时）
         var teachCard=findDemoCard();
         while(!teachCard){ if(_abort) return; await wait(200); teachCard=findDemoCard(); }
@@ -56389,8 +56439,10 @@ if(document.readyState!=='loading'){__mzxIntroInit();}else{document.addEventList
       // (B) 拖拽体验：拖「汉拼对照」到魔法区（也接受改用双击）→ 这张作为要打磨的卡
       var b2=blockByName('汉拼对照')||blockByName('拼音基础');
       if(!b2){cleanup(true);return;}
+      blockExtra(canvas);   /* §V518.22 拖拽落点在魔法区（洞外）：给魔法区开第二个放行洞，drop 才落得进去 */
       await switchHole(b2,8,18); if(_abort) return;
       await waitUser(b2,'第二步·出题（拖拽积木)','现在按住亮起的<b>「'+(b2.dataset.name||'')+'」</b>，把它拖进下方魔法区则松手！','below',8,18,bindCardAppear); if(_abort) return;
+      blockExtra(null);
 
       var demoCard=findDemoCard();
       while(!demoCard){ if(_abort) return; await wait(200); demoCard=findDemoCard(); }
