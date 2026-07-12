@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>男女声直测 · 小积木</title>
+<style>
+body{font-family:system-ui;background:#F5F3FA;padding:30px 16px;margin:0}
+h1{font-size:18px;color:#3A2E55;text-align:center}
+.p{max-width:560px;margin:14px auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(90,60,160,.09)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+button{border:1.5px solid #C9BCE8;background:#FAF7FF;color:#5B3FA8;border-radius:10px;padding:10px 18px;font-size:15px;cursor:pointer;font-family:inherit;flex:1}
+button:hover{background:#F1E9FF}
+pre{background:#F7F4FE;border-radius:10px;padding:12px;font-size:12.5px;white-space:pre-wrap;word-break:break-all;min-height:80px;color:#3A2E55}
+.sel{display:flex;gap:8px;align-items:center;margin-bottom:10px;font-size:13px;color:#5B3FA8;flex-wrap:wrap}
+select{border:1.5px solid #E4DBF7;border-radius:8px;padding:6px 10px;font-family:inherit}
+</style></head><body>
+<h1>男女声直测</h1>
+<div class="p">
+<div class="sel">男声音色试不同的：
+  <select id="mv">
+    <option value="zh-CN-YunyangNeural">云扬 Yunyang（当前）</option>
+    <option value="zh-CN-YunxiNeural">云希 Yunxi</option>
+    <option value="zh-CN-YunjianNeural">云健 Yunjian</option>
+    <option value="zh-CN-YunxiaNeural">云夏 Yunxia</option>
+  </select>
+</div>
+<div class="row">
+  <button onclick="play('zh-CN-XiaoxiaoNeural','谢谢')">♀ 女声·晓晓</button>
+  <button onclick="play(document.getElementById('mv').value,'老师')">♂ 男声·选中款</button>
+</div>
+<pre id="log">点上面两个按钮，各听一次、看下面的结果。
+如果女声出声、男声报错 → 该男声音色在你的 Azure 区域不供应，换上面下拉里的其它款再试，能出声的就是可用的，把名字发给 Claude。</pre>
+</div>
+<script>
+const log=m=>document.getElementById('log').textContent=m;
+let au=null;
+async function play(voice,text){
+  log('请求中… voice='+voice);
+  try{
+    const r=await fetch('/api/tts?voice='+encodeURIComponent(voice)+'&text='+encodeURIComponent(text));
+    if(!r.ok){ log('❌ 失败 '+r.status+'\n'+(await r.text()).slice(0,300)+'\n\n→ 这个音色/配置有问题，换个男声试'); return; }
+    const url=URL.createObjectURL(await r.blob());
+    if(au){try{au.pause();}catch(e){}} au=new Audio(url); au.play();
+    log('✅ 成功出声 voice='+voice+'\n听到了就说明这个音色可用。');
+  }catch(e){ log('❌ 网络错误：'+e.message); }
+}
+</script></body></html>
