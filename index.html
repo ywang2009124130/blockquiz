@@ -2628,6 +2628,22 @@ body.bq-remind-manual .dc-field-wrap:has(input.dc-tj-sec:placeholder-shown) .rub
 .dc-imgjudge-tf{display:flex;gap:6px;flex:none;margin-left:auto;margin-right:22px;}
 /* 小题行其它元素靠左；√× 由上面的 margin-left:auto 单独推到行末靠右 */
 .dc-imgjudge-row{justify-content:flex-start;}
+
+/* §V667 判断题横向滚动条根治（用户报"怎么加了拖拉条"）：
+   病根不是滚动条本身，是内容撑破了列 ——
+   ① .dc-imgjudge 用 grid-template-columns:1fr 1fr，而 1fr = minmax(auto,1fr)，auto 下限 = min-content，
+      列宽拒绝小于行的 min-content(实测 702px)；702×2 + 28gap = 1432px 恒定 → 窗口 <1432 必然溢出；
+   ② 行内所有子项都是 flex:0 0 auto(num 24 + 材料位 126 + 题干 346 + 括号 68 + 正误 66 + 间距/内边距)，
+      一个都不肯让步，于是把 √/✗ 挤出行框；
+   ③ .dc-ta-wrap.dc-form 只写了 overflow-y:auto，CSS 规范会把另一轴的 visible 自动升级成 auto → 滚动条现身。
+   解法：让列可收缩(minmax(0,1fr)) + 只放题干框这一个"可让步位"(flex:0 1 auto)，窄屏时题干换行而非溢出；
+   ≤1120px 直接单列。§V19.337 的 fit-content 初衷(贴内容、PDF 不浪费)保留：宽屏依旧 hug，窄屏才收缩。 */
+.dc-imgjudge{grid-template-columns:repeat(2,minmax(0,1fr));}
+.dc-imgjudge-row{min-width:0;}
+.dc-imgjudge-word{flex:0 1 auto;min-width:0;}
+.dc-imgjudge-word .dc-field-wrap{max-width:100%;}
+.dc-imgjudge-word .dc-fi-opt{max-width:100%;}
+@media (max-width:1120px){ .dc-imgjudge{grid-template-columns:1fr;} }
 .dc-imgjudge-tfbtn{width:30px;height:30px;border-radius:8px;border:2px solid #ddd6f3;background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:#bbb;font-weight:700;transition:.12s;}
 .dc-imgjudge-tfbtn.on-t{border-color:#22a86a;background:#e6f7ef;color:#22a86a;}
 .dc-imgjudge-tfbtn.on-f{border-color:#e0594f;background:#fdeceb;color:#e0594f;}
@@ -50144,30 +50160,8 @@ function myqPaginate(){
   if(typeof syncAppScrollbarWidth==='function') syncAppScrollbarWidth();   // §V18.7 分页后重测滚动条，面板精确吸附
 }
 window.myqPaginate=myqPaginate;
-/* §V520.12 状态侦察器：window.__bqTrace 环形日志（灯槽存取/提交/复位全记录），F9 开关查看面板。
-   诊断残余竞态用：复现怪象后按 F9 截图日志即可。 */
-window.__bqTrace=window.__bqTrace||[];
-window.bqLog=function(tag,info){ try{ const t=window.__bqTrace; t.push(Date.now()%100000+' '+tag+' '+(info||'')); if(t.length>120) t.shift();
-  const p=document.getElementById('bqTracePanel'); if(p && p.style.display!=='none'){ p.textContent=t.slice(-40).join('\n'); p.scrollTop=p.scrollHeight; } }catch(_e){} };
-window.__bqToggleTrace=function(){
-  let p=document.getElementById('bqTracePanel');
-  if(!p){ p=document.createElement('pre'); p.id='bqTracePanel';
-    p.style.cssText='position:fixed;right:8px;bottom:8px;width:430px;max-height:46vh;overflow:auto;background:rgba(20,8,40,.93);color:#c9f7a8;font:10.5px/1.5 monospace;padding:10px;border-radius:10px;z-index:99999;white-space:pre-wrap;cursor:pointer;';
-    p.title='点击面板=复制全部日志';
-    p.addEventListener('click',function(){ try{ navigator.clipboard.writeText((window.__bqTrace||[]).join('\n')); p.style.outline='2px solid #7fbf5e'; setTimeout(()=>p.style.outline='',600); }catch(_e){} });
-    document.body.appendChild(p); }
-  p.style.display=(p.style.display==='none'?'block':'none');
-  p.textContent=(window.__bqTrace||[]).slice(-60).join('\n');
-};
-document.addEventListener('keydown',function(e){ if(e.key==='F9') window.__bqToggleTrace(); });
-/* §V520.14 诊断版（用户报 F9 无效）：左下角常驻半透明小虫钮，点击开关日志面板；点面板本体=复制全部日志 */
-(function(){
-  const b=document.createElement('button'); b.type='button'; b.textContent='\ud83d\udc1e'; b.title='状态侦察器（点开日志；点日志面板可复制）';
-  b.style.cssText='position:fixed;left:8px;bottom:8px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(60,20,112,.3);background:rgba(255,255,255,.75);font-size:14px;line-height:26px;padding:0;z-index:99998;opacity:.45;cursor:pointer;transition:.15s;';
-  b.addEventListener('mouseenter',()=>b.style.opacity='1'); b.addEventListener('mouseleave',()=>b.style.opacity='.45');
-  b.addEventListener('click',()=>window.__bqToggleTrace());
-  if(document.body) document.body.appendChild(b); else window.addEventListener('load',()=>document.body.appendChild(b));
-})();
+/* §V666 探针已摘除（发布版）：状态侦察器/bqLog/F9面板/左下小虫钮 整块移除；全部调用点均带 window.bqLog&& 守卫，静默跳过。 */
+
 function wireMyqZoom(){
   const range=document.getElementById('ptZoomRange');
   const val=document.getElementById('ptZoomVal');
