@@ -4,6 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=1280"/>
 <title>小积木 · BlockQuiz</title>
+<!-- §V668 浏览器标签小图标：小智全身（挥手，手脚完整）。内嵌 64px（放最后＝浏览器优先用它，单文件/存档也能显示）；favicon.ico、apple-touch-icon.png（手机加到主屏）与 index.html 同级发布 -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="64x64" href="data:image/png;base64,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">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Long+Cang&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
@@ -127,8 +131,14 @@
 
 /* ===== 启动页CSS结束 ===== */
 </style>
-<!-- 拼音库：pinyin-pro (UMD, 全汉字支持) -->
-<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.21.0/dist/index.js"></script>
+<!-- 拼音库：pinyin-pro 3.21.0 (UMD, 全汉字支持)
+     §V668 改为「本站同源自带为主、jsDelivr CDN 为备」：有用户（学校网络）拦截 cdn.jsdelivr.net，
+     拼音库加载不到 → 只剩内置 ~120 词 → 题干拼音显示不全（只有 听/你/的 等有拼音）。
+     pinyin-pro.js 与 index.html 同目录发布（同源，不受 CDN 拦截影响；双击 file:// 打开也能用）。 -->
+<script src="pinyin-pro.js"></script>
+<script>
+if(!window.pinyinPro){ document.write('<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.21.0/dist/index.js"><\/script>'); }
+</script>
 <script>
 /* §V650 本地下载版拼音兜底（离线审计定案）：CDN 加载不到（断网/双击 file:// 且无网）时，
    拼音只剩内置 PINYIN_DICT ~120 词——对中文出题工具是无声重伤。两步补救：
@@ -138,15 +148,12 @@
    注：CDN 标签是同步脚本，本块执行时其成败已定；联网正常时这里直接短路，零多余请求。 */
 (function(){
   if(window.pinyinPro) return;
-  var s=document.createElement('script');
-  s.src='pinyin-pro.js';
-  s.onerror=function(){ window._bqPinyinLibMissing=true; };
-  document.head.appendChild(s);
+  /* §V668 本地库已改为主加载（见上），这里不再重复加载，只保留「两者都没有」时的提示 */
   window.addEventListener('load', function(){
     setTimeout(function(){
       if(window.pinyinPro) return;   /* 本地兜底库加载成功 */
       window._bqPinyinLibMissing=true;
-      var msg='📴 拼音库未加载（离线）：注音只剩少量常用词。联网打开一次，或把 pinyin-pro.js 放在本文件同级即可恢复全量拼音。';
+      var msg='📴 拼音库未加载：注音只剩少量常用词。请确认 pinyin-pro.js 和本文件放在同一文件夹。';
       try{ if(typeof showToast==='function'){ showToast(msg,'warn'); return; } }catch(_e){}
       try{ console.warn('[BlockQuiz] '+msg); }catch(_e){}
     }, 2500);
@@ -43521,8 +43528,24 @@ window.MatchGen = (function(){
               if(ch in _cache){ cb(_cache[ch]); return; }
               if(_pend[ch]){ _pend[ch].push(cb); return; }   /* 同字在途请求去重（打字期多次触发只发一次） */
               _pend[ch]=[cb]; cb=function(v){ const q=_pend[ch]||[]; delete _pend[ch]; q.forEach(f=>{ try{f(v);}catch(_e){} }); };
-              fetch('https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/'+encodeURIComponent(ch)+'.json')
-                .then(r=>{ if(!r.ok){ const e=new Error('http'); e._net=true; throw e; } return r.json(); })
+              /* §V668 笔画数据改为「本站同源自带为主、jsDelivr CDN 为备」：学校网络拦截 cdn.jsdelivr.net 时彩虹笔顺图出不来。
+                 自带数据 = hanzi-writer-data@2.0.1 全部 9574 字，按「码位 % 128」合并成 128 个分包 hanzi-writer-data/hw-000.json…hw-127.json
+                 （每包 { "字": {strokes,medians,radStrokes} }，约 180–290KB）。不用 9574 个单字文件：OneDrive 同步大量中文名小文件会报错，
+                 git 提交也慢；文件名一律英文。分包按需加载、整包缓存；本地取不到（双击 file:// 打开、包里没有该字）→ 回退 CDN 单字。 */
+              const _hwGet=(base)=>fetch(base+encodeURIComponent(ch)+'.json')
+                .then(r=>{ if(!r.ok){ const e=new Error('http'); e._net=true; throw e; } return r.json(); });
+              const _hwPk=window._hwPacks||(window._hwPacks={});
+              const _hwLocal=()=>{
+                const k=String(ch.codePointAt(0)%128).padStart(3,'0');
+                if(!_hwPk[k]){
+                  _hwPk[k]=fetch('hanzi-writer-data/hw-'+k+'.json')
+                    .then(r=>{ if(!r.ok) throw new Error('http'); return r.json(); })
+                    .catch(e=>{ delete _hwPk[k]; throw e; });   /* 失败不缓存，下次可重试 */
+                }
+                return _hwPk[k].then(m=>{ const d=m&&m[ch]; if(!d) throw new Error('nochar'); return d; });
+              };
+              _hwLocal()
+                .catch(()=>_hwGet('https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/'))
                 .then(d=>{
                   const cols=['#FF4FA0','#FFB300','#22C55E','#00B8FF','#A855F7'];
                   const paths=(d.strokes||[]).map((p,i)=>'<path d="'+p+'" fill="'+cols[i%cols.length]+'"/>').join('');
